@@ -749,8 +749,7 @@ fun usePotentialMovePiece(
   val newNode = board.nodes.first { it.coordinate == coordinateToMoveTo }
 
   if (newNode.piece == null) {
-    currentNode.piece?.usePiecePotential()
-    newNode.piece = currentNode.piece
+    newNode.piece = currentNode.piece?.usePiecePotential()
 
     var newBoard = updateBoard(newNode, board)
     newBoard = updateBoard(currentNode, board)

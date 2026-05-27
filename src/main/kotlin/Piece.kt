@@ -20,8 +20,16 @@ data class Piece(
     val type: PieceType,
 		var stacked: Boolean = false, // neutralized // TODO Implement logic
 ) {
-  fun usePiecePotential() {
+  fun usePiecePotential(): Piece {
     potential = false
+	  return Piece(
+		  abbreviation = this.abbreviation,
+		  potential = false,
+		  color = this.color,
+		  colorName = this.colorName,
+		  type = this.type,
+		  stacked = this.stacked
+	  )
   }
 
   fun hasNoPotential(): Boolean {
@@ -29,6 +37,7 @@ data class Piece(
   }
 
   fun resetPotential() {
+		TODO("Implement logic to handle piece stacking when there is a two of a kind for each piece type")
     potential = true
   }
 }
@@ -51,7 +60,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
       List(3) {
         Piece(
             abbreviation = player.abbreviation.plus('T'),
-            potential = false,
+            potential = true,
             color = player.color,
             colorName = player.name,
             type = PieceType.TAMSK,
@@ -62,7 +71,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
       List(3) {
         Piece(
             abbreviation = player.abbreviation.plus('Z'),
-            potential = false,
+            potential = true,
             color = player.color,
             colorName = player.name,
             type = PieceType.ZERTZ,
@@ -73,7 +82,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
       List(3) {
         Piece(
             abbreviation = player.abbreviation.plus('D'),
-            potential = false,
+            potential = true,
             color = player.color,
             colorName = player.name,
             type = PieceType.DVONN,
@@ -84,7 +93,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
       List(3) {
         Piece(
             abbreviation = player.abbreviation.plus('Y'),
-            potential = false,
+            potential = true,
             color = player.color,
             colorName = player.name,
             type = PieceType.YINSH,
@@ -95,7 +104,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
       List(3) {
         Piece(
             abbreviation = player.abbreviation.plus('P'),
-            potential = false,
+            potential = true,
             color = player.color,
             colorName = player.name,
             type = PieceType.PUNCT,

@@ -8,12 +8,12 @@ fun main() {
 
   gameState.printStateSummary()
 	// TODO implement function to evaluate if the current player's pieces has any valid moves left
-  while (!evaluateCapturedPieces(gameState) || !evaluatePiecesInReserve(gameState)) {
+  while (!evaluateCapturedPieces(gameState) || !evaluatePiecesInReserve(gameState) || getEligiblePotentialMoves(gameState).isNotEmpty()) {
 
     gameState = playerTurn(gameState)
 
 	  // TODO implement function to evaluate if the current player's pieces has any valid moves left
-    if (evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState)) {
+    if (evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState) || getEligiblePotentialMoves(gameState).isEmpty()) {
       break
     }
 

@@ -2,17 +2,23 @@ package org.example
 
 import kotlin.collections.mutableSetOf
 
-// TODO call `evaluateState` function before `playerTurn` function
+/**
+ * TODO create a two functions:
+ *  1. Add new pieces to the board
+ *  2. Using piece potentials
+*/
 fun playerMove(state: State): State {
   // Does player have GIPF pieces in reserve?
   val gipfPiecesInReserve: Int =
       state.currentPlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF }
 
-  val otherPiecesInReserve: List<Piece> =
-      state.currentPlayer.piecesInReserve.filter { piece -> piece.type != PieceType.GIPF }
+  val playableStackedPiecesInReserve: List<Piece> =
+      state.currentPlayer.piecesInReserve.filter { piece -> piece.type != PieceType.GIPF && piece.potential}
+
+	val eligibleMoves = getEligiblePotentialMoves(state)
 
   // TODO Current Player has no moves left
-  if (otherPiecesInReserve.isEmpty()) {
+  if (playableStackedPiecesInReserve.isEmpty() && gipfPiecesInReserve == 0 && eligibleMoves.isEmpty()) {
     return state
   }
 
@@ -140,9 +146,7 @@ fun playerMove(state: State): State {
                 }
                 .piece
 
-        selectedNode.node.piece = piece
-
-        piece?.usePiecePotential()
+        selectedNode.node.piece = piece?.usePiecePotential()
 
         check(piece?.potential == false) {
           val pieceCoords = selectedNode.node.coordinate.let { "${it.column}${it.row}" }
@@ -154,10 +158,10 @@ fun playerMove(state: State): State {
 
         selectedNode
       } else /*if (otherPiecesInReserve.isNotEmpty())*/ {
-        // TODO select piece from otherPiecesInReserve
+        // TODO select piece from otherPiecesInReserve or use a piece's potential if there are any
         val selectedNode = selectDot(selectableDots)
 
-        val selectedPiece = selectPieceFromReserve(otherPiecesInReserve)
+        val selectedPiece = selectPieceFromReserve(playableStackedPiecesInReserve)
 
         require(selectedPiece != null) { "No piece was selected!" }
 
@@ -242,9 +246,7 @@ fun enforcePieceRemovalRules(state: State): State {
           lines = state.lines,
       )
 
-  TODO(
-      "Implement logic for instances where all of the current player's pieces have their potential == true"
-  )
+  // TODO "Implement logic for instances where all of the current player's pieces have their potential == true"
   /*
   TODO Confirm – Don't reset piece potential when captured/retrieved if it's potential == false &&
      that there's only one piece of that type that has been retrieved
@@ -402,13 +404,16 @@ fun evaluateCapturedPieces(state: State): Boolean {
 }
 
 fun evaluatePiecesInReserve(state: State): Boolean {
-  return state.currentPlayer.piecesInReserve.isEmpty()
+  return state.currentPlayer.piecesInReserve.none { piece -> piece.potential || piece.type == PieceType.GIPF }
 }
 
 
 
 fun playerTurn(state: State): State {
   var newState = enforcePieceRemovalRules(state)
+
+	// recombine player pieces
+	newState.currentPlayer.recombinePieces()
 
   if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
     newState = playerMove(newState)
@@ -434,6 +439,9 @@ fun playerTurn(state: State): State {
   }
 
   newState = enforcePieceRemovalRules(newState)
+
+	// recombine player pieces
+	newState.currentPlayer.recombinePieces()
 
   newState.board.printHexGrid()
 
