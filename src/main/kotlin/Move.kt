@@ -1,6 +1,6 @@
 package org.example
 
-import org.example.org.example.LineOrientation
+import org.example.LineOrientation
 
 fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
   val eligibleNodes =

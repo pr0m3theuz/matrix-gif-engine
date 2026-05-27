@@ -1,4 +1,4 @@
-package org.example.org.example
+package org.example
 
 enum class LineOrientation {
 	VERTICAL,
