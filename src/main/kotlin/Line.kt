@@ -141,8 +141,62 @@ fun getLowerRightNode(
 fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Node>> {
   lines.forEach { line ->
     val sublists = line.windowed(4)
+
+	  /**
+	   * ============================================================================
+	   * MOVEMENT AND INTERACTION RULES: DVONN & PUNCT POTENTIALS
+	   * ============================================================================
+	   * * 1. MOVEMENT & JUMPING RESTRICTIONS
+	   * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
+	   * - Valid targets include:
+	   * - A single DVONN-potential on the board.
+	   * - A DVONN-stack.
+	   * - A DVONN-potential currently sitting on top of a stack.
+	   * - Pathing:
+	   * - Can jump to an adjacent spot.
+	   * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
+	   * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic GIPF
+	   *   piece.
+	   *
+	   * * 2. STACK MECHANICS
+	   * - Because players can jump onto opposing DVONN-potentials, stacks of alternating colors
+	   *   will form.
+	   * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is NOT
+	   *   treated as a single entity.
+	   * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
+	   *
+	   * * 3. NEUTRALIZATION & OCCUPATION
+	   * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
+	   * - The top piece's color controls/occupies that board spot.
+	   * - When the top piece is removed, the piece directly beneath it is liberated and returns
+	   *   to active play.
+	   *
+	   * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
+	   * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially
+	   *   creating a new row-of-4.
+	   * - Removing an opponent's piece to reveal your own can complete your row-of-4.
+	   * - Removing your own piece to reveal an opponent's can complete their row-of-4.
+	   * - Turn Resolution Logic:
+	   * - A player's turn is NOT over if they still have a row that needs removal.
+	   * - Rows must be removed one at a time.
+	   * - Active player's turn ends ONLY when no more rows of their color remain.
+	   * - If an opponent begins their turn with an existing row of their color on the board
+	   *   (caused by the previous player's move), they MUST remove it before making a standard
+	   *   move.
+	   */
+
     val hasFourPiecesInARow = sublists.any { sublist ->
-      sublist.all { node -> node.piece?.color == player.color }
+      sublist.all { node ->
+				if (node.isNeutralized) {
+					check(node.piece?.type == PieceType.DVONN || node.piece?.type == PieceType.PUNCT)
+					{
+						"Only Dvonn and Pünct pieces can be neutralized."
+					}
+					node.stackedPieces.last().colorName == player.name
+				} else {
+					node.piece?.colorName == player.name
+				}
+			}
     }
 
     if (hasFourPiecesInARow) {
