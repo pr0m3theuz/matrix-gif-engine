@@ -19,6 +19,17 @@ fun Node.removePiece() {
 	this.piece = null
 }
 
+fun Node.pushPotential(newPiece: Piece) {
+	val topPiece = stackedPieces.lastOrNull() ?: piece
+	if (topPiece != null) {
+		require(topPiece.colorName != newPiece.colorName) {
+			"Illegal Layering: Stacks must strictly alternate player colors!"
+		}
+	}
+	stackedPieces.add(newPiece)
+	isNeutralized = true
+}
+
 fun populateNeighbors(coordinate: Coordinate, nodes: Set<Node>): NodeNeighbors {
 	// Dots are only connected the adjacent Spots
 	val letterIndex = LETTERS.indexOf(coordinate.column)
