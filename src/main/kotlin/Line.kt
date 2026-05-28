@@ -114,7 +114,6 @@ fun getUpperRightNode(
   }
 
   upperRightNodes.add(node)
-  // TODO recursive stack overflow
   getUpperRightNode(node.neighbors?.upperRight, nodes, upperRightNodes)
 
   return upperRightNodes
@@ -192,7 +191,7 @@ fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Nod
 					{
 						"Only Dvonn and Pünct pieces can be neutralized."
 					}
-					node.stackedPieces.last().colorName == player.name
+					node.stackedPieces[node.stackedPieces.lastIndex].colorName == player.name
 				} else {
 					node.piece?.colorName == player.name
 				}

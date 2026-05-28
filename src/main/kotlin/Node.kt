@@ -11,6 +11,7 @@ data class Node(
 	var piece: Piece? = null,
 	var isNeutralized: Boolean = false,  // neutralized // TODO Implement logic for stacking pieces and removing potential and neutralizing pieces
 	// TODO Implement logic // For DVONN & PÜNCT pieces, needs to be a mutableList of alternating player pieces, use add() and removeLast(), this piece which can either be retrieved or captured
+	// TODO check that pieces alternate
 	var stackedPieces: MutableList<Piece> = mutableListOf(),
 )
 

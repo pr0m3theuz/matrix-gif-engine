@@ -23,6 +23,8 @@ fun playerMove(state: State): State {
   }
 
   val dots = state.board.nodes.filter { it.isDot }
+
+	// TODO rename variable to be more descriptive
   val populatedNodes: MutableSet<NodeConnections> = mutableSetOf()
 
   val linesWithSpace: Lines = state.lines.getLinesWithSpaces()
@@ -46,6 +48,7 @@ fun playerMove(state: State): State {
         "The following target lines have no empty spaces remaining: $jammedLines"
   }
 
+	// populate populatedNodes
   dots.forEach { dot ->
     val nodeConnections = NodeConnections(node = dot)
 
@@ -69,6 +72,7 @@ fun playerMove(state: State): State {
           }
         }
       }
+
       dot.neighbors?.upperRight != null || dot.neighbors?.lowerLeft != null -> {
         linesWithSpace.upwardRightLines.forEach { line ->
           val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
@@ -90,6 +94,7 @@ fun playerMove(state: State): State {
           }
         }
       }
+
       dot.neighbors?.lowerRight != null || dot.neighbors?.upperLeft != null -> {
         linesWithSpace.downwardRightLines.forEach { line ->
           val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
@@ -120,7 +125,8 @@ fun playerMove(state: State): State {
 
   val numberOfPiecesBefore = state.currentPlayer.getNumberOfPiecesInReserve()
 
-  val selectedNode =
+  val selectedDot =
+			// the Order of playing GIPF and TAMSK potential is invariant
       if (gipfPiecesInReserve > 0) {
         val selectedNode = selectDot(selectableDots)
 
@@ -133,7 +139,8 @@ fun playerMove(state: State): State {
         }
 
         selectedNode
-      } else if (isTamskPieceAtCenter(state.board, state.currentPlayer)) {
+      } else
+				if (isTamskPieceAtCenter(state.board, state.currentPlayer)) {
         // TODO use potential
         // TODO put piece on a selectable dot shift piece
         val selectedNode = selectDot(selectableDots)
@@ -157,7 +164,8 @@ fun playerMove(state: State): State {
         }
 
         selectedNode
-      } else /*if (otherPiecesInReserve.isNotEmpty())*/ {
+      }
+				else /*if (otherPiecesInReserve.isNotEmpty())*/ {
         // TODO select piece from otherPiecesInReserve or use a piece's potential if there are any
         val selectedNode = selectDot(selectableDots)
 
@@ -169,9 +177,10 @@ fun playerMove(state: State): State {
         selectedNode
       }
 
+	// Directions to the piece can be pushed ir
   val availablePushDirections =
-      selectedNode.neighbours.mapNotNull { neighbour ->
-        selectedNode.node.neighbors!!.getPushDirectionFromNeighbor(neighbour.coordinate)
+      selectedDot.neighbours.mapNotNull { neighbour ->
+        selectedDot.node.neighbors!!.getPushDirectionFromNeighbor(neighbour.coordinate)
       }
 
   if (availablePushDirections.isEmpty()) {
@@ -185,8 +194,9 @@ fun playerMove(state: State): State {
   val newState =
       updateBoard(
           board =
-              shiftPiece(
-                  currentNode = selectedNode.node,
+	          // Move piece in the selected spot(node) based on selected push direction
+	          shiftPiece(
+                  currentNode = selectedDot.node,
                   moveDirection = selectedPushDirection,
                   board = state.board,
                   lines = state.lines,
@@ -415,6 +425,7 @@ fun playerTurn(state: State): State {
 	// recombine player pieces
 	newState.currentPlayer.recombinePieces()
 
+	// Handle Tamsk Potential
   if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
     newState = playerMove(newState)
   }
@@ -423,6 +434,7 @@ fun playerTurn(state: State): State {
 
   newState.board.printHexGrid()
 
+	// Handle Tamsk Potential
   if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
     newState = playerMove(newState)
   }
