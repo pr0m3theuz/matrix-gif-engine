@@ -1,7 +1,11 @@
 package org.example
 
+import kotlinx.serialization.Contextual
 import java.awt.Color
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+@Serializable
 enum class PieceType() {
   GIPF,
   TAMSK,
@@ -11,26 +15,48 @@ enum class PieceType() {
   PUNCT,
 }
 
+@Serializable
 data class Piece(
-    val abbreviation: String,
-    var potential: Boolean,
+	val abbreviation: String,
+	var potential: Boolean,
     //	var position: Coordinate,
-    val color: Color,
-    val colorName: String,
-    val type: PieceType,
-		var stacked: Boolean = false, // neutralized // TODO Implement logic
+//	@Contextual val color: Color,
+	val colorName: String,
+	val type: PieceType,
+	var isNeutralized: Boolean =
+		false, // neutralized // TODO Implement logic for stacking pieces and removing potential and
+	// neutralizing pieces
+	// TODO Implement logic // For DVONN & PÜNCT pieces, needs to be a mutableList of alternating
+	// player pieces, use add() and removeLast(), this piece which can either be retrieved or
+	// captured
+	// TODO check that pieces alternate
+	var stackedPieces: MutableList<Piece> = mutableListOf(),
+
 ) {
+	fun deepCopy(): Piece {
+		val string = Json.encodeToString(serializer(), this)
+		return Json.decodeFromString(serializer(), string)
+	}
+
   fun usePiecePotential(): Piece {
     potential = false
 	  return Piece(
 		  abbreviation = this.abbreviation,
 		  potential = false,
-		  color = this.color,
+//		  color = this.color,
 		  colorName = this.colorName,
 		  type = this.type,
-		  stacked = this.stacked
 	  )
   }
+
+	fun pushPotential(newPiece: Piece) {
+		val topPiece = stackedPieces.lastOrNull() ?: this
+		require(topPiece.colorName != newPiece.colorName) {
+			"Illegal Layering: Stacks must strictly alternate player colors!"
+		}
+		stackedPieces.add(newPiece)
+		isNeutralized = true
+	}
 
   fun hasNoPotential(): Boolean {
     return !potential
@@ -50,7 +76,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('G'),
             potential = false,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.GIPF,
         )
@@ -61,7 +87,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('T'),
             potential = true,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.TAMSK,
         )
@@ -72,7 +98,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('Z'),
             potential = true,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.ZERTZ,
         )
@@ -83,7 +109,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('D'),
             potential = true,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.DVONN,
         )
@@ -94,7 +120,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('Y'),
             potential = true,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.YINSH,
         )
@@ -105,7 +131,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
         Piece(
             abbreviation = player.abbreviation.plus('P'),
             potential = true,
-            color = player.color,
+//            color = player.color,
             colorName = player.name,
             type = PieceType.PUNCT,
         )

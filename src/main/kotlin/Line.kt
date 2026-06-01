@@ -1,10 +1,14 @@
 package org.example
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
 // TODO Needs to be reconstructed after each action
 /**
  * Lines (Start Node, End Node): A-J 1-9? A1 - I5 B1 - B6 B1 - J4 C1 - C7 C1 - J3 D1 - D8 D1 - J2
  * E1 - E9 F1 - F8 F1 - A2 G1 - G7 G1 - A3 H1 - H6 H1 - A4 I1 - I5 I1 - A5 J1 - B6
  */
+@Serializable
 data class Lines(
     val verticalLines: MutableList<Set<Node>>,
     val upwardRightLines: MutableList<Set<Node>>,
@@ -26,6 +30,11 @@ data class Lines(
 		    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).toSet())
     )
   }
+
+	fun deepCopy(): Lines {
+		val string = Json.encodeToString(serializer(), this)
+		return Json.decodeFromString(serializer(), string)
+	}
 }
 
 fun Lines.toList(): MutableList<MutableList<Set<Node>>> {
@@ -139,7 +148,7 @@ fun getLowerRightNode(
 
 fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Node>> {
   lines.forEach { line ->
-    val sublists = line.windowed(4)
+    val sublists = line.windowed(4).filter { nodes -> nodes.all {it.piece != null }}
 
 	  /**
 	   * ============================================================================
@@ -186,12 +195,12 @@ fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Nod
 
     val hasFourPiecesInARow = sublists.any { sublist ->
       sublist.all { node ->
-				if (node.isNeutralized) {
-					check(node.piece?.type == PieceType.DVONN || node.piece?.type == PieceType.PUNCT)
+				if (node.piece?.isNeutralized == true) {
+					check(node.piece?.type in setOf(PieceType.DVONN, PieceType.PUNCT))
 					{
-						"Only Dvonn and Pünct pieces can be neutralized."
+						"Only Dvonn and Pünct pieces can be neutralized. \n Node: ${Json.encodeToString<Node>(node)}"
 					}
-					node.stackedPieces[node.stackedPieces.lastIndex].colorName == player.name
+					node.piece?.stackedPieces?.last()?.colorName == player.name
 				} else {
 					node.piece?.colorName == player.name
 				}

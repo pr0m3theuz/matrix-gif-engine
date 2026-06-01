@@ -1,34 +1,48 @@
 package org.example
 
 import kotlin.random.Random
+import kotlinx.serialization.json.Json
 
+// TODO fix bug where the target nodes set includes the source node
 fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
   // return Map<Node – the node containing a piece with potential
   // Set<Node?>> – set of eligible nodes that a potential can be placed on
   val eligibleNodes =
       state.board.nodes.filter {
         it.piece != null &&
-            it.piece?.type != PieceType.GIPF &&
+            it.piece?.type !in setOf(PieceType.GIPF, PieceType.TAMSK) &&
             it.piece?.potential == true &&
             it.piece?.colorName == state.currentPlayer.name &&
-            !it.isNeutralized
+            it.piece?.isNeutralized == false
       }
 
+  check(eligibleNodes.none { it.piece?.type in setOf(PieceType.GIPF, PieceType.TAMSK) }) {
+    val invalidPieces =
+        eligibleNodes
+            .mapNotNull { it.piece }
+            .filter { it.type in setOf(PieceType.GIPF, PieceType.TAMSK) }
+            .map { "${it.type} (${it.colorName})" }
+
+    "Eligibility violation: Found prohibited basic pieces in the selection pool: $invalidPieces"
+  }
+
   return eligibleNodes.associateWith { eligibleNode ->
-    val eligibleNodesLines = eligibleNodes.associateWith { eligibleNode ->
-      state.lines.getLinesContainingNode(eligibleNode)
-    }
+    val eligibleNodesLines = state.lines.getLinesContainingNode(eligibleNode)
 
     when (eligibleNode.piece?.type) {
       // PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
       PieceType.ZERTZ -> {
         /**
-         * 1/ The ZÈRTZ-potential has the ability to jump over other pieces. 2/ Take the top piece
-         * from a ZÈRTZ-stack and use it to jump over one or more pieces. It can jump over both your
-         * own and your opponent’s pieces. 3/ The potential must jump over at least one piece. If it
-         * jumps over more than one piece, these must all be on the same line. 4/ A jump with a
-         * ZÈRTZ-potential always ends on the first vacant spot in the direction of the jump; it
-         * cannot jump over empty spots.
+         * 1/ The ZÈRTZ-potential has the ability to jump over other pieces.
+         *
+         * 2/ Take the top piece from a ZÈRTZ-stack and use it to jump over one or more pieces. It
+         * can jump over both your own and your opponent’s pieces.
+         *
+         * 3/ The potential must jump over at least one piece. If it jumps over more than one piece,
+         * these must all be on the same line.
+         *
+         * 4/ A jump with a ZÈRTZ-potential always ends on the first vacant spot in the direction of
+         * the jump; it cannot jump over empty spots.
          */
         /**
          * TODO
@@ -39,38 +53,45 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
          *    == null) from each line
          * 5. These nodes are eligible for placing a ZERTZ Piece on
          */
-        val result =
-            eligibleNodesLines.keys.associateWith { node ->
-              val lines = eligibleNodesLines[node]!!
-              val verticalNodes =
-                  findFirstNode(
-                      currentNode = node,
-                      line = lines.verticalLines.first(),
-                      orientation = LineOrientation.VERTICAL,
-                      isNextNodeVacant = true,
-                      isNextNodeOccupied = false,
-                  )
-              val upwardRightNodes =
-                  findFirstNode(
-                      currentNode = node,
-                      line = lines.upwardRightLines.first(),
-                      orientation = LineOrientation.UPWARD_RIGHT,
-                      isNextNodeVacant = true,
-                      isNextNodeOccupied = false,
-                  )
-              val downwardRightNodes =
-                  findFirstNode(
-                      currentNode = node,
-                      line = lines.downwardRightLines.first(),
-                      orientation = LineOrientation.DOWNWARD_RIGHT,
-                      isNextNodeVacant = true,
-                      isNextNodeOccupied = false,
-                  )
+        val result = run {
+          val neighbours = eligibleNode.neighbors?.getNeighbours()
+          val lines = eligibleNodesLines
+          val verticalNodes =
+              findFirstNode(
+                  currentNode = eligibleNode,
+                  line = lines.verticalLines.first(),
+                  orientation = LineOrientation.VERTICAL,
+                  isNextNodeVacant = true,
+                  isNextNodeOccupied = false,
+              )
+          val upwardRightNodes =
+              findFirstNode(
+                  currentNode = eligibleNode,
+                  line = lines.upwardRightLines.first(),
+                  orientation = LineOrientation.UPWARD_RIGHT,
+                  isNextNodeVacant = true,
+                  isNextNodeOccupied = false,
+              )
+          val downwardRightNodes =
+              findFirstNode(
+                  currentNode = eligibleNode,
+                  line = lines.downwardRightLines.first(),
+                  orientation = LineOrientation.DOWNWARD_RIGHT,
+                  isNextNodeVacant = true,
+                  isNextNodeOccupied = false,
+              )
 
-              verticalNodes + upwardRightNodes + downwardRightNodes
-            }
+          val allNodes = verticalNodes + upwardRightNodes + downwardRightNodes
 
-        return result
+          // remove all nulls and neighbour nodes as the potential must jump over at least one
+          // piece.
+          allNodes
+              .filterNotNull()
+              .filter { it -> neighbours?.contains(it.coordinate) == false }
+              .toSet()
+        }
+
+        result
       }
       PieceType.YINSH -> {
         /**
@@ -87,38 +108,40 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
          *    (node.piece != null) from each line
          * 5. These nodes are eligible for placing a YINSH Piece on
          */
-        val result =
-            eligibleNodesLines.keys.associateWith { node ->
-              val lines = eligibleNodesLines[node]!!
-              val verticalNodes =
-                  findAdjacentVacantNodes(
-                      currentNode = node,
-                      line = lines.verticalLines.first(),
-                      orientation = LineOrientation.VERTICAL,
-                      isNextNodeVacant = false,
-                      isNextNodeOccupied = false,
-                  )
-              val upwardRightNodes =
-                  findAdjacentVacantNodes(
-                      currentNode = node,
-                      line = lines.upwardRightLines.first(),
-                      orientation = LineOrientation.UPWARD_RIGHT,
-                      isNextNodeVacant = true,
-                      isNextNodeOccupied = false,
-                  )
-              val downwardRightNodes =
-                  findAdjacentVacantNodes(
-                      currentNode = node,
-                      line = lines.downwardRightLines.first(),
-                      orientation = LineOrientation.DOWNWARD_RIGHT,
-                      isNextNodeVacant = true,
-                      isNextNodeOccupied = false,
-                  )
+        val result = run {
+          val lines = eligibleNodesLines
+          val verticalNodes =
+              findAdjacentVacantNodes(
+                  currentNode = eligibleNode,
+                  line = lines.verticalLines.first(),
+                  orientation = LineOrientation.VERTICAL,
+                  isNextNodeVacant = false,
+                  isNextNodeOccupied = true,
+              )
+          val upwardRightNodes =
+              findAdjacentVacantNodes(
+                  currentNode = eligibleNode,
+                  line = lines.upwardRightLines.first(),
+                  orientation = LineOrientation.UPWARD_RIGHT,
+                  isNextNodeVacant = false,
+                  isNextNodeOccupied = true,
+              )
+          val downwardRightNodes =
+              findAdjacentVacantNodes(
+                  currentNode = eligibleNode,
+                  line = lines.downwardRightLines.first(),
+                  orientation = LineOrientation.DOWNWARD_RIGHT,
+                  isNextNodeVacant = false,
+                  isNextNodeOccupied = true,
+              )
 
-              verticalNodes + upwardRightNodes + downwardRightNodes
-            }
+          (verticalNodes + upwardRightNodes + downwardRightNodes)
+              .filterNotNull()
+              .filter { it.coordinate != eligibleNode.coordinate }
+              .toSet()
+        }
 
-        return result
+        result
       }
       PieceType.DVONN -> {
         /**
@@ -171,52 +194,60 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
          */
         val pieceType = PieceType.DVONN
 
-        val result =
-            eligibleNodesLines.keys.associateWith { node ->
-              val lines = eligibleNodesLines[node]!!
-              val verticalNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.verticalLines.first(),
-                          orientation = LineOrientation.VERTICAL,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+        val result = run {
+          val lines = eligibleNodesLines
+          val verticalNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.verticalLines.first(),
+                      orientation = LineOrientation.VERTICAL,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              val upwardRightNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.upwardRightLines.first(),
-                          orientation = LineOrientation.UPWARD_RIGHT,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+          val upwardRightNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.upwardRightLines.first(),
+                      orientation = LineOrientation.UPWARD_RIGHT,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              val downwardRightNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.downwardRightLines.first(),
-                          orientation = LineOrientation.DOWNWARD_RIGHT,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+          val downwardRightNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.downwardRightLines.first(),
+                      orientation = LineOrientation.DOWNWARD_RIGHT,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              verticalNodes + upwardRightNodes + downwardRightNodes
-            }
+          verticalNodes + upwardRightNodes + downwardRightNodes
+        }
 
-        return result
+        result
       }
       PieceType.PUNCT -> {
         /**
@@ -235,52 +266,60 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
          */
         val pieceType = PieceType.PUNCT
 
-        val result =
-            eligibleNodesLines.keys.associateWith { node ->
-              val lines = eligibleNodesLines[node]!!
-              val verticalNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.verticalLines.first(),
-                          orientation = LineOrientation.VERTICAL,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+        val result = run {
+          val lines = eligibleNodesLines
+          val verticalNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.verticalLines.first(),
+                      orientation = LineOrientation.VERTICAL,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              val upwardRightNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.upwardRightLines.first(),
-                          orientation = LineOrientation.UPWARD_RIGHT,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+          val upwardRightNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.upwardRightLines.first(),
+                      orientation = LineOrientation.UPWARD_RIGHT,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              val downwardRightNodes =
-                  findFirstNode(
-                          currentNode = node,
-                          line = lines.downwardRightLines.first(),
-                          orientation = LineOrientation.DOWNWARD_RIGHT,
-                          isNextNodeVacant = false,
-                          isNextNodeOccupied = true,
-                      )
-                      .filter {
-                        it?.piece?.type == pieceType && it.piece?.colorName == state.nextPlayer.name
-                      }
-                      .toSet()
+          val downwardRightNodes =
+              findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.downwardRightLines.first(),
+                      orientation = LineOrientation.DOWNWARD_RIGHT,
+                      isNextNodeVacant = false,
+                      isNextNodeOccupied = true,
+                  )
+                  .filter {
+                    it?.piece?.type == pieceType &&
+                        (it.piece?.colorName != state.currentPlayer.name ||
+                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                state.nextPlayer.name)
+                  }
+                  .toSet()
 
-              verticalNodes + upwardRightNodes + downwardRightNodes
-            }
+          verticalNodes + upwardRightNodes + downwardRightNodes
+        }
 
-        return result
+        result
       }
       else -> {
         return mapOf()
@@ -435,26 +474,26 @@ fun getNextNode(
   val nextNode: Node? =
       when (direction) {
         PushDirection.UP -> {
-          line.firstOrNull { node.neighbors?.above?.equals(it) ?: false }
+          line.firstOrNull { it: Node -> node.neighbors?.above?.equals(it.coordinate) ?: false }
         }
         PushDirection.DOWN -> {
-          line.firstOrNull { node.neighbors?.below?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.below?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.UPPER_RIGHT -> {
-          line.firstOrNull { node.neighbors?.upperRight?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.upperRight?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.LOWER_RIGHT -> {
-          line.firstOrNull { node.neighbors?.lowerRight?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.lowerRight?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.UPPER_LEFT -> {
-          line.firstOrNull { node.neighbors?.upperLeft?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.upperLeft?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.LOWER_LEFT -> {
-          line.firstOrNull { node.neighbors?.lowerLeft?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.lowerLeft?.equals(it.coordinate) ?: false }
         }
       }
 
@@ -488,26 +527,26 @@ fun getAdjacentVacantNode(
   val nextNode: Node? =
       when (direction) {
         PushDirection.UP -> {
-          line.firstOrNull { node.neighbors?.above?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.above?.equals(it.coordinate) ?: false }
         }
         PushDirection.DOWN -> {
-          line.firstOrNull { node.neighbors?.below?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.below?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.UPPER_RIGHT -> {
-          line.firstOrNull { node.neighbors?.upperRight?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.upperRight?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.LOWER_RIGHT -> {
-          line.firstOrNull { node.neighbors?.lowerRight?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.lowerRight?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.UPPER_LEFT -> {
-          line.firstOrNull { node.neighbors?.upperLeft?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.upperLeft?.equals(it.coordinate) ?: false }
         }
 
         PushDirection.LOWER_LEFT -> {
-          line.firstOrNull { node.neighbors?.lowerLeft?.equals(it) ?: false }
+          line.firstOrNull { node.neighbors?.lowerLeft?.equals(it.coordinate) ?: false }
         }
       }
 
@@ -517,7 +556,7 @@ fun getAdjacentVacantNode(
     vacantNodes.add(node)
     return vacantNodes
   } else {
-    vacantNodes.plus(node)
+    vacantNodes.add(nextNode)
     getAdjacentVacantNode(
         node = nextNode,
         line = line,
@@ -707,7 +746,18 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     currentNode.piece = null
 
     var newBoard = updateBoard(nextNode, board)
-    newBoard = updateBoard(currentNode, board)
+
+    val targetNextNodeCoordinate = nextNode.coordinate
+    check(newBoard.nodes.first { it.coordinate == targetNextNodeCoordinate }.piece != null) {
+      "State corruption: Node at coordinate $targetNextNodeCoordinate was expected to contain a piece, but it is empty."
+    }
+
+    newBoard = updateBoard(currentNode, newBoard)
+
+    val sourceCoordinate = currentNode.coordinate
+    check(newBoard.nodes.first { it.coordinate == sourceCoordinate }.piece == null) {
+      "State corruption: Node at coordinate $sourceCoordinate was expected to be empty, but it still contains a piece."
+    }
 
     println("[SHIFT] Grid configuration post-shift step:")
     newBoard.printHexGrid()
@@ -764,11 +814,9 @@ fun retrieveAndCapturePieces(
     line: Set<Node>, // TODO Replace with Line
     removePiecesWithPotential: Boolean,
     // TODO Add intersectingNodes to chooseToRemovePiecesWithPotential()
-): RetrievedCapturedPieces {
-  var retrievedPieces = listOf<Piece>()
-  var capturedPieces = listOf<Piece>()
-
-  val nodesToRemovePieces = mutableSetOf<Node>()
+): List<RetrievedCapturedPieceNode> {
+  var retrievedPieces = listOf<RetrievedCapturedPieceNode>()
+  var capturedPieces = listOf<RetrievedCapturedPieceNode>()
 
   // TODO "Implement logic for handling nodes where pieces are stacked and remove the stacked pieces
   // and leave the underlying pieces, i.e. node.piece"
@@ -817,32 +865,47 @@ fun retrieveAndCapturePieces(
   retrievedPieces =
       line
           .filter { node ->
-            if (node.isNeutralized) {
+            if (node.piece == null) {
+              false
+            } else if (node.piece?.isNeutralized == true) {
               check(node.piece?.type in validTypes) {
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
-              node.stackedPieces[node.stackedPieces.lastIndex].colorName == player.name
+              node.piece?.stackedPieces?.last()?.colorName == player.name
             } else {
               node.piece?.colorName == player.name
             }
           }
-          .mapNotNull { node ->
-            nodesToRemovePieces.add(node)
-            if (node.isNeutralized) {
+          .map { node ->
+            if (node.piece?.isNeutralized == true) {
               check(node.piece?.type in validTypes) {
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
 
-              node.stackedPieces.last()
+	            RetrievedCapturedPieceNode(
+		            retrievedPiece = node.piece?.stackedPieces?.last(),
+		            node = node,
+		            isStackedPieceNode = true
+	            )
             } else {
-              node.piece
+	            RetrievedCapturedPieceNode(
+		            retrievedPiece = node.piece,
+		            node = node,
+		            isStackedPieceNode = false
+	            )
             }
           }
           .toMutableList()
 
+  check(retrievedPieces.all { piece -> piece.retrievedPiece?.colorName == player.name }) {
+    val invalidColors = retrievedPieces.map { it.retrievedPiece?.colorName }.filter { it != player.name }.distinct()
+
+    "Sanity check failed: Player '${player.name}' cannot retrieve pieces belonging to: $invalidColors"
+  }
+
   // TODO Check if all pieces have their potentials then at least one piece has to be removed
   //	if (removePiecesWithPotential) true else node.piece!!.hasNoPotential()
-  if (retrievedPieces.all { it.potential }) {
+  if (retrievedPieces.all { it.retrievedPiece?.potential == true }) {
     //		TODO("Implement function to select which pieces to remove,
     // chooseToRemovePiecesWithPotential()")
     // TODO remove pieces and nodes from retrievedPieces and nodesToRemovePieces that have not been
@@ -862,61 +925,69 @@ fun retrieveAndCapturePieces(
     }
 
     retrievedPieces.removeAll(selectedPiecesToKeepInPlay)
-
-    nodesToRemovePieces
-        .filter { node -> node.piece in selectedPiecesToKeepInPlay }
-        .forEach { nodesToRemovePieces.remove(it) }
-  }
+	}
 
   capturedPieces =
       line
           .filter { node ->
-            if (node.isNeutralized) {
+            if (node.piece == null) {
+              false
+            } else if (node.piece?.isNeutralized == true) {
               check(node.piece?.type in validTypes) {
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
 
-              node.stackedPieces[node.stackedPieces.lastIndex].colorName != player.name
+              node.piece?.stackedPieces?.last()?.colorName != player.name
             } else {
               node.piece?.colorName != player.name
             }
           }
-          .mapNotNull { node ->
-            nodesToRemovePieces.add(node)
-            if (node.isNeutralized) {
-              check(node.piece?.type in validTypes) {
-                "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
-              }
+          .map { node ->
+	          if (node.piece?.isNeutralized == true) {
+		          check(node.piece?.type in validTypes) {
+			          "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
+		          }
 
-              node.stackedPieces.last()
-            } else {
-              node.piece
-            }
+		          RetrievedCapturedPieceNode(
+			          capturedPiece = node.piece?.stackedPieces?.last(),
+			          node = node,
+			          isStackedPieceNode = true
+		          )
+	          } else {
+		          RetrievedCapturedPieceNode(
+			          capturedPiece = node.piece,
+			          node = node,
+			          isStackedPieceNode = false
+		          )
+	          }
           }
 
-  check(nodesToRemovePieces.size == (capturedPieces.size + retrievedPieces.size)) {
-    "Piece & Node removal mismatch! Nodes to clear (${nodesToRemovePieces.size}) " +
-        "does not equal captured (${capturedPieces.size}) + retrieved (${retrievedPieces.size})."
-  }
-
-  return RetrievedCapturedPieces(
-      retrieved = retrievedPieces,
-      captured = capturedPieces,
-      nodes = nodesToRemovePieces.toList(),
-  )
+  return retrievedPieces + capturedPieces
 }
 
 fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: State): State {
-  // TODO return new state with updated board and lines
-  require(node.piece != null) {
-	  "Source node must contain a valid game piece."
+  // TODO fix bug where DVONN & PUNCT Pieces being stacked on ZERTZ and YINSH pieces
+  require(node.piece != null) { "Source node must contain a valid game piece." }
+
+  check(node.piece!!.type !in setOf(PieceType.GIPF, PieceType.TAMSK)) {
+    "Invalid source piece: ${node.piece?.type ?: "Node is empty"}. The current piece cannot be a GIPF or TAMSK piece." +
+        "\n\nCurrent Node: $node" +
+        "\n\nState: ${Json.encodeToString(state)}"
   }
 
-  check(node.piece != null && node.piece?.type !in setOf(PieceType.GIPF, PieceType.TAMSK)) {
-	  "Invalid source piece: ${node.piece?.type ?: "Node is empty"}. The current piece cannot be a GIPF or TAMSK piece."
-  }
+  var newState = state.deepCopy()
 
   val piece = node.piece!!
+  val potential = piece.usePiecePotential()
+
+  var selectedNodeToPlacePotential: Node? = null
+
+  check(!potential.potential && !piece.potential) {
+    "State invalid: source piece and potential cannot have active potentials. " +
+        "State -> Potential: ${potential.potential}, Piece: ${piece.potential}" +
+        "\nCurrent Node: ${Json.encodeToString(node)}" +
+        "\n\nState: ${Json.encodeToString(state)}"
+  }
 
   when (piece.type) {
     PieceType.GIPF -> {
@@ -927,102 +998,139 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
     }
 
     PieceType.ZERTZ -> {
-      val potential = piece.usePiecePotential()
+      val candidateNodes = eligibleNodesForPotential.filter { it.piece == null }
 
-	    check(!potential.potential && !piece.potential) {
-		    "State invalid: source piece and potential cannot have active potentials. " +
-				    "State -> Potential: ${potential.potential}, Piece: ${piece.potential}"
-	    }
+      if (candidateNodes.isEmpty()) {
+        check(candidateNodes.isNotEmpty()) { "Nodes are empty." }
+      }
 
+      selectedNodeToPlacePotential = candidateNodes.random()
 
-	    val selectedNodeToPlacePotential: Node = eligibleNodesForPotential.random()
+      check(selectedNodeToPlacePotential.piece == null) {
+        "Illegal placement: Cannot target an occupied node." +
+            "\nCurrent Node: ${Json.encodeToString(node)}" +
+            "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+            "\n\nState: ${Json.encodeToString(state)}"
+      }
 
       selectedNodeToPlacePotential.piece = potential
     }
 
     PieceType.YINSH -> {
-      val potential = piece.usePiecePotential()
+      val candidateNodes = eligibleNodesForPotential.filter { it.piece == null }
 
-	    check(!potential.potential && !piece.potential) {
-		    "State invalid: source piece and potential cannot have active potentials. " +
-				    "State -> Potential: ${potential.potential}, Piece: ${piece.potential}"
-	    }
+      if (candidateNodes.isEmpty()) {
+        // TODO
+        check(candidateNodes.isNotEmpty()) { "Nodes are empty." }
+      }
 
+      selectedNodeToPlacePotential = candidateNodes.random()
 
-	    val selectedNodeToPlacePotential: Node = eligibleNodesForPotential.random()
+      check(selectedNodeToPlacePotential.piece == null) {
+        "Illegal placement: Cannot target an occupied node." +
+            "\nCurrent Node: ${Json.encodeToString(node)}" +
+            "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+            "\n\nState: ${Json.encodeToString(state)}"
+      }
 
       selectedNodeToPlacePotential.piece = potential
     }
 
     PieceType.DVONN -> {
-      val potential = piece.usePiecePotential()
+      val candidateNodes = eligibleNodesForPotential.filter { it.piece?.type == PieceType.DVONN }
 
-	    check(!potential.potential && !piece.potential) {
-		    "State invalid: source piece and potential cannot have active potentials. " +
-				    "State -> Potential: ${potential.potential}, Piece: ${piece.potential}"
-	    }
+      if (candidateNodes.isEmpty()) {
+        check(candidateNodes.isNotEmpty()) { "Nodes are empty." }
+      }
 
+      selectedNodeToPlacePotential = candidateNodes.random()
 
-	    val selectedNodeToPlacePotential: Node = eligibleNodesForPotential.random()
+      if (potential.type != selectedNodeToPlacePotential.piece?.type) {
+        check(potential.type != selectedNodeToPlacePotential.piece?.type) {
+          "Illegal placement: Cannot target a piece of a different type (${potential.type})." +
+              "\nCurrent Node: ${Json.encodeToString(node)}" +
+              "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+              "\n\nState: ${Json.encodeToString(state)}"
+        }
+      }
 
-	    if (!selectedNodeToPlacePotential.isNeutralized) {
-		    check(selectedNodeToPlacePotential.piece?.colorName != potential.colorName) {
-			    "Illegal placement: Cannot target a piece of your own color (${potential.colorName})."
-		    }
-	    }
+      if (selectedNodeToPlacePotential.piece?.isNeutralized == false) {
+        check(selectedNodeToPlacePotential.piece?.colorName != potential.colorName) {
+          "Illegal placement: Cannot target a piece of your own color (${potential.colorName})." +
+              "\nCurrent Node: ${Json.encodeToString(node)}" +
+              "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+              "\n\nState: ${Json.encodeToString(state)}"
+        }
+      }
 
-	    if (selectedNodeToPlacePotential.stackedPieces.size > 1) {
-		    val topPotential =
-			    selectedNodeToPlacePotential.stackedPieces[
-				    selectedNodeToPlacePotential.stackedPieces.lastIndex]
-		    check(topPotential.colorName != potential.colorName) {
-			    "Illegal move: A ${potential.type.name}-potential cannot jump onto another potential of the same color (${potential.colorName})."
-		    }
-	    }
+      selectedNodeToPlacePotential.piece?.stackedPieces?.let {
+        if (it.size > 1) {
+          val topPotential = it.last()
 
-	    selectedNodeToPlacePotential.stackedPieces.add(potential)
-	    selectedNodeToPlacePotential.isNeutralized = true
+          check(topPotential.colorName != potential.colorName) {
+            "Illegal move: A ${potential.type.name}-potential cannot jump onto another potential of the same color (${potential.colorName})." +
+                "\nCurrent Node: ${Json.encodeToString(node)}" +
+                "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+                "\n\nState: ${Json.encodeToString(state)}"
+          }
+        }
+      }
+
+      selectedNodeToPlacePotential.piece?.stackedPieces?.add(potential)
+      selectedNodeToPlacePotential.piece?.isNeutralized = true
     }
 
     PieceType.PUNCT -> {
-      val potential = piece.usePiecePotential()
+      val candidateNodes = eligibleNodesForPotential.filter { it.piece?.type == PieceType.PUNCT }
 
-      check(!potential.potential && !piece.potential) {
-	      "State invalid: source piece and potential cannot have active potentials. " +
-	      "State -> Potential: ${potential.potential}, Piece: ${piece.potential}"
+      if (candidateNodes.isEmpty()) {
+        check(candidateNodes.isNotEmpty()) { "Nodes are empty." }
       }
 
-      val selectedNodeToPlacePotential: Node = eligibleNodesForPotential.random()
+      selectedNodeToPlacePotential = candidateNodes.random()
 
-      if (!selectedNodeToPlacePotential.isNeutralized) {
+      if (potential.type != selectedNodeToPlacePotential.piece?.type) {
+        check(potential.type != selectedNodeToPlacePotential.piece?.type) {
+          "Illegal placement: Cannot target a piece of a different type (${potential.type})." +
+              "\nCurrent Node: ${Json.encodeToString(node)}" +
+              "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+              "\n\nState: ${Json.encodeToString(state)}"
+        }
+      }
+
+      if (selectedNodeToPlacePotential.piece?.isNeutralized == false) {
         check(selectedNodeToPlacePotential.piece?.colorName != potential.colorName) {
-	        "Illegal placement: Cannot target a piece of your own color (${potential.colorName})."
+          "Illegal placement: Cannot target a piece of your own color (${potential.colorName})." +
+              "\nCurrent Node: ${Json.encodeToString(node)}" +
+              "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+              "\n\nState: ${Json.encodeToString(state)}"
         }
       }
 
-      if (selectedNodeToPlacePotential.stackedPieces.size > 1) {
-        val topPotential =
-            selectedNodeToPlacePotential.stackedPieces[
-                    selectedNodeToPlacePotential.stackedPieces.lastIndex]
-        check(topPotential.colorName != potential.colorName) {
-	        "Illegal move: A ${potential.type.name}-potential cannot jump onto another potential of the same color (${potential.colorName})."
+      selectedNodeToPlacePotential.piece?.stackedPieces?.let {
+        if (it.size > 1) {
+          val topPotential = it.last()
+
+          check(topPotential.colorName != potential.colorName) {
+            "Illegal move: A ${potential.type.name}-potential cannot jump onto another potential of the same color (${potential.colorName})." +
+                "\nCurrent Node: ${Json.encodeToString(node)}" +
+                "\nSelected Node To Place Potential: ${Json.encodeToString(selectedNodeToPlacePotential)}" +
+                "\n\nState: ${Json.encodeToString(state)}"
+          }
         }
       }
 
-      selectedNodeToPlacePotential.stackedPieces.add(potential)
-      selectedNodeToPlacePotential.isNeutralized = true
-
-	    // TODO Implement Deep Copy
-//	    State(
-//		    currentPlayer = TODO(),
-//		    nextPlayer = TODO(),
-//		    board = Board(
-//			    nodes = TODO(),
-//			    centerNodeCoordinate = state.board.centerNodeCoordinate
-//		    ),
-//		    lines = constructLines()
-//	    )
+      selectedNodeToPlacePotential.piece?.stackedPieces?.add(potential)
+      selectedNodeToPlacePotential.piece?.isNeutralized = true
     }
   }
-  return TODO("Provide the return value")
+
+  var newBoard = updateBoard(node, newState.board)
+  newBoard = updateBoard(selectedNodeToPlacePotential, newBoard)
+
+  newState = newState.copy(board = newBoard, lines = constructLines(newBoard.nodes))
+
+	newState.assertPieceCount()
+
+	return newState
 }

@@ -1,5 +1,9 @@
 package org.example
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+@Serializable
 data class Coordinate(
 	val column: Char,
 	val row: Int,
@@ -7,6 +11,11 @@ data class Coordinate(
 //	fun equals(other: Coordinate): Boolean {
 //		return column == other.column && row == other.row
 //	}
+
+	fun deepCopy(): Coordinate {
+		val string = Json.encodeToString(serializer(), this)
+		return Json.decodeFromString(serializer(), string)
+	}
 }
 
 enum class PushDirection() {
@@ -22,5 +31,13 @@ data class RetrievedCapturedPieces(
 	val retrieved: List<Piece>,
 	val captured: List<Piece>,
 	val nodes: List<Node>,
+)
+
+data class RetrievedCapturedPieceNode(
+	val retrievedPiece: Piece? = null,
+	val capturedPiece: Piece? = null,
+	val node: Node? = null,
+	val isStackedPieceNode: Boolean = false,
+	val keepRetrievedPieceInPlay: Boolean = false,
 )
 

@@ -1,27 +1,22 @@
 package org.example
 
-import java.awt.Color
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+@Serializable
 data class Player(
     val name: String,
     val abbreviation: String,
-    val color: Color,
+//    val color: Color,
     val piecesInReserve: MutableList<Piece> = mutableListOf(),
     val capturedPieces: MutableList<Piece> = mutableListOf(),
 ) {
+	fun deepCopy(): Player {
+		val string = Json.encodeToString(serializer(), this)
+		return Json.decodeFromString(serializer(), string)
+	}
 
   fun addPiecesToReserve(pieces: List<Piece>) {
-    pieces.forEach { piece ->
-      when (piece.type) {
-        PieceType.TAMSK -> piece.potential = true
-        PieceType.ZERTZ -> piece.potential = true
-        PieceType.DVONN -> piece.potential = true
-        PieceType.YINSH -> piece.potential = true
-        PieceType.PUNCT -> piece.potential = true
-        else -> {}
-      }
-    }
-
     this.piecesInReserve.addAll(pieces)
   }
 
@@ -30,13 +25,15 @@ data class Player(
   }
 
   /** Play GIPF piece from the reserve and make a move */
-  fun playGIPFPiece(piece: Piece): Piece? {
-    return this.piecesInReserve.firstOrNull { it.type == PieceType.GIPF }
+  fun selectGIPFPiece(): Piece {
+	  val piece =  this.piecesInReserve.first { it.type == PieceType.GIPF }
+	  this.piecesInReserve.remove(piece)
+    return piece
   }
 
   /** Select a piece from the reserve and make a move */
   fun selectPiece(pieceType: PieceType): Piece {
-    val piece = this.piecesInReserve.first { it.type == pieceType }
+    val piece = this.piecesInReserve.first { it.type == pieceType && it.potential }
     this.piecesInReserve.remove(piece)
     return piece
   }
@@ -80,7 +77,7 @@ data class Player(
                     Piece(
                         abbreviation = this.abbreviation.plus(key.name.first()),
                         potential = true,
-                        color = this.color,
+//                        color = this.color,
                         colorName = this.name,
                         type = key,
                     )
@@ -91,7 +88,7 @@ data class Player(
                     Piece(
                         abbreviation = this.abbreviation.plus(key.name.first()),
                         potential = false,
-                        color = this.color,
+//                        color = this.color,
                         colorName = this.name,
                         type = key,
                     )
