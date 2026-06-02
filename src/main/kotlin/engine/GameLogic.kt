@@ -449,7 +449,7 @@ fun enforcePieceRemovalRules(state: State): State {
 		        removePiecesWithPotential =
 			        chooseToRemovePiecesWithPotential(line, newState.currentPlayer), // Result not used
 	        )
-        }.flatten()
+        }.flatten().distinctBy { it.node?.coordinate }
       } else {
         /*
         6/ It will occur that more than one row-of-4 of the same
@@ -505,7 +505,7 @@ fun enforcePieceRemovalRules(state: State): State {
 		            line = line,
 		            removePiecesWithPotential = false,
 	            )
-            }).flatten()
+            }).flatten().distinctBy { it.node?.coordinate }
       }
 
 	//

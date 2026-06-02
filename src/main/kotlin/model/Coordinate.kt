@@ -18,6 +18,7 @@ data class Coordinate(
 	}
 }
 
+@Serializable
 enum class PushDirection() {
 	UP,
 	DOWN,
@@ -33,6 +34,7 @@ data class RetrievedCapturedPieces(
 	val nodes: List<Node>,
 )
 
+@Serializable
 data class RetrievedCapturedPieceNode(
 	val retrievedPiece: Piece? = null,
 	val capturedPiece: Piece? = null,

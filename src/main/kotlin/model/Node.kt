@@ -7,11 +7,11 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class Node(
 	val coordinate: Coordinate,
-	var neighbors: NodeNeighbors? = null,
+	var piece: Piece? = null,
 	val isDot: Boolean,
 	val isSpot: Boolean, // play area
 	val isCenter: Boolean,
-	var piece: Piece? = null,
+	var neighbors: NodeNeighbors? = null,
 //    var isNeutralized: Boolean =
 //        false, // neutralized // TODO Implement logic for stacking pieces and removing potential and
                // neutralizing pieces

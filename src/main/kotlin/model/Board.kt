@@ -59,6 +59,8 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
 
   val newNodes = this.deepCopy().nodes.toMutableSet()
 
+	println("Retrieved and Captured Piece & Nodes to remove: ${Json.encodeToString(retrievedCapturedPieceNodes)}")
+
   val updatedNodes =
       retrievedCapturedPieceNodes
           .filter { !it.keepRetrievedPieceInPlay }
