@@ -50,8 +50,8 @@ fun updateBoard(node: Node, board: Board): Board {
   )
 }
 
-// TODO FIX Bug where nodes containing stacked pieces are being replaced instead of stack pieces
-// being removed
+// TODO FIX Bug where nodes containing stacked pieces are being replaced instead of stack pieces being removed
+// TODO Still have a bug with there being too many  pieces
 fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceNode>): Board {
   val oldActivePiecesCount =
       this.nodes.count { it.piece != null } +
@@ -59,7 +59,6 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
 
   val newNodes = this.deepCopy().nodes.toMutableSet()
 
-	// TODO is this mutating? I assumed it was immutable.
   val updatedNodes =
       retrievedCapturedPieceNodes
           .filter { !it.keepRetrievedPieceInPlay }
