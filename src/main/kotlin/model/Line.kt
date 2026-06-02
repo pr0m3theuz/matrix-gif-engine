@@ -1,4 +1,4 @@
-package org.example
+package org.example.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -112,9 +112,9 @@ fun constructLines(nodes: Set<Node>): Lines {
 }
 
 fun getUpperRightNode(
-    coordinate: Coordinate?,
-    nodes: Set<Node>,
-    upperRightNodes: MutableSet<Node>,
+	coordinate: Coordinate?,
+	nodes: Set<Node>,
+	upperRightNodes: MutableSet<Node>,
 ): MutableSet<Node> {
   val node = nodes.firstOrNull { node -> node.coordinate == coordinate }
 
@@ -129,9 +129,9 @@ fun getUpperRightNode(
 }
 
 fun getLowerRightNode(
-    coordinate: Coordinate?,
-    nodes: Set<Node>,
-    lowerRightNodes: MutableSet<Node>,
+	coordinate: Coordinate?,
+	nodes: Set<Node>,
+	lowerRightNodes: MutableSet<Node>,
 ): MutableSet<Node> {
   val node = nodes.firstOrNull { node -> node.coordinate == coordinate }
 

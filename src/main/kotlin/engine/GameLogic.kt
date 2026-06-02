@@ -1,6 +1,26 @@
-package org.example
+package org.example.engine
 
 import kotlinx.serialization.json.Json
+import org.example.model.assertPieceCount
+import org.example.model.getLinesWithSpaces
+import org.example.model.getNeighbours
+import org.example.model.getPushDirectionFromNeighbor
+import org.example.model.Board
+import org.example.model.Coordinate
+import org.example.model.Lines
+import org.example.model.Node
+import org.example.model.NodeConnections
+import org.example.model.Piece
+import org.example.model.PieceType
+import org.example.model.Player
+import org.example.model.PushDirection
+import org.example.model.RetrievedCapturedPieceNode
+import org.example.model.State
+import org.example.model.constructLines
+import org.example.model.evaluateLines
+import org.example.model.printHexGrid
+import org.example.model.removePieces
+import org.example.model.toList
 import kotlin.collections.mutableSetOf
 import kotlin.system.exitProcess
 
@@ -67,11 +87,11 @@ fun playerTurn(state: State): State {
 // TODO Create  LIST OF ALL POSSIBLE MOVES
 
 data class PossibleMove(
-    val piece: Piece? = null,
-    val selectableDots: Set<NodeConnections> = emptySet(),
-    val eligiblePotentialPieceNode: Node? = null,
-    val eligiblePotentialTargetNodes: Set<Node> = emptySet(),
-    val moveType: MoveType,
+	val piece: Piece? = null,
+	val selectableDots: Set<NodeConnections> = emptySet(),
+	val eligiblePotentialPieceNode: Node? = null,
+	val eligiblePotentialTargetNodes: Set<Node> = emptySet(),
+	val moveType: MoveType,
 )
 
 enum class MoveType {
@@ -90,7 +110,8 @@ fun playerMove(state: State): State {
       }
 
 	// TODO work on finding eligiblePotentialTargetNodes
-	val eligibleMovesUsingPotential: Map<Node, Set<Node?>> = getEligiblePotentialMoves(state)
+	val eligibleMovesUsingPotential: Map<Node, Set<Node?>> =
+		getEligiblePotentialMoves(state)
 
   // TODO Current Player has no moves left
   if (
@@ -285,18 +306,19 @@ fun playerMove(state: State): State {
           MoveType.UsePotential -> {
             require(randomMove.eligiblePotentialPieceNode != null)
             val newState = usePiecePotential(
-                node = randomMove.eligiblePotentialPieceNode.deepCopy(),
-                eligibleNodesForPotential = randomMove.eligiblePotentialTargetNodes,
-                state = state,
+	            node = randomMove.eligiblePotentialPieceNode.deepCopy(),
+	            eligibleNodesForPotential = randomMove.eligiblePotentialTargetNodes,
+	            state = state,
             )
 
             return newState
           }
         }
       } else {
-				println("There are no available moves left!")
+				println("${state.currentPlayer.name} player no available moves left!")
+	      // TODO exitProcess or return state
 				exitProcess(
-					status = 1
+					status = 0
 				)
       }
 
@@ -319,12 +341,12 @@ fun playerMove(state: State): State {
 
   // Move piece in the selected spot(node) based on selected push direction
   val newBoard =
-      shiftPiece(
-          currentNode = selectedDot.node,
-          moveDirection = selectedPushDirection,
-          board = savedBoardState,
-          lines = savedLines,
-      )
+	  shiftPiece(
+		  currentNode = selectedDot.node,
+		  moveDirection = selectedPushDirection,
+		  board = savedBoardState,
+		  lines = savedLines,
+	  )
 
   val newState =
       state
@@ -353,7 +375,7 @@ fun playerMove(state: State): State {
 }
 
 fun selectDot(
-    selectableDots: Set<NodeConnections>,
+	selectableDots: Set<NodeConnections>,
     //    linesWithSpace: List<Set<Node>>,
 ): NodeConnections {
   // TODO Iterable each selectable dot
@@ -362,7 +384,7 @@ fun selectDot(
 }
 
 fun selectPushDirection(
-    availablePushDirections: List<PushDirection>,
+	availablePushDirections: List<PushDirection>,
 ): PushDirection {
   // TODO Iterable each selectable dot
   // TODO This is random
@@ -421,12 +443,12 @@ fun enforcePieceRemovalRules(state: State): State {
   val retrievedCapturedPieces: List<RetrievedCapturedPieceNode> =
       if (linesWithFourPiecesInARow.size == 1) {
         linesWithFourPiecesInARow.map { (_, line) ->
-          retrieveAndCapturePieces(
-              player = state.currentPlayer,
-              line = line,
-              removePiecesWithPotential =
-                  chooseToRemovePiecesWithPotential(line, newState.currentPlayer), // Result not used
-          )
+	        retrieveAndCapturePieces(
+		        player = state.currentPlayer,
+		        line = line,
+		        removePiecesWithPotential =
+			        chooseToRemovePiecesWithPotential(line, newState.currentPlayer), // Result not used
+	        )
         }.flatten()
       } else {
         /*
@@ -471,18 +493,18 @@ fun enforcePieceRemovalRules(state: State): State {
         // TODO create function that decides whether To Remove Pieces With Potential or not
 
 	      (intersectingLines.map { line ->
-          retrieveAndCapturePieces(
-              player = state.currentPlayer,
-              line = line,
-              removePiecesWithPotential = false,
-          )
+		      retrieveAndCapturePieces(
+			      player = state.currentPlayer,
+			      line = line,
+			      removePiecesWithPotential = false,
+		      )
         } +
             nonIntersectingLines.map { line ->
-              retrieveAndCapturePieces(
-                  player = state.currentPlayer,
-                  line = line,
-                  removePiecesWithPotential = false,
-              )
+	            retrieveAndCapturePieces(
+		            player = state.currentPlayer,
+		            line = line,
+		            removePiecesWithPotential = false,
+	            )
             }).flatten()
       }
 
@@ -530,13 +552,13 @@ fun enforcePieceRemovalRules(state: State): State {
         "Before: $oldCapturedPieces, After: $newCapturedPieces"
   }
 
-  val board = state.board.removePieces(retrievedCapturedPieces)
+  val board = state.board.removePieces(retrievedCapturedPieces.distinctBy { it.node?.coordinate })
 
   val newNewState = State(
-      currentPlayer = newState.currentPlayer,
-      nextPlayer = newState.nextPlayer,
-      board = board,
-      lines = constructLines(board.nodes),
+	  currentPlayer = newState.currentPlayer,
+	  nextPlayer = newState.nextPlayer,
+	  board = board,
+	  lines = constructLines(board.nodes),
   )
 
 	newNewState.assertPieceCount()
@@ -559,8 +581,8 @@ fun evaluatePiecesInReserve(state: State): Boolean {
 }
 
 fun isTamskPieceAtCenter(
-    board: Board,
-    player: Player,
+	board: Board,
+	player: Player,
 ): Boolean {
   val piece: Piece? =
       board.nodes

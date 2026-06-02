@@ -1,7 +1,5 @@
-package org.example
+package org.example.model
 
-import kotlinx.serialization.Contextual
-import java.awt.Color
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -23,14 +21,15 @@ data class Piece(
 //	@Contextual val color: Color,
 	val colorName: String,
 	val type: PieceType,
-	var isNeutralized: Boolean =
-		false, // neutralized // TODO Implement logic for stacking pieces and removing potential and
+	// TODO check that pieces alternate
+	var isNeutralized: Boolean = false,
+	var stackedPieces: MutableList<Piece> = mutableListOf(),
+
+	// neutralized // TODO Implement logic for stacking pieces and removing potential and
 	// neutralizing pieces
 	// TODO Implement logic // For DVONN & PÜNCT pieces, needs to be a mutableList of alternating
 	// player pieces, use add() and removeLast(), this piece which can either be retrieved or
 	// captured
-	// TODO check that pieces alternate
-	var stackedPieces: MutableList<Piece> = mutableListOf(),
 
 ) {
 	fun deepCopy(): Piece {
@@ -66,6 +65,12 @@ data class Piece(
 		TODO("Implement logic to handle piece stacking when there is a two of a kind for each piece type")
     potential = true
   }
+
+	fun removePiece() {
+		// TODO replace with Piece.removePiece()
+		// TODO figure out how to remove piece from a node. either return the current piece (less the last stacked piece) or null
+		//  how does these functions interact with each other
+	}
 }
 
 fun createPlayerPieces(player: Player): List<Piece> {

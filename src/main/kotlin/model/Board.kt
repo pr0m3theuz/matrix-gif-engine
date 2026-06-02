@@ -1,4 +1,4 @@
-package org.example
+package org.example.model
 
 import kotlin.collections.sortedWith
 import kotlin.math.abs
@@ -52,17 +52,20 @@ fun updateBoard(node: Node, board: Board): Board {
 
 // TODO FIX Bug where nodes containing stacked pieces are being replaced instead of stack pieces
 // being removed
-fun Board.removePieces(nodes: List<RetrievedCapturedPieceNode>): Board {
+fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceNode>): Board {
   val oldActivePiecesCount =
       this.nodes.count { it.piece != null } +
           this.nodes.sumOf { it.piece?.stackedPieces?.size ?: 0 }
-  val newNodes = this.deepCopy().nodes.toMutableList()
 
+  val newNodes = this.deepCopy().nodes.toMutableSet()
+
+	// TODO is this mutating? I assumed it was immutable.
   val updatedNodes =
-      nodes
+      retrievedCapturedPieceNodes
           .filter { !it.keepRetrievedPieceInPlay }
+          .toSet()
           .map { node ->
-            val updatedNode = newNodes.first { it.coordinate == node.node?.coordinate }
+            val updatedNode = newNodes.first { it.coordinate == node.node?.coordinate }.deepCopy()
 
 	          if (node.isStackedPieceNode) {
               updatedNode.piece?.stackedPieces?.removeLast()
@@ -75,9 +78,20 @@ fun Board.removePieces(nodes: List<RetrievedCapturedPieceNode>): Board {
             }
             updatedNode
           }
+          .toSet()
+
+  check(updatedNodes.size == retrievedCapturedPieceNodes.size) {
+	  "The updated node list size (${updatedNodes.size}) " +
+			  "does not match the original board size (${retrievedCapturedPieceNodes.size})."
+  }
 
   updatedNodes.forEach { updatedNode ->
-    newNodes.remove(newNodes.find { it.coordinate == updatedNode.coordinate }!!)
+    newNodes
+        .first { it.coordinate == updatedNode.coordinate }
+        .let {
+					println("Removing node $it")
+          newNodes.remove(it)
+        }
   }
 
   // TODO update check
@@ -85,15 +99,23 @@ fun Board.removePieces(nodes: List<RetrievedCapturedPieceNode>): Board {
 
   newNodes.addAll(updatedNodes)
 
-  check(this.nodes.size == newNodes.size)
+  check(this.nodes.size == newNodes.size) {
+	  "Board topology mismatch! The updated node list size (${newNodes.size}) " +
+			  "does not match the original board size (${this.nodes.size})."
+  }
+  check(this.nodes.size == newNodes.size) {
+	  "Board mutation mismatch! The updated board has a different node count than the original. " +
+			  "Expected: ${this.nodes.size}, Actual: ${newNodes.size}."
+  }
 
   val newActivePiecesCount =
       newNodes.count { it.piece != null } + newNodes.sumOf { it.piece?.stackedPieces?.size ?: 0 }
 
   val piecesRemoved = oldActivePiecesCount - newActivePiecesCount
-  check(piecesRemoved == nodes.size) {
+
+  check(piecesRemoved == retrievedCapturedPieceNodes.size) {
     "Active piece count mismatch after removal operation! " +
-        "Expected to remove ${nodes.size} pieces (nodes processed), but active piece delta was $piecesRemoved " +
+        "Expected to remove ${retrievedCapturedPieceNodes.size} pieces (nodes processed), but active piece delta was $piecesRemoved " +
         "(Before: $oldActivePiecesCount, After: $newActivePiecesCount)."
   }
 
@@ -104,15 +126,19 @@ fun Board.removePieces(nodes: List<RetrievedCapturedPieceNode>): Board {
     }
   }
 
-	val hasInvalidNeutralizedPiece = newNodes.any {
-		it.piece?.isNeutralized == true && it.piece?.stackedPieces?.isEmpty() == true
-	}
+  val hasInvalidNeutralizedPiece = newNodes.any {
+    it.piece?.isNeutralized == true && it.piece?.stackedPieces?.isEmpty() == true
+  }
 
-	check(!hasInvalidNeutralizedPiece) {
-		"Sanity check failed: A piece cannot be neutralized if its stack is empty."
-	}
+  check(!hasInvalidNeutralizedPiece) {
+    "Sanity check failed: A piece cannot be neutralized if its stack is empty."
+  }
 
-	check(newNodes.filter { it.piece?.isNeutralized == true }.all { it.piece?.stackedPieces?.isNotEmpty() == true }) {}
+  check(
+      newNodes
+          .filter { it.piece?.isNeutralized == true }
+          .all { it.piece?.stackedPieces?.isNotEmpty() == true }
+  ) {}
 
   return Board(
       nodes =

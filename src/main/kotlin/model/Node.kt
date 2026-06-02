@@ -1,4 +1,4 @@
-package org.example
+package org.example.model
 
 import kotlin.math.abs
 import kotlinx.serialization.Serializable
@@ -6,12 +6,12 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 data class Node(
-    val coordinate: Coordinate,
-    var neighbors: NodeNeighbors? = null,
-    val isDot: Boolean,
-    val isSpot: Boolean, // play area
-    val isCenter: Boolean,
-    var piece: Piece? = null,
+	val coordinate: Coordinate,
+	var neighbors: NodeNeighbors? = null,
+	val isDot: Boolean,
+	val isSpot: Boolean, // play area
+	val isCenter: Boolean,
+	var piece: Piece? = null,
 //    var isNeutralized: Boolean =
 //        false, // neutralized // TODO Implement logic for stacking pieces and removing potential and
                // neutralizing pieces
@@ -47,29 +47,29 @@ fun populateNeighbors(coordinate: Coordinate, nodes: Set<Node>): NodeNeighbors {
   val above = Coordinate(column = coordinate.column, row = row.plus(1))
   val below = Coordinate(column = coordinate.column, row = row.minus(1))
   val upperRight =
-      Coordinate(
-          column = columns.last(),
-          // A, B, C, D plus 1; E, F, G, H, I plus 0
-          row = row.plus(if (LETTERS.indexOf(columns.last()) > centerLetterIndex) 0 else 1),
-      )
+	  Coordinate(
+		  column = columns.last(),
+		  // A, B, C, D plus 1; E, F, G, H, I plus 0
+		  row = row.plus(if (LETTERS.indexOf(columns.last()) > centerLetterIndex) 0 else 1),
+	  )
   val lowerRight =
-      Coordinate(
-          column = columns.last(),
-          // A, B, C, D minus 0; E, F, G, H, I minus 1
-          row = row.minus(if (LETTERS.indexOf(columns.last()) > centerLetterIndex) 1 else 0),
-      )
+	  Coordinate(
+		  column = columns.last(),
+		  // A, B, C, D minus 0; E, F, G, H, I minus 1
+		  row = row.minus(if (LETTERS.indexOf(columns.last()) > centerLetterIndex) 1 else 0),
+	  )
   val upperLeft =
-      Coordinate(
-          column = columns.first(),
-          // A, B, C, D plus 0; E, F, G, H, I plus 1
-          row = row.plus(if (LETTERS.indexOf(columns.first()) < centerLetterIndex) 0 else 1),
-      )
+	  Coordinate(
+		  column = columns.first(),
+		  // A, B, C, D plus 0; E, F, G, H, I plus 1
+		  row = row.plus(if (LETTERS.indexOf(columns.first()) < centerLetterIndex) 0 else 1),
+	  )
   val lowerLeft =
-      Coordinate(
-          column = columns.first(),
-          // A, B, C, D minus 1; E, F, G, H, I minus 0
-          row = row.minus(if (LETTERS.indexOf(columns.first()) < centerLetterIndex) 1 else 0),
-      )
+	  Coordinate(
+		  column = columns.first(),
+		  // A, B, C, D minus 1; E, F, G, H, I minus 0
+		  row = row.minus(if (LETTERS.indexOf(columns.first()) < centerLetterIndex) 1 else 0),
+	  )
 
   return NodeNeighbors(
       above = if (nodes.any { it.coordinate == above && it.isSpot }) above else null,
@@ -83,12 +83,12 @@ fun populateNeighbors(coordinate: Coordinate, nodes: Set<Node>): NodeNeighbors {
 
 @Serializable
 data class NodeNeighbors(
-    val above: Coordinate?,
-    val below: Coordinate?,
-    val upperRight: Coordinate?,
-    val lowerRight: Coordinate?,
-    val upperLeft: Coordinate?,
-    val lowerLeft: Coordinate?,
+	val above: Coordinate?,
+	val below: Coordinate?,
+	val upperRight: Coordinate?,
+	val lowerRight: Coordinate?,
+	val upperLeft: Coordinate?,
+	val lowerLeft: Coordinate?,
 )
 
 fun NodeNeighbors.getNeighbours(): List<Coordinate> {
@@ -141,10 +141,10 @@ fun NodeNeighbors.getPushDirectionFromNeighbor(neighbor: Coordinate): PushDirect
 }
 
 fun constructNodes(
-    letters: String,
-    rows: List<Int>,
-    centerLetterIndex: Int,
-    center: Coordinate,
+	letters: String,
+	rows: List<Int>,
+	centerLetterIndex: Int,
+	center: Coordinate,
 ): Set<Node> {
   val nodes = mutableSetOf<Node>()
   letters.forEach { letter ->
@@ -155,10 +155,10 @@ fun constructNodes(
 
     rowRange.forEach { row ->
       val coordinate =
-          Coordinate(
-              column = letter,
-              row = row,
-          )
+	      Coordinate(
+		      column = letter,
+		      row = row,
+	      )
       val isDot =
           row == rowRange.first ||
               row == rowRange.last ||

@@ -1,18 +1,17 @@
 import java.io.File
 import kotlin.io.readText
 import kotlinx.serialization.json.Json
-import org.example.Coordinate
-import org.example.LineOrientation
-import org.example.Node
-import org.example.PieceType
-import org.example.State
-import org.example.constructLines
-import org.example.evaluateLines
-import org.example.initializeState
-import org.example.printHexGrid
-import org.example.toList
-import org.example.updateBoard
-import org.junit.jupiter.api.Assertions.*
+import org.example.model.Coordinate
+import org.example.model.LineOrientation
+import org.example.model.Node
+import org.example.model.PieceType
+import org.example.model.State
+import org.example.model.constructLines
+import org.example.model.evaluateLines
+import org.example.model.initializeState
+import org.example.model.printHexGrid
+import org.example.model.toList
+import org.example.model.updateBoard
 import org.junit.jupiter.api.Test
 
 class MovesTest {
@@ -34,7 +33,7 @@ class MovesTest {
     state = state.updateState(board, state)
     state.board.printHexGrid()
 
-    val eligibleMovesUsingPotential = org.example.getEligiblePotentialMoves(state)
+    val eligibleMovesUsingPotential = org.example.engine.getEligiblePotentialMoves(state)
 
     assert(eligibleMovesUsingPotential.containsKey(node))
     assert(eligibleMovesUsingPotential[node]?.isNotEmpty() == true)
@@ -60,29 +59,29 @@ class MovesTest {
     val lines = state.lines.getLinesContainingNode(node)
 
     val verticalNodes =
-        org.example.findFirstNode(
-            currentNode = node,
-            line = lines.verticalLines.first(),
-            orientation = LineOrientation.VERTICAL,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findFirstNode(
+		    currentNode = node,
+		    line = lines.verticalLines.first(),
+		    orientation = LineOrientation.VERTICAL,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
     val upwardRightNodes =
-        org.example.findFirstNode(
-            currentNode = node,
-            line = lines.upwardRightLines.first(),
-            orientation = LineOrientation.UPWARD_RIGHT,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findFirstNode(
+		    currentNode = node,
+		    line = lines.upwardRightLines.first(),
+		    orientation = LineOrientation.UPWARD_RIGHT,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
     val downwardRightNodes =
-        org.example.findFirstNode(
-            currentNode = node,
-            line = lines.downwardRightLines.first(),
-            orientation = LineOrientation.DOWNWARD_RIGHT,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findFirstNode(
+		    currentNode = node,
+		    line = lines.downwardRightLines.first(),
+		    orientation = LineOrientation.DOWNWARD_RIGHT,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
 
     assert(verticalNodes.size == lines.verticalLines.first().count { it.piece == null })
     assert(upwardRightNodes.size == lines.upwardRightLines.first().count { it.piece == null })
@@ -109,29 +108,29 @@ class MovesTest {
     val lines = state.lines.getLinesContainingNode(node)
 
     val verticalNodes =
-        org.example.findAdjacentVacantNodes(
-            currentNode = node,
-            line = lines.verticalLines.first(),
-            orientation = LineOrientation.VERTICAL,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findAdjacentVacantNodes(
+		    currentNode = node,
+		    line = lines.verticalLines.first(),
+		    orientation = LineOrientation.VERTICAL,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
     val upwardRightNodes =
-        org.example.findAdjacentVacantNodes(
-            currentNode = node,
-            line = lines.upwardRightLines.first(),
-            orientation = LineOrientation.UPWARD_RIGHT,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findAdjacentVacantNodes(
+		    currentNode = node,
+		    line = lines.upwardRightLines.first(),
+		    orientation = LineOrientation.UPWARD_RIGHT,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
     val downwardRightNodes =
-        org.example.findAdjacentVacantNodes(
-            currentNode = node,
-            line = lines.downwardRightLines.first(),
-            orientation = LineOrientation.DOWNWARD_RIGHT,
-            isNextNodeVacant = false,
-            isNextNodeOccupied = true,
-        )
+	    org.example.engine.findAdjacentVacantNodes(
+		    currentNode = node,
+		    line = lines.downwardRightLines.first(),
+		    orientation = LineOrientation.DOWNWARD_RIGHT,
+		    isNextNodeVacant = false,
+		    isNextNodeOccupied = true,
+	    )
 
     assert(verticalNodes.size == lines.verticalLines.first().count { it.piece == null })
     assert(upwardRightNodes.size == lines.upwardRightLines.first().count { it.piece == null })
@@ -183,14 +182,13 @@ class MovesTest {
     val lines = constructLines(loadedState.board.nodes).getLinesContainingNode(node)
 
     val verticalNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.verticalLines.first(),
-                orientation = LineOrientation.VERTICAL,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.verticalLines.first(),
+	        orientation = LineOrientation.VERTICAL,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
@@ -198,14 +196,13 @@ class MovesTest {
             }
             .toSet()
     val upwardRightNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.upwardRightLines.first(),
-                orientation = LineOrientation.UPWARD_RIGHT,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.upwardRightLines.first(),
+	        orientation = LineOrientation.UPWARD_RIGHT,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
@@ -213,14 +210,13 @@ class MovesTest {
             }
             .toSet()
     val downwardRightNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.downwardRightLines.first(),
-                orientation = LineOrientation.DOWNWARD_RIGHT,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.downwardRightLines.first(),
+	        orientation = LineOrientation.DOWNWARD_RIGHT,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
@@ -422,14 +418,13 @@ class MovesTest {
     val lines = constructLines(loadedState.board.nodes).getLinesContainingNode(node)
 
     val verticalNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.verticalLines.first(),
-                orientation = LineOrientation.VERTICAL,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.verticalLines.first(),
+	        orientation = LineOrientation.VERTICAL,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
@@ -437,14 +432,13 @@ class MovesTest {
             }
             .toSet()
     val upwardRightNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.upwardRightLines.first(),
-                orientation = LineOrientation.UPWARD_RIGHT,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.upwardRightLines.first(),
+	        orientation = LineOrientation.UPWARD_RIGHT,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
@@ -452,14 +446,13 @@ class MovesTest {
             }
             .toSet()
     val downwardRightNodes =
-        org.example
-            .findFirstNode(
-                currentNode = node,
-                line = lines.downwardRightLines.first(),
-                orientation = LineOrientation.DOWNWARD_RIGHT,
-                isNextNodeVacant = false,
-                isNextNodeOccupied = true,
-            )
+        org.example.engine.findFirstNode(
+	        currentNode = node,
+	        line = lines.downwardRightLines.first(),
+	        orientation = LineOrientation.DOWNWARD_RIGHT,
+	        isNextNodeVacant = false,
+	        isNextNodeOccupied = true,
+        )
             .filter {
               it?.piece?.type == pieceType &&
                   (it.piece?.colorName != loadedState.currentPlayer.name ||
