@@ -1,25 +1,25 @@
 package org.example.engine
 
+import kotlin.collections.contains
+import kotlin.collections.plus
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
+import org.example.model.Board
+import org.example.model.Coordinate
 import org.example.model.LineOrientation
 import org.example.model.Lines
 import org.example.model.Node
 import org.example.model.PieceType
 import org.example.model.Player
+import org.example.model.PushDirection
+import org.example.model.RetrievedCapturedPieceNode
 import org.example.model.State
 import org.example.model.assertPieceCount
 import org.example.model.constructLines
 import org.example.model.getNeighborFromPushDirection
 import org.example.model.getNeighbours
-import org.example.model.Board
-import org.example.model.Coordinate
-import org.example.model.PushDirection
-import org.example.model.RetrievedCapturedPieceNode
 import org.example.model.printHexGrid
 import org.example.model.updateBoard
-import kotlin.collections.contains
-import kotlin.collections.plus
 
 // TODO fix bug where the target nodes set includes the source node
 fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
@@ -222,11 +222,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -238,11 +244,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -254,11 +266,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -294,11 +312,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -310,11 +334,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -326,11 +356,17 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
+                  .filterNotNull()
                   .filter {
-                    it?.piece?.type == pieceType &&
-                        (it.piece?.colorName != state.currentPlayer.name ||
+                    it.piece?.type == pieceType &&
+                        run {
+                          if (it.piece?.isNeutralized == false) {
+                            it.piece?.colorName != state.currentPlayer.name
+                          } else {
                             it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name)
+                                state.nextPlayer.name
+                          }
+                        }
                   }
                   .toSet()
 
@@ -347,11 +383,11 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
 }
 
 fun findFirstNode(
-	currentNode: Node,
-	line: Set<Node>,
-	orientation: LineOrientation,
-	isNextNodeVacant: Boolean,
-	isNextNodeOccupied: Boolean,
+    currentNode: Node,
+    line: Set<Node>,
+    orientation: LineOrientation,
+    isNextNodeVacant: Boolean,
+    isNextNodeOccupied: Boolean,
 ): Set<Node?> {
   when (orientation) {
     LineOrientation.VERTICAL -> {
@@ -412,11 +448,11 @@ fun findFirstNode(
 }
 
 fun findAdjacentVacantNodes(
-	currentNode: Node,
-	line: Set<Node>,
-	orientation: LineOrientation,
-	isNextNodeVacant: Boolean,
-	isNextNodeOccupied: Boolean,
+    currentNode: Node,
+    line: Set<Node>,
+    orientation: LineOrientation,
+    isNextNodeVacant: Boolean,
+    isNextNodeOccupied: Boolean,
 ): Set<Node?> {
   val vacantNodes: MutableSet<Node?> = mutableSetOf()
 
@@ -481,11 +517,11 @@ fun findAdjacentVacantNodes(
 }
 
 fun getNextNode(
-	node: Node?,
-	line: Set<Node>,
-	direction: PushDirection,
-	isNextNodeVacant: Boolean,
-	isNextNodeOccupied: Boolean,
+    node: Node?,
+    line: Set<Node>,
+    direction: PushDirection,
+    isNextNodeVacant: Boolean,
+    isNextNodeOccupied: Boolean,
 ): Node? {
   if (node == null) return null
 
@@ -533,12 +569,12 @@ fun getNextNode(
 }
 
 fun getAdjacentVacantNode(
-	node: Node?,
-	line: Set<Node>,
-	direction: PushDirection,
-	isNextNodeVacant: Boolean,
-	isNextNodeOccupied: Boolean,
-	vacantNodes: MutableSet<Node?> = mutableSetOf(),
+    node: Node?,
+    line: Set<Node>,
+    direction: PushDirection,
+    isNextNodeVacant: Boolean,
+    isNextNodeOccupied: Boolean,
+    vacantNodes: MutableSet<Node?> = mutableSetOf(),
 ): MutableSet<Node?> {
   if (node == null) return vacantNodes
 
@@ -589,11 +625,11 @@ fun getAdjacentVacantNode(
 }
 
 fun pushPiece(
-	currentNode: Node,
-	moveDirection: PushDirection,
-	coordinateToMoveTo: Coordinate,
-	validCoordinates: List<Coordinate>,
-	board: Board,
+    currentNode: Node,
+    moveDirection: PushDirection,
+    coordinateToMoveTo: Coordinate,
+    validCoordinates: List<Coordinate>,
+    board: Board,
 ): Board {
   //  TODO("Implement this function to complete the task")
 
@@ -805,10 +841,10 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
 }
 
 fun usePotentialMovePiece(
-	currentNode: Node,
-	coordinateToMoveTo: Coordinate,
-	validCoordinates: List<Coordinate>,
-	board: Board,
+    currentNode: Node,
+    coordinateToMoveTo: Coordinate,
+    validCoordinates: List<Coordinate>,
+    board: Board,
 ): Board {
   if (!validCoordinates.contains(coordinateToMoveTo)) {
     return board
@@ -828,9 +864,9 @@ fun usePotentialMovePiece(
 }
 
 fun retrieveAndCapturePieces(
-	player: Player,
-	line: Set<Node>, // TODO Replace with Line
-	removePiecesWithPotential: Boolean,
+    player: Player,
+    line: Set<Node>, // TODO Replace with Line
+    removePiecesWithPotential: Boolean,
     // TODO Add intersectingNodes to chooseToRemovePiecesWithPotential()
 ): List<RetrievedCapturedPieceNode> {
   var retrievedPieces = listOf<RetrievedCapturedPieceNode>()
@@ -895,31 +931,33 @@ fun retrieveAndCapturePieces(
             }
           }
           .map { node ->
-						// TODO replace with Piece.removePiece()
-						// TODO figure out how to remove piece from a node. either return the current piece (less the last stacked piece) or null
-						//  how does these functions interact with each other
+            // TODO replace with Piece.removePiece()
+            // TODO figure out how to remove piece from a node. either return the current piece
+            // (less the last stacked piece) or null
+            //  how does these functions interact with each other
             if (node.piece?.isNeutralized == true) {
               check(node.piece?.type in validTypes) {
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
 
-	            RetrievedCapturedPieceNode(
-		            retrievedPiece = node.piece?.stackedPieces?.last(),
-		            node = node,
-		            isStackedPieceNode = true
-	            )
+              RetrievedCapturedPieceNode(
+                  retrievedPiece = node.piece?.stackedPieces?.last(),
+                  node = node,
+                  isStackedPieceNode = true,
+              )
             } else {
-	            RetrievedCapturedPieceNode(
-		            retrievedPiece = node.piece,
-		            node = node,
-		            isStackedPieceNode = false
-	            )
+              RetrievedCapturedPieceNode(
+                  retrievedPiece = node.piece,
+                  node = node,
+                  isStackedPieceNode = false,
+              )
             }
           }
           .toMutableList()
 
   check(retrievedPieces.all { piece -> piece.retrievedPiece?.colorName == player.name }) {
-    val invalidColors = retrievedPieces.map { it.retrievedPiece?.colorName }.filter { it != player.name }.distinct()
+    val invalidColors =
+        retrievedPieces.map { it.retrievedPiece?.colorName }.filter { it != player.name }.distinct()
 
     "Sanity check failed: Player '${player.name}' cannot retrieve pieces belonging to: $invalidColors"
   }
@@ -946,7 +984,7 @@ fun retrieveAndCapturePieces(
     }
 
     retrievedPieces.removeAll(selectedPiecesToKeepInPlay)
-	}
+  }
 
   capturedPieces =
       line
@@ -964,23 +1002,23 @@ fun retrieveAndCapturePieces(
             }
           }
           .map { node ->
-	          if (node.piece?.isNeutralized == true) {
-		          check(node.piece?.type in validTypes) {
-			          "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
-		          }
+            if (node.piece?.isNeutralized == true) {
+              check(node.piece?.type in validTypes) {
+                "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
+              }
 
-		          RetrievedCapturedPieceNode(
-			          capturedPiece = node.piece?.stackedPieces?.last(),
-			          node = node,
-			          isStackedPieceNode = true
-		          )
-	          } else {
-		          RetrievedCapturedPieceNode(
-			          capturedPiece = node.piece,
-			          node = node,
-			          isStackedPieceNode = false
-		          )
-	          }
+              RetrievedCapturedPieceNode(
+                  capturedPiece = node.piece?.stackedPieces?.last(),
+                  node = node,
+                  isStackedPieceNode = true,
+              )
+            } else {
+              RetrievedCapturedPieceNode(
+                  capturedPiece = node.piece,
+                  node = node,
+                  isStackedPieceNode = false,
+              )
+            }
           }
 
   return retrievedPieces + capturedPieces
@@ -1065,7 +1103,7 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
 
       selectedNodeToPlacePotential = candidateNodes.random()
 
-	    // TODO replace with Piece.pushPotential() Function
+      // TODO replace with Piece.pushPotential() Function
       if (potential.type != selectedNodeToPlacePotential.piece?.type) {
         check(potential.type != selectedNodeToPlacePotential.piece?.type) {
           "Illegal placement: Cannot target a piece of a different type (${potential.type})." +
@@ -1097,7 +1135,7 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
         }
       }
 
-	    // TODO replace with Piece.pushPotential() Function
+      // TODO replace with Piece.pushPotential() Function
       selectedNodeToPlacePotential.piece?.stackedPieces?.add(potential)
       selectedNodeToPlacePotential.piece?.isNeutralized = true
     }
@@ -1111,7 +1149,7 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
 
       selectedNodeToPlacePotential = candidateNodes.random()
 
-	    // TODO replace with Piece.pushPotential() Function
+      // TODO replace with Piece.pushPotential() Function
       if (potential.type != selectedNodeToPlacePotential.piece?.type) {
         check(potential.type != selectedNodeToPlacePotential.piece?.type) {
           "Illegal placement: Cannot target a piece of a different type (${potential.type})." +
@@ -1143,7 +1181,7 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
         }
       }
 
-	    // TODO replace with Piece.pushPotential() Function
+      // TODO replace with Piece.pushPotential() Function
       selectedNodeToPlacePotential.piece?.stackedPieces?.add(potential)
       selectedNodeToPlacePotential.piece?.isNeutralized = true
     }
@@ -1154,7 +1192,7 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
 
   newState = newState.copy(board = newBoard, lines = constructLines(newBoard.nodes))
 
-	newState.assertPieceCount()
+  newState.assertPieceCount()
 
-	return newState
+  return newState
 }

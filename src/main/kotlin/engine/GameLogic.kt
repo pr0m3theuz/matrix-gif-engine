@@ -34,7 +34,7 @@ fun playerTurn(state: State): State {
 
   // Handle Tamsk Potential
   if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState)
+    newState = playerMove(newState) // ?: return null
   }
 
 	newState.assertPieceCount()
@@ -42,7 +42,7 @@ fun playerTurn(state: State): State {
   // TODO if gipf, gipf
   //  if tamsk, tamsk
   //  add piece or use potential
-  newState = playerMove(newState)
+  newState = playerMove(newState) // ?: return null
 
 	newState.assertPieceCount()
 
@@ -50,7 +50,7 @@ fun playerTurn(state: State): State {
 
   // Handle Tamsk Potential
   if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState)
+    newState = playerMove(newState) // ?: return null
   }
 
 	newState.assertPieceCount()
@@ -315,11 +315,10 @@ fun playerMove(state: State): State {
           }
         }
       } else {
-				println("${state.currentPlayer.name} player no available moves left!")
+				println("${state.currentPlayer.name} player has no available moves left!")
 	      // TODO exitProcess or return state
-				exitProcess(
-					status = 0
-				)
+//	      return null
+				exitProcess(status = 0)
       }
 
   // Directions to the piece can be pushed ir

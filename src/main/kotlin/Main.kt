@@ -43,7 +43,7 @@ fun main() {
     }
   }
   // TODO Print winner
-  println(determineWinner(gameState)?.name)
+  println("Player: ${determineWinner(gameState)?.name} won")
   gameState.printStateSummary()
 }
 
