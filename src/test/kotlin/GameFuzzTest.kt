@@ -1,7 +1,7 @@
 package org.example.engine
 
-import kotlinx.fuzz.KFuzzTest
-import kotlinx.fuzz.KFuzzer
+import com.code_intelligence.jazzer.api.FuzzedDataProvider
+import com.code_intelligence.jazzer.junit.FuzzTest
 import org.example.model.initializeState
 import org.example.model.PieceType
 import org.example.model.State
@@ -17,18 +17,18 @@ import kotlin.test.assertTrue
 
 class GameFuzzTest {
 
-    @KFuzzTest
-    fun fuzzEngineMoves(f: KFuzzer) {
+    @FuzzTest
+    fun fuzzEngineMoves(f: FuzzedDataProvider) {
         var state = initializeState()
 
-        // Use KFuzzer to determine number of moves
-        val numMoves = f.int(1, 10)
+        // Use FuzzedDataProvider to determine number of moves
+        val numMoves = f.consumeInt(1, 10)
 
         for (i in 0 until numMoves) {
             try {
                 // Since playerTurn is fully automated based on random internal choices we can call it.
                 // However, to make it robust, we should test other functions explicitly.
-                if (f.boolean()) {
+                if (f.consumeBoolean()) {
                     state = playerTurn(state)
                     state.assertPieceCount(33, 66)
                     // Basic invariant checking after a player turn
@@ -41,17 +41,17 @@ class GameFuzzTest {
         }
     }
 
-    @KFuzzTest
-    fun fuzzShiftPiece(f: KFuzzer) {
+    @FuzzTest
+    fun fuzzShiftPiece(f: FuzzedDataProvider) {
         val state = initializeState()
 
         // Randomly pick a node and a direction
         val nodes = state.board.nodes.toList()
         if (nodes.isEmpty()) return
 
-        val randomNode = nodes[f.int(0, nodes.size - 1)]
+        val randomNode = nodes[f.consumeInt(0, nodes.size - 1)]
         val directions = PushDirection.values()
-        val randomDir = directions[f.int(0, directions.size - 1)]
+        val randomDir = directions[f.consumeInt(0, directions.size - 1)]
 
         try {
             shiftPiece(randomNode, randomDir, state.board, state.lines)
@@ -61,19 +61,19 @@ class GameFuzzTest {
         }
     }
 
-    @KFuzzTest
-    fun fuzzUsePiecePotential(f: KFuzzer) {
+    @FuzzTest
+    fun fuzzUsePiecePotential(f: FuzzedDataProvider) {
         val state = initializeState()
 
         // Randomly pick a node and a target set of nodes
         val nodes = state.board.nodes.toList()
         if (nodes.isEmpty()) return
 
-        val randomNode = nodes[f.int(0, nodes.size - 1)]
-        val numTargets = f.int(1, 5)
+        val randomNode = nodes[f.consumeInt(0, nodes.size - 1)]
+        val numTargets = f.consumeInt(1, 5)
         val targets = mutableSetOf<Node>()
         for (i in 0 until numTargets) {
-            targets.add(nodes[f.int(0, nodes.size - 1)])
+            targets.add(nodes[f.consumeInt(0, nodes.size - 1)])
         }
 
         try {
