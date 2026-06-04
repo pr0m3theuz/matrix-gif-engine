@@ -23,7 +23,6 @@ import org.example.model.removePieces
 import org.example.model.toList
 import kotlin.collections.mutableSetOf
 import kotlin.collections.none
-import kotlin.system.exitProcess
 
 fun playerTurn(state: State): State {
   var newState = enforcePieceRemovalRules(state,)
@@ -319,7 +318,7 @@ fun playerMove(state: State): State {
 				println("${state.currentPlayer.name} player has no available moves left!")
 	      // TODO exitProcess or return state
 //	      return null
-				exitProcess(status = 0)
+				throw IllegalStateException("Player has no available moves left!")
       }
 
   // Directions to the piece can be pushed ir
