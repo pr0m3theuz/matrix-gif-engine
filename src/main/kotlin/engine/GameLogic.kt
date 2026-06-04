@@ -228,7 +228,7 @@ fun playerMove(state: State): State {
   val numberOfPiecesBefore = state.currentPlayer.getNumberOfPiecesInReserve()
 
   // Build a list of all available moves
-  val allAvailableMoves: MutableList<PossibleMove> = mutableListOf()
+  var allAvailableMoves: MutableList<PossibleMove> = mutableListOf()
 
   playableStackedPiecesInReserve.forEach { piece ->
     allAvailableMoves.add(
@@ -248,7 +248,9 @@ fun playerMove(state: State): State {
         )
       }
 
-  val selectedDot =
+	allAvailableMoves = allAvailableMoves.filter { possibleMove -> possibleMove.selectableDots.isNotEmpty() }.toMutableList()
+
+	val selectedDot =
       // the Order of playing GIPF and TAMSK potential is invariant
       if (gipfPiecesInReserve > 0) {
         val selectedNode = selectDot(selectableDots)
