@@ -22,6 +22,7 @@ import org.example.model.printHexGrid
 import org.example.model.removePieces
 import org.example.model.toList
 import kotlin.collections.mutableSetOf
+import kotlin.collections.none
 import kotlin.system.exitProcess
 
 fun playerTurn(state: State): State {
@@ -599,12 +600,16 @@ fun isTamskPieceAtCenter(
 
 fun determineWinner(state: State): Player? {
   return if (
-      state.currentPlayer.capturedPieces.size == 3 ||
-          state.currentPlayer.piecesInReserve.isNotEmpty()
+      state.currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
+          state.currentPlayer.piecesInReserve.any { piece ->
+	      piece.potential || piece.type == PieceType.GIPF
+      }
   ) {
     state.currentPlayer
   } else if (
-      state.nextPlayer.capturedPieces.size == 3 || state.nextPlayer.piecesInReserve.isNotEmpty()
+      state.nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF }  == 3 || state.nextPlayer.piecesInReserve.any { piece ->
+	      piece.potential || piece.type == PieceType.GIPF
+      }
   ) {
     state.nextPlayer
   } else {

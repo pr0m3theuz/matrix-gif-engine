@@ -379,7 +379,8 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
         return mapOf()
       }
     }
-  }
+  }.filter { (key, value) -> value.isNotEmpty() }
+
 }
 
 fun findFirstNode(

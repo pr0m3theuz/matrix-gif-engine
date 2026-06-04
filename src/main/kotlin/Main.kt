@@ -1,5 +1,6 @@
 package org.example
 
+import kotlinx.serialization.json.Json
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.evaluatePiecesInReserve
@@ -24,8 +25,6 @@ fun main() {
     println("Turn: $turn")
     gameState.printStateSummary()
 
-    gameState = playerTurn(gameState)
-
     // TODO implement function to evaluate if the current player's pieces has any valid moves left
     if (
         (evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState)) &&
@@ -33,6 +32,8 @@ fun main() {
     ) {
       break
     }
+
+    gameState = playerTurn(gameState)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
     // state new turn
@@ -42,8 +43,10 @@ fun main() {
       "Turn rotation failure: The current player and the next player are both '${gameState.currentPlayer.name}'."
     }
   }
-  // TODO Print winner
-  println("Player: ${determineWinner(gameState)?.name} won")
+
   gameState.printStateSummary()
+  println("Player: ${determineWinner(gameState)?.name} won")
+	println("State: ${Json.encodeToString(gameState)}")
+
 }
 
