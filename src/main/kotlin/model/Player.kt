@@ -33,9 +33,25 @@ data class Player(
 
   /** Select a piece from the reserve and make a move */
   fun selectPiece(piece: Piece): Piece {
-    val piece = this.piecesInReserve.first { it.type == piece.type && it.potential == piece.potential }
-    this.piecesInReserve.remove(piece)
-    return piece
+    val initialSize = piecesInReserve.size
+
+    val selectedPiece = this.piecesInReserve.firstOrNull  { it.type == piece.type && it.potential == piece.potential }
+      check(selectedPiece != null) {
+          "$piece was not found!"
+      }
+    this.piecesInReserve.remove(selectedPiece)
+
+    val pieceCountDifference = initialSize - piecesInReserve.size
+    println(
+      "the delta was $pieceCountDifference (Initial: $initialSize, Current: ${piecesInReserve.size})"
+    )
+
+    check(pieceCountDifference == 1) {
+      "Reserve decrement failure! Expected exactly 1 piece to be removed from the reserve, " +
+          "but the delta was $pieceCountDifference (Initial: $initialSize, Current: ${piecesInReserve.size})."
+    }
+
+    return selectedPiece
   }
 
   fun getNumberOfPiecesInReserve(): Int {

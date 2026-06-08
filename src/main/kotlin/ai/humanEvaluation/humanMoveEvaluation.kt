@@ -21,7 +21,7 @@ data class BestMove(
 )
 
 // TODO change to Minimax
-fun minimax(depth: Int = 12, state: State): BestMove {
+fun minimaxAddPieces(depth: Int = 7, state: State): BestMove {
   /**
    * TODO evaluate lines based on:
    * 1. proximity to 4 in a row for current player and next player
@@ -30,6 +30,11 @@ fun minimax(depth: Int = 12, state: State): BestMove {
    *    ============================= You must try to either capture your opponent’s 3 GIPF pieces,
    *    or make your opponent run out of moves.
    */
+
+  state.assertPieceCount()
+
+
+
   val possibleMoves = identifyAvailableMoves(state)
 
   if (possibleMoves.isEmpty() || depth == 0) {
@@ -43,28 +48,29 @@ fun minimax(depth: Int = 12, state: State): BestMove {
   val bestMoves =
       possibleMoves
           .map { possibleMove ->
+
+            val mutableState = state.deepCopy()
+
             var moves: List<BestMove> = emptyList()
             when (possibleMove.moveType) {
               MoveType.AddPiece -> {
                 // for each selectable dot, add piece, push piece, assess resulting state, score it
 								require(possibleMove.piece != null) { "No piece was selected!" }
 
+                val selectedPiece = mutableState.currentPlayer.selectPiece(possibleMove.piece)
+
                 moves =
                     possibleMove.selectableDots
                         .map { nodeConnections ->
-                          // To deepcopy or not to deepcopy
-                          val node = nodeConnections.node.deepCopy()
 
-                          val selectedPiece = state.currentPlayer.selectPiece(possibleMove.piece)
-
-	                        node.piece = selectedPiece
-
-	                        if (node.piece == null) {
-		                        check(node.piece != null) { "Piece ${node.piece} is null" }
-	                        }
 
                           nodeConnections.node.neighbors!!.let {
                             it.getAvailablePushDirections().map { pushDirection ->
+                          // To deepcopy or not to deepcopy
+                              val node = nodeConnections.node.deepCopy()
+
+                              node.piece = selectedPiece
+
 	                            if (node.piece == null) {
 		                            check(node.piece != null) { "Piece ${node.piece} is null" }
 	                            }
@@ -73,12 +79,12 @@ fun minimax(depth: Int = 12, state: State): BestMove {
                                   shiftPiece(
                                       currentNode = node,
                                       moveDirection = pushDirection,
-                                      board = state.board.deepCopy(),
-                                      lines = state.lines.deepCopy(),
+                                      board = mutableState.board.deepCopy(),
+                                      lines = mutableState.lines.deepCopy(),
                                   )
 
-                              val newState =
-                                  state
+                              var newState =
+                                mutableState
                                       .deepCopy()
                                       .copy(
                                           board = newBoard,
@@ -86,6 +92,8 @@ fun minimax(depth: Int = 12, state: State): BestMove {
                                       )
 
                               newState.assertPieceCount()
+
+                              newState = enforcePieceRemovalRules(newState)
 
                               BestMove(
                                   move =
@@ -96,7 +104,7 @@ fun minimax(depth: Int = 12, state: State): BestMove {
                                           moveType = MoveType.AddPiece,
                                       ),
                                   score =
-                                      minimax(
+                                      minimaxAddPieces(
                                               depth = depth.minus(1),
                                               state =
                                                   newState.copy(
@@ -118,14 +126,16 @@ fun minimax(depth: Int = 12, state: State): BestMove {
                     possibleMove.eligiblePotentialTargetNodes.mapNotNull {
                         eligiblePotentialTargetNode ->
                       possibleMove.eligiblePotentialPieceNode?.let {
-                        val newState =
+                        var newState =
                             usePiecePotential(
                                 node = it.deepCopy(),
                                 eligibleNodesForPotential = setOf(eligiblePotentialTargetNode),
-                                state = state,
+                                state = mutableState,
                             )
 
                         newState.assertPieceCount()
+
+                        newState = enforcePieceRemovalRules(newState)
 
                         BestMove(
                             move =
@@ -137,7 +147,7 @@ fun minimax(depth: Int = 12, state: State): BestMove {
                                     moveType = MoveType.UsePotential,
                                 ),
                             score =
-                                minimax(
+                                minimaxAddPieces(
                                         depth = depth.minus(1),
                                         state =
                                             newState.copy(
@@ -234,6 +244,12 @@ fun scoreState(state: State): Int {
 
     score
   }
+}
+
+
+// TODO implement minimaxRemovePieces
+fun minimaxRemovePieces(state: State) {
+
 }
 
 fun evaluateState() {}

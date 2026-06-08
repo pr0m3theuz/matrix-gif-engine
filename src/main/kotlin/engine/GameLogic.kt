@@ -1,9 +1,8 @@
 package org.example.engine
 
 import kotlinx.serialization.Serializable
-import kotlin.system.exitProcess
 import kotlinx.serialization.json.Json
-import org.example.ai.humanEvaluation.minimax
+import org.example.ai.humanEvaluation.minimaxAddPieces
 import org.example.model.*
 
 fun playerTurn(state: State): State {
@@ -88,7 +87,7 @@ fun playerMove(state: State): State {
   val savedBoardState = state.board.deepCopy()
   val savedLines = state.lines.deepCopy()
 
-	val bestMove = minimax(state = state.deepCopy()).move
+	val bestMove = minimaxAddPieces(state = state.deepCopy()).move
 
 	when (bestMove?.moveType) {
 		MoveType.AddPiece -> {

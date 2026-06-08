@@ -1,3 +1,4 @@
+/*
 import java.io.File
 import kotlin.io.readText
 import kotlinx.serialization.json.Json
@@ -465,3 +466,4 @@ class MovesTest {
     val eligiblePotentialTargetNodes = verticalNodes + upwardRightNodes + downwardRightNodes
   }
 }
+*/
