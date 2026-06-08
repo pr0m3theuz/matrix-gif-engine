@@ -24,14 +24,7 @@ data class Piece(
 	// TODO check that pieces alternate
 	var isNeutralized: Boolean = false,
 	var stackedPieces: MutableList<Piece> = mutableListOf(),
-
-	// neutralized // TODO Implement logic for stacking pieces and removing potential and
-	// neutralizing pieces
-	// TODO Implement logic // For DVONN & PÜNCT pieces, needs to be a mutableList of alternating
-	// player pieces, use add() and removeLast(), this piece which can either be retrieved or
-	// captured
-
-) {
+	) {
 	fun deepCopy(): Piece {
 		val string = Json.encodeToString(serializer(), this)
 		return Json.decodeFromString(serializer(), string)
@@ -59,11 +52,6 @@ data class Piece(
 
   fun hasNoPotential(): Boolean {
     return !potential
-  }
-
-  fun resetPotential() {
-		TODO("Implement logic to handle piece stacking when there is a two of a kind for each piece type")
-    potential = true
   }
 
 	fun removePiece() {

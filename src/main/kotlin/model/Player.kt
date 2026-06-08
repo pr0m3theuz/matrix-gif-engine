@@ -32,8 +32,8 @@ data class Player(
   }
 
   /** Select a piece from the reserve and make a move */
-  fun selectPiece(pieceType: PieceType): Piece {
-    val piece = this.piecesInReserve.first { it.type == pieceType && it.potential }
+  fun selectPiece(piece: Piece): Piece {
+    val piece = this.piecesInReserve.first { it.type == piece.type && it.potential == piece.potential }
     this.piecesInReserve.remove(piece)
     return piece
   }

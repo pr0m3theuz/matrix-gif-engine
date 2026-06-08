@@ -26,8 +26,6 @@ fun addNewPiece(piece: Piece, coordinate: Coordinate, board: Board): Board {
 
   val node = dots.first { it.coordinate == coordinate }
 
-  // TODO Is there vacant space in the connected lines?
-
   val adjacentCoordinates = node.neighbors?.getNeighbours() ?: emptyList()
 
   node.piece = piece

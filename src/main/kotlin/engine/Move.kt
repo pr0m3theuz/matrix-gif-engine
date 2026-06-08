@@ -1,6 +1,7 @@
 package org.example.engine
 
 import kotlin.collections.contains
+import kotlin.collections.forEach
 import kotlin.collections.plus
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
@@ -9,6 +10,8 @@ import org.example.model.Coordinate
 import org.example.model.LineOrientation
 import org.example.model.Lines
 import org.example.model.Node
+import org.example.model.NodeConnections
+import org.example.model.Piece
 import org.example.model.PieceType
 import org.example.model.Player
 import org.example.model.PushDirection
@@ -16,6 +19,7 @@ import org.example.model.RetrievedCapturedPieceNode
 import org.example.model.State
 import org.example.model.assertPieceCount
 import org.example.model.constructLines
+import org.example.model.getLinesWithSpaces
 import org.example.model.getNeighborFromPushDirection
 import org.example.model.getNeighbours
 import org.example.model.printHexGrid
@@ -44,343 +48,344 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
     "Eligibility violation: Found prohibited basic pieces in the selection pool: $invalidPieces"
   }
 
-  return eligibleNodes.associateWith { eligibleNode ->
-    val eligibleNodesLines = state.lines.getLinesContainingNode(eligibleNode)
+  return eligibleNodes
+      .associateWith { eligibleNode ->
+        val eligibleNodesLines = state.lines.getLinesContainingNode(eligibleNode)
 
-    when (eligibleNode.piece?.type) {
-      // PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
-      PieceType.ZERTZ -> {
-        /**
-         * 1/ The ZÈRTZ-potential has the ability to jump over other pieces.
-         *
-         * 2/ Take the top piece from a ZÈRTZ-stack and use it to jump over one or more pieces. It
-         * can jump over both your own and your opponent’s pieces.
-         *
-         * 3/ The potential must jump over at least one piece. If it jumps over more than one piece,
-         * these must all be on the same line.
-         *
-         * 4/ A jump with a ZÈRTZ-potential always ends on the first vacant spot in the direction of
-         * the jump; it cannot jump over empty spots.
-         */
-        /**
-         * TODO
-         * 1. What nodes is this piece on?
-         * 2. What lines is this node in?
-         * 3. Are the neighboring nodes occupied?
-         * 4. Recursively find occupied nodes (node.piece != null) until a vacant node (node.piece
-         *    == null) from each line
-         * 5. These nodes are eligible for placing a ZERTZ Piece on
-         */
-        val result = run {
-          val neighbours = eligibleNode.neighbors?.getNeighbours()
-          val lines = eligibleNodesLines
-          val verticalNodes =
-              findFirstNode(
-                  currentNode = eligibleNode,
-                  line = lines.verticalLines.first(),
-                  orientation = LineOrientation.VERTICAL,
-                  isNextNodeVacant = true,
-                  isNextNodeOccupied = false,
-              )
-          val upwardRightNodes =
-              findFirstNode(
-                  currentNode = eligibleNode,
-                  line = lines.upwardRightLines.first(),
-                  orientation = LineOrientation.UPWARD_RIGHT,
-                  isNextNodeVacant = true,
-                  isNextNodeOccupied = false,
-              )
-          val downwardRightNodes =
-              findFirstNode(
-                  currentNode = eligibleNode,
-                  line = lines.downwardRightLines.first(),
-                  orientation = LineOrientation.DOWNWARD_RIGHT,
-                  isNextNodeVacant = true,
-                  isNextNodeOccupied = false,
-              )
+        when (eligibleNode.piece?.type) {
+          // PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
+          PieceType.ZERTZ -> {
+            /**
+             * 1/ The ZÈRTZ-potential has the ability to jump over other pieces.
+             *
+             * 2/ Take the top piece from a ZÈRTZ-stack and use it to jump over one or more pieces.
+             * It can jump over both your own and your opponent’s pieces.
+             *
+             * 3/ The potential must jump over at least one piece. If it jumps over more than one
+             * piece, these must all be on the same line.
+             *
+             * 4/ A jump with a ZÈRTZ-potential always ends on the first vacant spot in the
+             * direction of the jump; it cannot jump over empty spots.
+             */
+            /**
+             * TODO
+             * 1. What nodes is this piece on?
+             * 2. What lines is this node in?
+             * 3. Are the neighboring nodes occupied?
+             * 4. Recursively find occupied nodes (node.piece != null) until a vacant node
+             *    (node.piece == null) from each line
+             * 5. These nodes are eligible for placing a ZERTZ Piece on
+             */
+            val result = run {
+              val neighbours = eligibleNode.neighbors?.getNeighbours()
+              val lines = eligibleNodesLines
+              val verticalNodes =
+                  findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.verticalLines.first(),
+                      orientation = LineOrientation.VERTICAL,
+                      isNextNodeVacant = true,
+                      isNextNodeOccupied = false,
+                  )
+              val upwardRightNodes =
+                  findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.upwardRightLines.first(),
+                      orientation = LineOrientation.UPWARD_RIGHT,
+                      isNextNodeVacant = true,
+                      isNextNodeOccupied = false,
+                  )
+              val downwardRightNodes =
+                  findFirstNode(
+                      currentNode = eligibleNode,
+                      line = lines.downwardRightLines.first(),
+                      orientation = LineOrientation.DOWNWARD_RIGHT,
+                      isNextNodeVacant = true,
+                      isNextNodeOccupied = false,
+                  )
 
-          val allNodes = verticalNodes + upwardRightNodes + downwardRightNodes
+              val allNodes = verticalNodes + upwardRightNodes + downwardRightNodes
 
-          // remove all nulls and neighbour nodes as the potential must jump over at least one
-          // piece.
-          allNodes
-              .filterNotNull()
-              .filter { it -> neighbours?.contains(it.coordinate) == false }
-              .toSet()
-        }
+              // remove all nulls and neighbour nodes as the potential must jump over at least one
+              // piece.
+              allNodes
+                  .filterNotNull()
+                  .filter { it -> neighbours?.contains(it.coordinate) == false }
+                  .toSet()
+            }
 
-        result
-      }
-      PieceType.YINSH -> {
-        /**
-         * 1/ The YINSH-potential has the ability to move along the lines on the board. It may be
-         * moved onto an adjacent vacant spot or to any vacant spot that it can reach in a straight
-         * line without jumping over pieces.
-         */
-        /**
-         * TODO
-         * 1. What nodes is this piece on?
-         * 2. What lines is this node in?
-         * 3. Are the neighboring nodes vacant?
-         * 4. Recursively add vacant nodes (node.piece == null) until an occupied node is found
-         *    (node.piece != null) from each line
-         * 5. These nodes are eligible for placing a YINSH Piece on
-         */
-        val result = run {
-          val lines = eligibleNodesLines
-          val verticalNodes =
-              findAdjacentVacantNodes(
-                  currentNode = eligibleNode,
-                  line = lines.verticalLines.first(),
-                  orientation = LineOrientation.VERTICAL,
-                  isNextNodeVacant = false,
-                  isNextNodeOccupied = true,
-              )
-          val upwardRightNodes =
-              findAdjacentVacantNodes(
-                  currentNode = eligibleNode,
-                  line = lines.upwardRightLines.first(),
-                  orientation = LineOrientation.UPWARD_RIGHT,
-                  isNextNodeVacant = false,
-                  isNextNodeOccupied = true,
-              )
-          val downwardRightNodes =
-              findAdjacentVacantNodes(
-                  currentNode = eligibleNode,
-                  line = lines.downwardRightLines.first(),
-                  orientation = LineOrientation.DOWNWARD_RIGHT,
-                  isNextNodeVacant = false,
-                  isNextNodeOccupied = true,
-              )
-
-          (verticalNodes + upwardRightNodes + downwardRightNodes)
-              .filterNotNull()
-              .filter { it.coordinate != eligibleNode.coordinate }
-              .toSet()
-        }
-
-        result
-      }
-      PieceType.DVONN -> {
-        /**
-         * ============================================================================
-         * MOVEMENT AND INTERACTION RULES: DVONN-POTENTIALS
-         * ============================================================================
-         * * 1. MOVEMENT & JUMPING RESTRICTIONS
-         * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
-         * - Valid targets include:
-         * - A single DVONN-potential on the board.
-         * - A DVONN-stack.
-         * - A DVONN-potential currently sitting on top of a stack.
-         * - Pathing:
-         * - Can jump to an adjacent spot.
-         * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
-         * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic GIPF
-         *   piece.
-         * * 2. STACK MECHANICS
-         * - Because players can jump onto opposing DVONN-potentials, stacks of alternating colors
-         *   will form.
-         * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is NOT
-         *   treated as a single entity.
-         * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
-         * * 3. NEUTRALIZATION & OCCUPATION
-         * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
-         * - The top piece's color controls/occupies that board spot.
-         * - When the top piece is removed, the piece directly beneath it is liberated and returns
-         *   to active play.
-         * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
-         * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially
-         *   creating a new row-of-4.
-         * - Removing an opponent's piece to reveal your own can complete your row-of-4.
-         * - Removing your own piece to reveal an opponent's can complete their row-of-4.
-         * - Turn Resolution Logic:
-         * - A player's turn is NOT over if they still have a row that needs removal.
-         * - Rows must be removed one at a time.
-         * - Active player's turn ends ONLY when no more rows of their color remain.
-         * - If an opponent begins their turn with an existing row of their color on the board
-         *   (caused by the previous player's move), they MUST remove it before making a standard
-         *   move.
-         */
-        /**
-         * TODO
-         * 1. What nodes is this piece on?
-         * 2. What lines is this node in?
-         * 3. Are the neighboring nodes vacant?
-         * 4. Recursively find vacant nodes (node.piece == null) until an occupied node is found
-         *    (node.piece != null) from each line
-         * 5. Filter for nodes where node.piece?.type == PieceType.DVONN
-         */
-        val pieceType = PieceType.DVONN
-
-        val result = run {
-          val lines = eligibleNodesLines
-          val verticalNodes =
-              findFirstNode(
+            result
+          }
+          PieceType.YINSH -> {
+            /**
+             * 1/ The YINSH-potential has the ability to move along the lines on the board. It may
+             * be moved onto an adjacent vacant spot or to any vacant spot that it can reach in a
+             * straight line without jumping over pieces.
+             */
+            /**
+             * TODO
+             * 1. What nodes is this piece on?
+             * 2. What lines is this node in?
+             * 3. Are the neighboring nodes vacant?
+             * 4. Recursively add vacant nodes (node.piece == null) until an occupied node is found
+             *    (node.piece != null) from each line
+             * 5. These nodes are eligible for placing a YINSH Piece on
+             */
+            val result = run {
+              val lines = eligibleNodesLines
+              val verticalNodes =
+                  findAdjacentVacantNodes(
                       currentNode = eligibleNode,
                       line = lines.verticalLines.first(),
                       orientation = LineOrientation.VERTICAL,
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
-
-          val upwardRightNodes =
-              findFirstNode(
+              val upwardRightNodes =
+                  findAdjacentVacantNodes(
                       currentNode = eligibleNode,
                       line = lines.upwardRightLines.first(),
                       orientation = LineOrientation.UPWARD_RIGHT,
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
-
-          val downwardRightNodes =
-              findFirstNode(
+              val downwardRightNodes =
+                  findAdjacentVacantNodes(
                       currentNode = eligibleNode,
                       line = lines.downwardRightLines.first(),
                       orientation = LineOrientation.DOWNWARD_RIGHT,
                       isNextNodeVacant = false,
                       isNextNodeOccupied = true,
                   )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
 
-          verticalNodes + upwardRightNodes + downwardRightNodes
+              (verticalNodes + upwardRightNodes + downwardRightNodes)
+                  .filterNotNull()
+                  .filter { it.coordinate != eligibleNode.coordinate }
+                  .toSet()
+            }
+
+            result
+          }
+          PieceType.DVONN -> {
+            /**
+             * ============================================================================
+             * MOVEMENT AND INTERACTION RULES: DVONN-POTENTIALS
+             * ============================================================================
+             * * 1. MOVEMENT & JUMPING RESTRICTIONS
+             * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
+             * - Valid targets include:
+             * - A single DVONN-potential on the board.
+             * - A DVONN-stack.
+             * - A DVONN-potential currently sitting on top of a stack.
+             * - Pathing:
+             * - Can jump to an adjacent spot.
+             * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
+             * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic
+             *   GIPF piece.
+             * * 2. STACK MECHANICS
+             * - Because players can jump onto opposing DVONN-potentials, stacks of alternating
+             *   colors will form.
+             * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is
+             *   NOT treated as a single entity.
+             * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
+             * * 3. NEUTRALIZATION & OCCUPATION
+             * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
+             * - The top piece's color controls/occupies that board spot.
+             * - When the top piece is removed, the piece directly beneath it is liberated and
+             *   returns to active play.
+             * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
+             * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially
+             *   creating a new row-of-4.
+             * - Removing an opponent's piece to reveal your own can complete your row-of-4.
+             * - Removing your own piece to reveal an opponent's can complete their row-of-4.
+             * - Turn Resolution Logic:
+             * - A player's turn is NOT over if they still have a row that needs removal.
+             * - Rows must be removed one at a time.
+             * - Active player's turn ends ONLY when no more rows of their color remain.
+             * - If an opponent begins their turn with an existing row of their color on the board
+             *   (caused by the previous player's move), they MUST remove it before making a
+             *   standard move.
+             */
+            /**
+             * TODO
+             * 1. What nodes is this piece on?
+             * 2. What lines is this node in?
+             * 3. Are the neighboring nodes vacant?
+             * 4. Recursively find vacant nodes (node.piece == null) until an occupied node is found
+             *    (node.piece != null) from each line
+             * 5. Filter for nodes where node.piece?.type == PieceType.DVONN
+             */
+            val pieceType = PieceType.DVONN
+
+            val result = run {
+              val lines = eligibleNodesLines
+              val verticalNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.verticalLines.first(),
+                          orientation = LineOrientation.VERTICAL,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              val upwardRightNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.upwardRightLines.first(),
+                          orientation = LineOrientation.UPWARD_RIGHT,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              val downwardRightNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.downwardRightLines.first(),
+                          orientation = LineOrientation.DOWNWARD_RIGHT,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              verticalNodes + upwardRightNodes + downwardRightNodes
+            }
+
+            result
+          }
+          PieceType.PUNCT -> {
+            /**
+             * The PÜNCT-potential is used just like the DVONN-potential, except that it can only
+             * jump onto an opponent’s PÜNCT-potential. So their function is the same, but each
+             * potential can only target potentials of its own type.
+             */
+            /**
+             * TODO
+             * 1. What nodes is this piece on?
+             * 2. What lines is this node in?
+             * 3. Are the neighboring nodes vacant?
+             * 4. Recursively find vacant nodes (node.piece == null) until an occupied node is found
+             *    (node.piece != null) from each line
+             * 5. Filter for nodes where node.piece?.type == PieceType.PUNCT
+             */
+            val pieceType = PieceType.PUNCT
+
+            val result = run {
+              val lines = eligibleNodesLines
+              val verticalNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.verticalLines.first(),
+                          orientation = LineOrientation.VERTICAL,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              val upwardRightNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.upwardRightLines.first(),
+                          orientation = LineOrientation.UPWARD_RIGHT,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              val downwardRightNodes =
+                  findFirstNode(
+                          currentNode = eligibleNode,
+                          line = lines.downwardRightLines.first(),
+                          orientation = LineOrientation.DOWNWARD_RIGHT,
+                          isNextNodeVacant = false,
+                          isNextNodeOccupied = true,
+                      )
+                      .filterNotNull()
+                      .filter {
+                        it.piece?.type == pieceType &&
+                            run {
+                              if (it.piece?.isNeutralized == false) {
+                                it.piece?.colorName != state.currentPlayer.name
+                              } else {
+                                it.piece?.stackedPieces?.lastOrNull()?.colorName ==
+                                    state.nextPlayer.name
+                              }
+                            }
+                      }
+                      .toSet()
+
+              verticalNodes + upwardRightNodes + downwardRightNodes
+            }
+
+            result
+          }
+          else -> {
+            return mapOf()
+          }
         }
-
-        result
       }
-      PieceType.PUNCT -> {
-        /**
-         * The PÜNCT-potential is used just like the DVONN-potential, except that it can only jump
-         * onto an opponent’s PÜNCT-potential. So their function is the same, but each potential can
-         * only target potentials of its own type.
-         */
-        /**
-         * TODO
-         * 1. What nodes is this piece on?
-         * 2. What lines is this node in?
-         * 3. Are the neighboring nodes vacant?
-         * 4. Recursively find vacant nodes (node.piece == null) until an occupied node is found
-         *    (node.piece != null) from each line
-         * 5. Filter for nodes where node.piece?.type == PieceType.PUNCT
-         */
-        val pieceType = PieceType.PUNCT
-
-        val result = run {
-          val lines = eligibleNodesLines
-          val verticalNodes =
-              findFirstNode(
-                      currentNode = eligibleNode,
-                      line = lines.verticalLines.first(),
-                      orientation = LineOrientation.VERTICAL,
-                      isNextNodeVacant = false,
-                      isNextNodeOccupied = true,
-                  )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
-
-          val upwardRightNodes =
-              findFirstNode(
-                      currentNode = eligibleNode,
-                      line = lines.upwardRightLines.first(),
-                      orientation = LineOrientation.UPWARD_RIGHT,
-                      isNextNodeVacant = false,
-                      isNextNodeOccupied = true,
-                  )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
-
-          val downwardRightNodes =
-              findFirstNode(
-                      currentNode = eligibleNode,
-                      line = lines.downwardRightLines.first(),
-                      orientation = LineOrientation.DOWNWARD_RIGHT,
-                      isNextNodeVacant = false,
-                      isNextNodeOccupied = true,
-                  )
-                  .filterNotNull()
-                  .filter {
-                    it.piece?.type == pieceType &&
-                        run {
-                          if (it.piece?.isNeutralized == false) {
-                            it.piece?.colorName != state.currentPlayer.name
-                          } else {
-                            it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                state.nextPlayer.name
-                          }
-                        }
-                  }
-                  .toSet()
-
-          verticalNodes + upwardRightNodes + downwardRightNodes
-        }
-
-        result
-      }
-      else -> {
-        return mapOf()
-      }
-    }
-  }.filter { (key, value) -> value.isNotEmpty() }
-
+      .filter { (key, value) -> value.isNotEmpty() }
 }
 
 fun findFirstNode(
@@ -737,6 +742,10 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
   val currentCoordStr = "${currentNode.coordinate.column}${currentNode.coordinate.row}"
   val pieceDesc = currentNode.piece?.let { "${it.colorName} ${it.type.name}" } ?: "EMPTY"
 
+  if (pieceDesc == "EMPTY") {
+    require(currentNode.piece != null) { "Piece ${currentNode.piece} is null" }
+  }
+
   println("[SHIFT] Processing node $currentCoordStr ($pieceDesc) pushing $moveDirection")
 
   val targetCoordinate = currentNode.neighbors?.getNeighborFromPushDirection(moveDirection)
@@ -798,7 +807,6 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     )
 
     nextNode.piece = currentNode.piece
-    currentNode.piece = null
 
     var newBoard = updateBoard(nextNode, board)
 
@@ -807,6 +815,7 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
       "State corruption: Node at coordinate $targetNextNodeCoordinate was expected to contain a piece, but it is empty."
     }
 
+    currentNode.piece = null
     newBoard = updateBoard(currentNode, newBoard)
 
     val sourceCoordinate = currentNode.coordinate
@@ -1196,4 +1205,209 @@ fun usePiecePotential(node: Node, eligibleNodesForPotential: Set<Node>, state: S
   newState.assertPieceCount()
 
   return newState
+}
+
+fun identifyAvailableMoves(state: State): List<PossibleMove> {
+  // Does player have GIPF pieces in reserve?
+  val gipfPiecesInReserve: List<Piece> =
+      state.currentPlayer.piecesInReserve
+          .filter { piece -> piece.type == PieceType.GIPF }
+          .distinctBy { piece -> piece.type }
+
+  val playableStackedPiecesInReserve: List<Piece> =
+      state.currentPlayer.piecesInReserve
+          .filter { piece ->
+            piece.type != PieceType.GIPF && piece.potential
+          }
+          .distinctBy { piece -> piece.type }
+
+  // TODO work on finding eligiblePotentialTargetNodes
+  val eligibleMovesUsingPotential: Map<Node, Set<Node?>> = getEligiblePotentialMoves(state)
+
+  // TODO Current Player has no moves left
+  if (
+      playableStackedPiecesInReserve.isEmpty() &&
+          gipfPiecesInReserve.isEmpty() &&
+          eligibleMovesUsingPotential.isEmpty()
+  ) {
+    return emptyList()
+  }
+
+  val dots = state.board.nodes.filter { it.isDot }
+
+  // TODO rename variable to be more descriptive
+  val populatedNodes: MutableSet<NodeConnections> = mutableSetOf()
+
+  val linesWithSpace: Lines = state.lines.getLinesWithSpaces()
+
+  val allLines =
+      linesWithSpace.verticalLines +
+          linesWithSpace.upwardRightLines +
+          linesWithSpace.downwardRightLines
+
+  check(allLines.all { nodes -> nodes.any { node -> node.piece == null } }) {
+    val jammedLines =
+        allLines
+            .filter { nodes -> nodes.none { node -> node.piece == null } }
+            .map { nodes ->
+              nodes.joinToString(", ", prefix = "[", postfix = "]") {
+                "${it.coordinate.column}${it.coordinate.row}"
+              }
+            }
+
+    "Invalid state transition: A piece shift was attempted on a blocked axis. " +
+        "The following target lines have no empty spaces remaining: $jammedLines"
+  }
+
+  // populate populatedNodes
+  // TODO can this be simplified
+  dots.forEach { dot ->
+    val nodeConnections = NodeConnections(node = dot)
+
+    when {
+      (dot.neighbors?.above != null || dot.neighbors?.below != null) -> {
+        linesWithSpace.verticalLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (ends.contains(dot.neighbors!!.above) || ends.contains(dot.neighbors!!.below)) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+
+      dot.neighbors?.upperRight != null || dot.neighbors?.lowerLeft != null -> {
+        linesWithSpace.upwardRightLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (
+              ends.contains(dot.neighbors!!.upperRight) || ends.contains(dot.neighbors!!.lowerLeft)
+          ) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+
+      dot.neighbors?.lowerRight != null || dot.neighbors?.upperLeft != null -> {
+        linesWithSpace.downwardRightLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (
+              ends.contains(dot.neighbors!!.lowerRight) || ends.contains(dot.neighbors!!.upperLeft)
+          ) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    populatedNodes.add(nodeConnections)
+  }
+
+  val selectableDots: Set<NodeConnections> =
+      populatedNodes.filter { it.neighbours.isNotEmpty() }.toSet()
+
+  if (selectableDots.size < populatedNodes.size) {
+    println(
+        "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
+    )
+  }
+
+  val numberOfPiecesBefore = state.currentPlayer.getNumberOfPiecesInReserve()
+
+  // Build a list of all available moves
+  var allAvailableMoves: MutableList<PossibleMove> = mutableListOf()
+
+  playableStackedPiecesInReserve.forEach { piece ->
+    allAvailableMoves.add(
+        PossibleMove(piece = piece, selectableDots = selectableDots, moveType = MoveType.AddPiece)
+    )
+  }
+
+  eligibleMovesUsingPotential
+      .filter { (key, value) -> value.filterNotNull().isNotEmpty() }
+      .forEach { (node, eligiblePotentialTargetNodes): Map.Entry<Node, Set<Node?>> ->
+        allAvailableMoves.add(
+            PossibleMove(
+                eligiblePotentialPieceNode = node,
+                eligiblePotentialTargetNodes = eligiblePotentialTargetNodes.filterNotNull().toSet(),
+                moveType = MoveType.UsePotential,
+            )
+        )
+      }
+
+  allAvailableMoves =
+      allAvailableMoves
+          .filter { possibleMove -> possibleMove.selectableDots.isNotEmpty() }
+          .toMutableList()
+
+  if (gipfPiecesInReserve.isNotEmpty()) {
+    return gipfPiecesInReserve.map { piece ->
+      PossibleMove(piece = piece, selectableDots = selectableDots, moveType = MoveType.AddPiece)
+    }
+  } else if (isTamskPieceAtCenter(state.board, state.currentPlayer)) {
+    // TODO use potential
+    // TODO put piece on a selectable dot shift piece
+
+    val piece: Piece? =
+        state.board.nodes
+            .first {
+              it.coordinate.column == state.board.centerNodeCoordinate.column &&
+                  it.coordinate.row == state.board.centerNodeCoordinate.row
+            }
+            .piece
+
+    val selectedNode = selectDot(selectableDots)
+
+    check(piece?.potential == false) {
+      //      val pieceCoords = selectedNode.node.coordinate.let { "${it.column}${it.row}" }
+      val currentPotential = piece?.potential
+
+      //      "Invalid piece state at $pieceCoords: Expected piece potential to be spent (false), "
+      // +
+      "but found potential status is: $currentPotential (Piece Type: ${piece?.type?.name}, Color: ${piece?.colorName})"
+    }
+
+    return listOf<PossibleMove>(
+        PossibleMove(
+            piece = piece.usePiecePotential(),
+            selectableDots = selectableDots,
+            moveType = MoveType.AddPiece,
+        )
+    )
+  } else if (allAvailableMoves.isNotEmpty()) {
+    return allAvailableMoves
+  } else {
+    //		emptyList<PossibleMove>()
+    throw IllegalStateException("Player ${state.currentPlayer.name} has no available moves left!")
+  }
 }

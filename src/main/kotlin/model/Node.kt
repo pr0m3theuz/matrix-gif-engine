@@ -12,14 +12,6 @@ data class Node(
 	val isSpot: Boolean, // play area
 	val isCenter: Boolean,
 	var neighbors: NodeNeighbors? = null,
-//    var isNeutralized: Boolean =
-//        false, // neutralized // TODO Implement logic for stacking pieces and removing potential and
-               // neutralizing pieces
-    // TODO Implement logic // For DVONN & PÜNCT pieces, needs to be a mutableList of alternating
-    // player pieces, use add() and removeLast(), this piece which can either be retrieved or
-    // captured
-    // TODO check that pieces alternate
-//    var stackedPieces: MutableList<Piece> = mutableListOf(),
 ) {
   fun deepCopy(): Node {
     val string = Json.encodeToString(serializer(), this)
@@ -126,18 +118,20 @@ fun NodeNeighbors.getNeighborFromPushDirection(pushDirection: PushDirection): Co
   }
 }
 
-fun NodeNeighbors.getPushDirectionFromNeighbor(neighbor: Coordinate): PushDirection? {
-  return when (neighbor) {
-    this.above -> PushDirection.UP
-    this.below -> PushDirection.DOWN
-    this.upperRight -> PushDirection.UPPER_RIGHT
-    this.lowerRight -> PushDirection.LOWER_RIGHT
-    this.upperLeft -> PushDirection.UPPER_LEFT
-    this.lowerLeft -> PushDirection.LOWER_LEFT
-    else -> {
-      null
-    }
-  }
+fun NodeNeighbors.getPushDirectionsFromNeighbor(): List<PushDirection> {
+	return getNeighbours().mapNotNull { coordinate ->
+		when (coordinate) {
+			this.above -> PushDirection.UP
+			this.below -> PushDirection.DOWN
+			this.upperRight -> PushDirection.UPPER_RIGHT
+			this.lowerRight -> PushDirection.LOWER_RIGHT
+			this.upperLeft -> PushDirection.UPPER_LEFT
+			this.lowerLeft -> PushDirection.LOWER_LEFT
+			else -> {
+				null
+			}
+		}
+	}
 }
 
 fun constructNodes(
@@ -181,6 +175,7 @@ fun constructNodes(
   return nodes
 }
 
+@Serializable
 data class NodeConnections(
     val node: Node,
     val neighbours: MutableSet<Node> = mutableSetOf(),

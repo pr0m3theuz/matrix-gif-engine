@@ -3,7 +3,6 @@ package org.example.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-// TODO Needs to be reconstructed after each action
 /**
  * Lines (Start Node, End Node): A-J 1-9? A1 - I5 B1 - B6 B1 - J4 C1 - C7 C1 - J3 D1 - D8 D1 - J2
  * E1 - E9 F1 - F8 F1 - A2 G1 - G7 G1 - A3 H1 - H6 H1 - A4 I1 - I5 I1 - A5 J1 - B6
@@ -77,8 +76,6 @@ fun constructLines(nodes: Set<Node>): Lines {
                     upperRightNodes,
                 )
 
-            // TODO is result == upperRightNodes
-
             setOf(node).plus(result)
           }
           .toMutableList()
@@ -97,8 +94,6 @@ fun constructLines(nodes: Set<Node>): Lines {
                     nodes = spots,
                     lowerRightNodes = lowerRightNodes,
                 )
-
-            // TODO is result == upperRightNodes
 
             setOf(node).plus(result)
           }

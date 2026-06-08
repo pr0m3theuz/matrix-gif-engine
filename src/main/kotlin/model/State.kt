@@ -15,7 +15,6 @@ data class State(
     return Json.decodeFromString(serializer(), string)
   }
 
-  // TODO Create update state function/Create next state function
   fun updateState(board: Board, state: State): State {
 		state.assertPieceCount()
 
@@ -82,14 +81,6 @@ fun State.printStateSummary() {
 }
 
 fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66) {
-	// TODO Check total pieces count == piecesCount
-	val totalPieces =
-		this.nextPlayer.piecesInReserve.size +
-				this.nextPlayer.capturedPieces.size +
-				this.currentPlayer.piecesInReserve.size +
-				this.currentPlayer.capturedPieces.size +
-				this.board.nodes.count { it.piece != null } +
-				this.board.nodes.sumOf { it.piece?.stackedPieces?.size ?: 0 }
 
 	val nextPlayer = this.nextPlayer
 	val currentPlayer = this.currentPlayer
@@ -203,8 +194,8 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 			.trimIndent()
 	}
 
-	// TODO Confirm if this handles used potentials
-	check(totalPieces <= MAXIMUM_PIECES) {
+	val totalPieces = totalBlackPieces + totalWhitePieces
+	check(totalPieces == MAXIMUM_PIECES) {
 		"Game Piece Desynchronization: Total pieces in play ($totalPieces) exceeds the maximum piece count ($MAXIMUM_PIECES). " +
 				"Pieces have been illegally spawned or deleted." +
 				"\nGame State: \n${Json.encodeToString(this)}"
