@@ -2,8 +2,10 @@ package org.example.engine
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.example.ai.humanEvaluation.minimaxAddPieces
+import org.example.ai.humanEvaluation.AlphaBetaScore
+import org.example.ai.humanEvaluation.alphabetaAddPieces
 import org.example.model.*
+import kotlin.collections.HashMap
 
 fun playerTurn(state: State): State {
   var newState = enforcePieceRemovalRules(state)
@@ -87,7 +89,12 @@ fun playerMove(state: State): State {
   val savedBoardState = state.board.deepCopy()
   val savedLines = state.lines.deepCopy()
 
-	val bestMove = minimaxAddPieces(state = state.deepCopy()).move
+	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
+
+	val bestMove = alphabetaAddPieces(
+		state = state.deepCopy(), gameTree = gameTree,
+		alphaBetaScore = AlphaBetaScore()
+	).move
 
 	when (bestMove?.moveType) {
 		MoveType.AddPiece -> {
@@ -383,6 +390,8 @@ fun isTamskPieceAtCenter(
 }
 
 fun determineWinner(state: State): Player? {
+	// TODO refactor
+
   return if (
       state.currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
           state.currentPlayer.piecesInReserve.any { piece ->
