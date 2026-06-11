@@ -15,25 +15,37 @@ data class Lines(
 ) {
   fun getLinesContainingNode(node: Node): Lines {
     return Lines(
-	    verticalLines = mutableListOf(this.verticalLines
-		    .filter { nodes -> nodes.contains(node) }
-		    .flatten()
-		    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).toSet()),
-	    upwardRightLines = mutableListOf(this.upwardRightLines
-			    .filter { nodes -> nodes.contains(node) }
-			    .flatten()
-			    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).toSet()),
-	    downwardRightLines = mutableListOf(this.downwardRightLines
-		    .filter { nodes -> nodes.contains(node) }
-		    .flatten()
-		    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).toSet())
+        verticalLines =
+            mutableListOf(
+                this.verticalLines
+                    .filter { nodes -> nodes.contains(node) }
+                    .flatten()
+                    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row }))
+                    .toSet()
+            ),
+        upwardRightLines =
+            mutableListOf(
+                this.upwardRightLines
+                    .filter { nodes -> nodes.contains(node) }
+                    .flatten()
+                    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row }))
+                    .toSet()
+            ),
+        downwardRightLines =
+            mutableListOf(
+                this.downwardRightLines
+                    .filter { nodes -> nodes.contains(node) }
+                    .flatten()
+                    .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row }))
+                    .toSet()
+            ),
     )
   }
 
-	fun deepCopy(): Lines {
-		val string = Json.encodeToString(serializer(), this)
-		return Json.decodeFromString(serializer(), string)
-	}
+  fun deepCopy(): Lines {
+    val string = Json.encodeToString(serializer(), this)
+    return Json.decodeFromString(serializer(), string)
+  }
 }
 
 fun Lines.toList(): MutableList<MutableList<Set<Node>>> {
@@ -107,9 +119,9 @@ fun constructLines(nodes: Set<Node>): Lines {
 }
 
 fun getUpperRightNode(
-	coordinate: Coordinate?,
-	nodes: Set<Node>,
-	upperRightNodes: MutableSet<Node>,
+    coordinate: Coordinate?,
+    nodes: Set<Node>,
+    upperRightNodes: MutableSet<Node>,
 ): MutableSet<Node> {
   val node = nodes.firstOrNull { node -> node.coordinate == coordinate }
 
@@ -124,9 +136,9 @@ fun getUpperRightNode(
 }
 
 fun getLowerRightNode(
-	coordinate: Coordinate?,
-	nodes: Set<Node>,
-	lowerRightNodes: MutableSet<Node>,
+    coordinate: Coordinate?,
+    nodes: Set<Node>,
+    lowerRightNodes: MutableSet<Node>,
 ): MutableSet<Node> {
   val node = nodes.firstOrNull { node -> node.coordinate == coordinate }
 
@@ -142,64 +154,60 @@ fun getLowerRightNode(
 }
 
 fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Node>> {
+
+  /**
+   * ============================================================================
+   * MOVEMENT AND INTERACTION RULES: DVONN & PUNCT POTENTIALS
+   * ============================================================================
+   * * 1. MOVEMENT & JUMPING RESTRICTIONS
+   * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
+   * - Valid targets include:
+   * - A single DVONN-potential on the board.
+   * - A DVONN-stack.
+   * - A DVONN-potential currently sitting on top of a stack.
+   * - Pathing:
+   * - Can jump to an adjacent spot.
+   * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
+   * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic GIPF piece.
+   *
+   * * 2. STACK MECHANICS
+   * - Because players can jump onto opposing DVONN-potentials, stacks of alternating colors will
+   *   form.
+   * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is NOT treated
+   *   as a single entity.
+   * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
+   *
+   * * 3. NEUTRALIZATION & OCCUPATION
+   * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
+   * - The top piece's color controls/occupies that board spot.
+   * - When the top piece is removed, the piece directly beneath it is liberated and returns to
+   *   active play.
+   *
+   * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
+   * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially creating a
+   *   new row-of-4.
+   * - Removing an opponent's piece to reveal your own can complete your row-of-4.
+   * - Removing your own piece to reveal an opponent's can complete their row-of-4.
+   * - Turn Resolution Logic:
+   * - A player's turn is NOT over if they still have a row that needs removal.
+   * - Rows must be removed one at a time.
+   * - Active player's turn ends ONLY when no more rows of their color remain.
+   * - If an opponent begins their turn with an existing row of their color on the board (caused by
+   *   the previous player's move), they MUST remove it before making a standard move.
+   */
   lines.forEach { line ->
-    val sublists = line.windowed(4).filter { nodes -> nodes.all {it.piece != null }}
-
-	  /**
-	   * ============================================================================
-	   * MOVEMENT AND INTERACTION RULES: DVONN & PUNCT POTENTIALS
-	   * ============================================================================
-	   * * 1. MOVEMENT & JUMPING RESTRICTIONS
-	   * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
-	   * - Valid targets include:
-	   * - A single DVONN-potential on the board.
-	   * - A DVONN-stack.
-	   * - A DVONN-potential currently sitting on top of a stack.
-	   * - Pathing:
-	   * - Can jump to an adjacent spot.
-	   * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
-	   * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic GIPF
-	   *   piece.
-	   *
-	   * * 2. STACK MECHANICS
-	   * - Because players can jump onto opposing DVONN-potentials, stacks of alternating colors
-	   *   will form.
-	   * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is NOT
-	   *   treated as a single entity.
-	   * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
-	   *
-	   * * 3. NEUTRALIZATION & OCCUPATION
-	   * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
-	   * - The top piece's color controls/occupies that board spot.
-	   * - When the top piece is removed, the piece directly beneath it is liberated and returns
-	   *   to active play.
-	   *
-	   * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
-	   * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially
-	   *   creating a new row-of-4.
-	   * - Removing an opponent's piece to reveal your own can complete your row-of-4.
-	   * - Removing your own piece to reveal an opponent's can complete their row-of-4.
-	   * - Turn Resolution Logic:
-	   * - A player's turn is NOT over if they still have a row that needs removal.
-	   * - Rows must be removed one at a time.
-	   * - Active player's turn ends ONLY when no more rows of their color remain.
-	   * - If an opponent begins their turn with an existing row of their color on the board
-	   *   (caused by the previous player's move), they MUST remove it before making a standard
-	   *   move.
-	   */
-
+    val sublists = line.windowed(4).filter { nodes -> nodes.all { it.piece != null } }
     val hasFourPiecesInARow = sublists.any { sublist ->
       sublist.all { node ->
-				if (node.piece?.isNeutralized == true) {
-					check(node.piece?.type in setOf(PieceType.DVONN, PieceType.PUNCT))
-					{
-						"Only Dvonn and Pünct pieces can be neutralized. \n Node: ${Json.encodeToString<Node>(node)}"
-					}
-					node.piece?.stackedPieces?.last()?.colorName == player.name
-				} else {
-					node.piece?.colorName == player.name
-				}
-			}
+        if (node.piece?.isNeutralized == true) {
+          check(node.piece?.type in setOf(PieceType.DVONN, PieceType.PUNCT)) {
+            "Only Dvonn and Pünct pieces can be neutralized. \n Node: ${Json.encodeToString<Node>(node)}"
+          }
+          node.piece?.stackedPieces?.last()?.colorName == player.name
+        } else {
+          node.piece?.colorName == player.name
+        }
+      }
     }
 
     if (hasFourPiecesInARow) {
@@ -225,4 +233,87 @@ fun Lines.getLinesWithSpaces(): Lines {
       downwardRightLines =
           this.downwardRightLines.filter { line -> line.any { it.piece == null } }.toMutableList(),
   )
+}
+
+data class LineScore(
+    val line: Set<Node>,
+    // TODO status: winning, losing, draw
+    // TODO who is winning
+    val status: String,
+    val score: Float,
+)
+
+fun scoreLines(player: Player, lines: List<Set<Node>>) {
+  /**
+   * ============================================================================
+   * MOVEMENT AND INTERACTION RULES: DVONN & PUNCT POTENTIALS
+   * ============================================================================
+   * * 1. MOVEMENT & JUMPING RESTRICTIONS
+   * - A DVONN-potential can ONLY jump onto a DVONN-potential of the OPPOSITE color.
+   * - Valid targets include:
+   * - A single DVONN-potential on the board.
+   * - A DVONN-stack.
+   * - A DVONN-potential currently sitting on top of a stack.
+   * - Pathing:
+   * - Can jump to an adjacent spot.
+   * - Can move in a straight line over EMPTY spots (cannot jump over other pieces).
+   * - Note: Unlike 'GIPF With Potentials', a DVONN-potential CANNOT jump onto a basic GIPF piece.
+   *
+   * * 2. STACK MECHANICS
+   * - Because players can jump onto opposing DVONN-potentials, stacks of alternating colors will
+   *   form.
+   * - Unlike a stack of 2 identical/same-color potentials, a multi-color DVONN-stack is NOT treated
+   *   as a single entity.
+   * - When a multi-color stack is part of a resolved row, ONLY the top piece is removed.
+   *
+   * * 3. NEUTRALIZATION & OCCUPATION
+   * - Target pieces are neutralized when jumped on, and remain neutralized while covered.
+   * - The top piece's color controls/occupies that board spot.
+   * - When the top piece is removed, the piece directly beneath it is liberated and returns to
+   *   active play.
+   *
+   * * 4. EDGE CASE: ROW-OF-4 RESOLUTION
+   * - Removing a top DVONN-potential can un-neutralize the piece beneath it, potentially creating a
+   *   new row-of-4.
+   * - Removing an opponent's piece to reveal your own can complete your row-of-4.
+   * - Removing your own piece to reveal an opponent's can complete their row-of-4.
+   * - Turn Resolution Logic:
+   * - A player's turn is NOT over if they still have a row that needs removal.
+   * - Rows must be removed one at a time.
+   * - Active player's turn ends ONLY when no more rows of their color remain.
+   * - If an opponent begins their turn with an existing row of their color on the board (caused by
+   *   the previous player's move), they MUST remove it before making a standard move.
+   */
+  lines.map { line ->
+	  val currentPlayerPieces = mutableListOf(mutableListOf<Node>())
+	  val opponentPlayerPieces = mutableListOf(mutableListOf<Node>())
+
+	  val result =
+		  line.sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).fold(
+			  initial = mutableListOf<Node>() to mutableListOf<List<Node>>()
+		  ) { (currentList, allLists), currentNode: Node ->
+
+			  if (currentList.isEmpty()) {
+				  mutableListOf(currentNode) to allLists
+			  } else {
+				  if (currentList.last().piece?.colorName == currentNode.piece?.colorName) {
+					  currentList.apply { add(currentNode) } to allLists
+				  } else if (currentList.last().piece == currentNode.piece) {
+					  currentList.apply { add(currentNode) } to allLists
+				  } else {
+					  mutableListOf(currentNode) to allLists.apply { add(currentList) }
+				  }
+			  }
+		  }.let { it.second.apply { add(it.first) } }
+
+	  // TODO who is dominating this line
+	  result.sortByDescending { it.size }
+
+	  val grouped = result.groupBy { it.first().piece?.colorName }
+
+	  println(grouped.maxBy { it.value.size })
+
+	  result
+  }
+
 }

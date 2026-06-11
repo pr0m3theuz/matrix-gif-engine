@@ -101,7 +101,7 @@ fun playerMove(state: State): State {
 
 			val node = bestMove.selectableDots.first().node
 
-			node.piece = bestMove.piece
+			node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
 			// Move piece in the selected spot(node) based on selected push direction
 			val newBoard =

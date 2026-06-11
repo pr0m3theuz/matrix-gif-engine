@@ -1,0 +1,3002 @@
+{
+  "currentPlayer": {
+    "name": "Black",
+    "abbreviation": "B",
+    "piecesInReserve": [
+      {
+        "abbreviation": "BT",
+        "potential": true,
+        "colorName": "Black",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "BT",
+        "potential": true,
+        "colorName": "Black",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "BT",
+        "potential": true,
+        "colorName": "Black",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "BZ",
+        "potential": true,
+        "colorName": "Black",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "BZ",
+        "potential": true,
+        "colorName": "Black",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "BZ",
+        "potential": true,
+        "colorName": "Black",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "BD",
+        "potential": true,
+        "colorName": "Black",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "BD",
+        "potential": true,
+        "colorName": "Black",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "BD",
+        "potential": true,
+        "colorName": "Black",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "BY",
+        "potential": true,
+        "colorName": "Black",
+        "type": "YINSH"
+      },
+      {
+        "abbreviation": "BY",
+        "potential": true,
+        "colorName": "Black",
+        "type": "YINSH"
+      },
+      {
+        "abbreviation": "BY",
+        "potential": true,
+        "colorName": "Black",
+        "type": "YINSH"
+      },
+      {
+        "abbreviation": "BP",
+        "potential": true,
+        "colorName": "Black",
+        "type": "PUNCT"
+      },
+      {
+        "abbreviation": "BP",
+        "potential": true,
+        "colorName": "Black",
+        "type": "PUNCT"
+      },
+      {
+        "abbreviation": "BP",
+        "potential": true,
+        "colorName": "Black",
+        "type": "PUNCT"
+      }
+    ]
+  },
+  "nextPlayer": {
+    "name": "White",
+    "abbreviation": "W",
+    "piecesInReserve": [
+      {
+        "abbreviation": "WT",
+        "potential": true,
+        "colorName": "White",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "WT",
+        "potential": true,
+        "colorName": "White",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "WT",
+        "potential": true,
+        "colorName": "White",
+        "type": "TAMSK"
+      },
+      {
+        "abbreviation": "WZ",
+        "potential": true,
+        "colorName": "White",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "WZ",
+        "potential": true,
+        "colorName": "White",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "WZ",
+        "potential": true,
+        "colorName": "White",
+        "type": "ZERTZ"
+      },
+      {
+        "abbreviation": "WD",
+        "potential": true,
+        "colorName": "White",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "WD",
+        "potential": true,
+        "colorName": "White",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "WD",
+        "potential": true,
+        "colorName": "White",
+        "type": "DVONN"
+      },
+      {
+        "abbreviation": "WY",
+        "potential": true,
+        "colorName": "White",
+        "type": "YINSH"
+      },
+      {
+        "abbreviation": "WY",
+        "potential": true,
+        "colorName": "White",
+        "type": "YINSH"
+      },
+      {
+        "abbreviation": "WP",
+        "potential": true,
+        "colorName": "White",
+        "type": "PUNCT"
+      },
+      {
+        "abbreviation": "WP",
+        "potential": true,
+        "colorName": "White",
+        "type": "PUNCT"
+      },
+      {
+        "abbreviation": "WP",
+        "potential": true,
+        "colorName": "White",
+        "type": "PUNCT"
+      }
+    ]
+  },
+  "board": {
+    "nodes": [
+      {
+        "coordinate": { "column": "A", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": { "column": "B", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "A", "row": 2 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": { "column": "B", "row": 3 },
+          "lowerRight": { "column": "B", "row": 2 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "A", "row": 3 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": { "column": "B", "row": 4 },
+          "lowerRight": { "column": "B", "row": 3 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "A", "row": 4 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": { "column": "B", "row": 5 },
+          "lowerRight": { "column": "B", "row": 4 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "A", "row": 5 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": null,
+          "lowerRight": { "column": "B", "row": 5 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "B", "row": 2 },
+          "below": null,
+          "upperRight": { "column": "C", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 2 },
+        "piece": {
+          "abbreviation": "BG",
+          "potential": false,
+          "colorName": "Black",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "B", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "C", "row": 3 },
+          "lowerRight": { "column": "C", "row": 2 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "B", "row": 4 },
+          "below": { "column": "B", "row": 2 },
+          "upperRight": { "column": "C", "row": 4 },
+          "lowerRight": { "column": "C", "row": 3 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "B", "row": 5 },
+          "below": { "column": "B", "row": 3 },
+          "upperRight": { "column": "C", "row": 5 },
+          "lowerRight": { "column": "C", "row": 4 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 5 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "B", "row": 4 },
+          "upperRight": { "column": "C", "row": 6 },
+          "lowerRight": { "column": "C", "row": 5 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "B", "row": 6 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "B", "row": 5 },
+          "upperRight": null,
+          "lowerRight": { "column": "C", "row": 6 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "C", "row": 2 },
+          "below": null,
+          "upperRight": { "column": "D", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "C", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "D", "row": 3 },
+          "lowerRight": { "column": "D", "row": 2 },
+          "upperLeft": { "column": "B", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 3 },
+        "piece": {
+          "abbreviation": "BG",
+          "potential": false,
+          "colorName": "Black",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "C", "row": 4 },
+          "below": { "column": "C", "row": 2 },
+          "upperRight": { "column": "D", "row": 4 },
+          "lowerRight": { "column": "D", "row": 3 },
+          "upperLeft": { "column": "B", "row": 3 },
+          "lowerLeft": { "column": "B", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "C", "row": 5 },
+          "below": { "column": "C", "row": 3 },
+          "upperRight": { "column": "D", "row": 5 },
+          "lowerRight": { "column": "D", "row": 4 },
+          "upperLeft": { "column": "B", "row": 4 },
+          "lowerLeft": { "column": "B", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 5 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "C", "row": 6 },
+          "below": { "column": "C", "row": 4 },
+          "upperRight": { "column": "D", "row": 6 },
+          "lowerRight": { "column": "D", "row": 5 },
+          "upperLeft": { "column": "B", "row": 5 },
+          "lowerLeft": { "column": "B", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 6 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "C", "row": 5 },
+          "upperRight": { "column": "D", "row": 7 },
+          "lowerRight": { "column": "D", "row": 6 },
+          "upperLeft": null,
+          "lowerLeft": { "column": "B", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "C", "row": 7 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "C", "row": 6 },
+          "upperRight": null,
+          "lowerRight": { "column": "D", "row": 7 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 2 },
+          "below": null,
+          "upperRight": { "column": "E", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "E", "row": 3 },
+          "lowerRight": { "column": "E", "row": 2 },
+          "upperLeft": { "column": "C", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 4 },
+          "below": { "column": "D", "row": 2 },
+          "upperRight": { "column": "E", "row": 4 },
+          "lowerRight": { "column": "E", "row": 3 },
+          "upperLeft": { "column": "C", "row": 3 },
+          "lowerLeft": { "column": "C", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 4 },
+        "piece": {
+          "abbreviation": "WG",
+          "potential": false,
+          "colorName": "White",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 5 },
+          "below": { "column": "D", "row": 3 },
+          "upperRight": { "column": "E", "row": 5 },
+          "lowerRight": { "column": "E", "row": 4 },
+          "upperLeft": { "column": "C", "row": 4 },
+          "lowerLeft": { "column": "C", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 5 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 6 },
+          "below": { "column": "D", "row": 4 },
+          "upperRight": { "column": "E", "row": 6 },
+          "lowerRight": { "column": "E", "row": 5 },
+          "upperLeft": { "column": "C", "row": 5 },
+          "lowerLeft": { "column": "C", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 6 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "D", "row": 7 },
+          "below": { "column": "D", "row": 5 },
+          "upperRight": { "column": "E", "row": 7 },
+          "lowerRight": { "column": "E", "row": 6 },
+          "upperLeft": { "column": "C", "row": 6 },
+          "lowerLeft": { "column": "C", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 7 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "D", "row": 6 },
+          "upperRight": { "column": "E", "row": 8 },
+          "lowerRight": { "column": "E", "row": 7 },
+          "upperLeft": null,
+          "lowerLeft": { "column": "C", "row": 6 }
+        }
+      },
+      {
+        "coordinate": { "column": "D", "row": 8 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "D", "row": 7 },
+          "upperRight": null,
+          "lowerRight": { "column": "E", "row": 8 },
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 2 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "F", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": { "column": "D", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 4 },
+          "below": { "column": "E", "row": 2 },
+          "upperRight": { "column": "F", "row": 3 },
+          "lowerRight": { "column": "F", "row": 2 },
+          "upperLeft": { "column": "D", "row": 3 },
+          "lowerLeft": { "column": "D", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 5 },
+          "below": { "column": "E", "row": 3 },
+          "upperRight": { "column": "F", "row": 4 },
+          "lowerRight": { "column": "F", "row": 3 },
+          "upperLeft": { "column": "D", "row": 4 },
+          "lowerLeft": { "column": "D", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 5 },
+        "piece": {
+          "abbreviation": "BG",
+          "potential": false,
+          "colorName": "Black",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": true,
+        "neighbors": {
+          "above": { "column": "E", "row": 6 },
+          "below": { "column": "E", "row": 4 },
+          "upperRight": { "column": "F", "row": 5 },
+          "lowerRight": { "column": "F", "row": 4 },
+          "upperLeft": { "column": "D", "row": 5 },
+          "lowerLeft": { "column": "D", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 6 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 7 },
+          "below": { "column": "E", "row": 5 },
+          "upperRight": { "column": "F", "row": 6 },
+          "lowerRight": { "column": "F", "row": 5 },
+          "upperLeft": { "column": "D", "row": 6 },
+          "lowerLeft": { "column": "D", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 7 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "E", "row": 8 },
+          "below": { "column": "E", "row": 6 },
+          "upperRight": { "column": "F", "row": 7 },
+          "lowerRight": { "column": "F", "row": 6 },
+          "upperLeft": { "column": "D", "row": 7 },
+          "lowerLeft": { "column": "D", "row": 6 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 8 },
+        "piece": {
+          "abbreviation": "WG",
+          "potential": false,
+          "colorName": "White",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "E", "row": 7 },
+          "upperRight": null,
+          "lowerRight": { "column": "F", "row": 7 },
+          "upperLeft": null,
+          "lowerLeft": { "column": "D", "row": 7 }
+        }
+      },
+      {
+        "coordinate": { "column": "E", "row": 9 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "E", "row": 8 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 2 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "E", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "G", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": { "column": "E", "row": 3 },
+          "lowerLeft": { "column": "E", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 4 },
+          "below": { "column": "F", "row": 2 },
+          "upperRight": { "column": "G", "row": 3 },
+          "lowerRight": { "column": "G", "row": 2 },
+          "upperLeft": { "column": "E", "row": 4 },
+          "lowerLeft": { "column": "E", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 5 },
+          "below": { "column": "F", "row": 3 },
+          "upperRight": { "column": "G", "row": 4 },
+          "lowerRight": { "column": "G", "row": 3 },
+          "upperLeft": { "column": "E", "row": 5 },
+          "lowerLeft": { "column": "E", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 5 },
+        "piece": {
+          "abbreviation": "WG",
+          "potential": false,
+          "colorName": "White",
+          "type": "GIPF"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 6 },
+          "below": { "column": "F", "row": 4 },
+          "upperRight": { "column": "G", "row": 5 },
+          "lowerRight": { "column": "G", "row": 4 },
+          "upperLeft": { "column": "E", "row": 6 },
+          "lowerLeft": { "column": "E", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 6 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "F", "row": 7 },
+          "below": { "column": "F", "row": 5 },
+          "upperRight": { "column": "G", "row": 6 },
+          "lowerRight": { "column": "G", "row": 5 },
+          "upperLeft": { "column": "E", "row": 7 },
+          "lowerLeft": { "column": "E", "row": 6 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 7 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "F", "row": 6 },
+          "upperRight": null,
+          "lowerRight": { "column": "G", "row": 6 },
+          "upperLeft": { "column": "E", "row": 8 },
+          "lowerLeft": { "column": "E", "row": 7 }
+        }
+      },
+      {
+        "coordinate": { "column": "F", "row": 8 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "F", "row": 7 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": { "column": "E", "row": 8 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "G", "row": 2 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "F", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "G", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "H", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": { "column": "F", "row": 3 },
+          "lowerLeft": { "column": "F", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "G", "row": 4 },
+          "below": { "column": "G", "row": 2 },
+          "upperRight": { "column": "H", "row": 3 },
+          "lowerRight": { "column": "H", "row": 2 },
+          "upperLeft": { "column": "F", "row": 4 },
+          "lowerLeft": { "column": "F", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "G", "row": 5 },
+          "below": { "column": "G", "row": 3 },
+          "upperRight": { "column": "H", "row": 4 },
+          "lowerRight": { "column": "H", "row": 3 },
+          "upperLeft": { "column": "F", "row": 5 },
+          "lowerLeft": { "column": "F", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 5 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "G", "row": 6 },
+          "below": { "column": "G", "row": 4 },
+          "upperRight": { "column": "H", "row": 5 },
+          "lowerRight": { "column": "H", "row": 4 },
+          "upperLeft": { "column": "F", "row": 6 },
+          "lowerLeft": { "column": "F", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 6 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "G", "row": 5 },
+          "upperRight": null,
+          "lowerRight": { "column": "H", "row": 5 },
+          "upperLeft": { "column": "F", "row": 7 },
+          "lowerLeft": { "column": "F", "row": 6 }
+        }
+      },
+      {
+        "coordinate": { "column": "G", "row": 7 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "G", "row": 6 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": { "column": "F", "row": 7 }
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "H", "row": 2 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "G", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 2 },
+        "piece": {
+          "abbreviation": "WY",
+          "potential": true,
+          "colorName": "White",
+          "type": "YINSH"
+        },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "H", "row": 3 },
+          "below": null,
+          "upperRight": { "column": "I", "row": 2 },
+          "lowerRight": null,
+          "upperLeft": { "column": "G", "row": 3 },
+          "lowerLeft": { "column": "G", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "H", "row": 4 },
+          "below": { "column": "H", "row": 2 },
+          "upperRight": { "column": "I", "row": 3 },
+          "lowerRight": { "column": "I", "row": 2 },
+          "upperLeft": { "column": "G", "row": 4 },
+          "lowerLeft": { "column": "G", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "H", "row": 5 },
+          "below": { "column": "H", "row": 3 },
+          "upperRight": { "column": "I", "row": 4 },
+          "lowerRight": { "column": "I", "row": 3 },
+          "upperLeft": { "column": "G", "row": 5 },
+          "lowerLeft": { "column": "G", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 5 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "H", "row": 4 },
+          "upperRight": null,
+          "lowerRight": { "column": "I", "row": 4 },
+          "upperLeft": { "column": "G", "row": 6 },
+          "lowerLeft": { "column": "G", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "H", "row": 6 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "H", "row": 5 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": { "column": "G", "row": 6 }
+        }
+      },
+      {
+        "coordinate": { "column": "I", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "I", "row": 2 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "H", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "I", "row": 2 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "I", "row": 3 },
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "H", "row": 3 },
+          "lowerLeft": { "column": "H", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "I", "row": 3 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": { "column": "I", "row": 4 },
+          "below": { "column": "I", "row": 2 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "H", "row": 4 },
+          "lowerLeft": { "column": "H", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "I", "row": 4 },
+        "isDot": false,
+        "isSpot": true,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "I", "row": 3 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "H", "row": 5 },
+          "lowerLeft": { "column": "H", "row": 4 }
+        }
+      },
+      {
+        "coordinate": { "column": "I", "row": 5 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": { "column": "I", "row": 4 },
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": { "column": "H", "row": 5 }
+        }
+      },
+      {
+        "coordinate": { "column": "J", "row": 1 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "I", "row": 2 },
+          "lowerLeft": null
+        }
+      },
+      {
+        "coordinate": { "column": "J", "row": 2 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "I", "row": 3 },
+          "lowerLeft": { "column": "I", "row": 2 }
+        }
+      },
+      {
+        "coordinate": { "column": "J", "row": 3 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": { "column": "I", "row": 4 },
+          "lowerLeft": { "column": "I", "row": 3 }
+        }
+      },
+      {
+        "coordinate": { "column": "J", "row": 4 },
+        "isDot": true,
+        "isSpot": false,
+        "isCenter": false,
+        "neighbors": {
+          "above": null,
+          "below": null,
+          "upperRight": null,
+          "lowerRight": null,
+          "upperLeft": null,
+          "lowerLeft": { "column": "I", "row": 4 }
+        }
+      }
+    ]
+  },
+  "lines": {
+    "verticalLines": [
+      [
+        {
+          "coordinate": { "column": "B", "row": 2 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "C", "row": 3 },
+            "lowerRight": { "column": "C", "row": 2 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "B", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 4 },
+            "below": { "column": "B", "row": 2 },
+            "upperRight": { "column": "C", "row": 4 },
+            "lowerRight": { "column": "C", "row": 3 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "B", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 5 },
+            "below": { "column": "B", "row": 3 },
+            "upperRight": { "column": "C", "row": 5 },
+            "lowerRight": { "column": "C", "row": 4 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "B", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "B", "row": 4 },
+            "upperRight": { "column": "C", "row": 6 },
+            "lowerRight": { "column": "C", "row": 5 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "C", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "D", "row": 3 },
+            "lowerRight": { "column": "D", "row": 2 },
+            "upperLeft": { "column": "B", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 3 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 4 },
+            "below": { "column": "C", "row": 2 },
+            "upperRight": { "column": "D", "row": 4 },
+            "lowerRight": { "column": "D", "row": 3 },
+            "upperLeft": { "column": "B", "row": 3 },
+            "lowerLeft": { "column": "B", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 5 },
+            "below": { "column": "C", "row": 3 },
+            "upperRight": { "column": "D", "row": 5 },
+            "lowerRight": { "column": "D", "row": 4 },
+            "upperLeft": { "column": "B", "row": 4 },
+            "lowerLeft": { "column": "B", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 6 },
+            "below": { "column": "C", "row": 4 },
+            "upperRight": { "column": "D", "row": 6 },
+            "lowerRight": { "column": "D", "row": 5 },
+            "upperLeft": { "column": "B", "row": 5 },
+            "lowerLeft": { "column": "B", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "C", "row": 5 },
+            "upperRight": { "column": "D", "row": 7 },
+            "lowerRight": { "column": "D", "row": 6 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "B", "row": 5 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "D", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "E", "row": 3 },
+            "lowerRight": { "column": "E", "row": 2 },
+            "upperLeft": { "column": "C", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 4 },
+            "below": { "column": "D", "row": 2 },
+            "upperRight": { "column": "E", "row": 4 },
+            "lowerRight": { "column": "E", "row": 3 },
+            "upperLeft": { "column": "C", "row": 3 },
+            "lowerLeft": { "column": "C", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 4 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 5 },
+            "below": { "column": "D", "row": 3 },
+            "upperRight": { "column": "E", "row": 5 },
+            "lowerRight": { "column": "E", "row": 4 },
+            "upperLeft": { "column": "C", "row": 4 },
+            "lowerLeft": { "column": "C", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 6 },
+            "below": { "column": "D", "row": 4 },
+            "upperRight": { "column": "E", "row": 6 },
+            "lowerRight": { "column": "E", "row": 5 },
+            "upperLeft": { "column": "C", "row": 5 },
+            "lowerLeft": { "column": "C", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 7 },
+            "below": { "column": "D", "row": 5 },
+            "upperRight": { "column": "E", "row": 7 },
+            "lowerRight": { "column": "E", "row": 6 },
+            "upperLeft": { "column": "C", "row": 6 },
+            "lowerLeft": { "column": "C", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "D", "row": 6 },
+            "upperRight": { "column": "E", "row": 8 },
+            "lowerRight": { "column": "E", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "C", "row": 6 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "E", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "F", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "D", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 4 },
+            "below": { "column": "E", "row": 2 },
+            "upperRight": { "column": "F", "row": 3 },
+            "lowerRight": { "column": "F", "row": 2 },
+            "upperLeft": { "column": "D", "row": 3 },
+            "lowerLeft": { "column": "D", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 5 },
+            "below": { "column": "E", "row": 3 },
+            "upperRight": { "column": "F", "row": 4 },
+            "lowerRight": { "column": "F", "row": 3 },
+            "upperLeft": { "column": "D", "row": 4 },
+            "lowerLeft": { "column": "D", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 5 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": true,
+          "neighbors": {
+            "above": { "column": "E", "row": 6 },
+            "below": { "column": "E", "row": 4 },
+            "upperRight": { "column": "F", "row": 5 },
+            "lowerRight": { "column": "F", "row": 4 },
+            "upperLeft": { "column": "D", "row": 5 },
+            "lowerLeft": { "column": "D", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 7 },
+            "below": { "column": "E", "row": 5 },
+            "upperRight": { "column": "F", "row": 6 },
+            "lowerRight": { "column": "F", "row": 5 },
+            "upperLeft": { "column": "D", "row": 6 },
+            "lowerLeft": { "column": "D", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 8 },
+            "below": { "column": "E", "row": 6 },
+            "upperRight": { "column": "F", "row": 7 },
+            "lowerRight": { "column": "F", "row": 6 },
+            "upperLeft": { "column": "D", "row": 7 },
+            "lowerLeft": { "column": "D", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 8 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "E", "row": 7 },
+            "upperRight": null,
+            "lowerRight": { "column": "F", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "D", "row": 7 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "F", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "G", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "E", "row": 3 },
+            "lowerLeft": { "column": "E", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 4 },
+            "below": { "column": "F", "row": 2 },
+            "upperRight": { "column": "G", "row": 3 },
+            "lowerRight": { "column": "G", "row": 2 },
+            "upperLeft": { "column": "E", "row": 4 },
+            "lowerLeft": { "column": "E", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 5 },
+            "below": { "column": "F", "row": 3 },
+            "upperRight": { "column": "G", "row": 4 },
+            "lowerRight": { "column": "G", "row": 3 },
+            "upperLeft": { "column": "E", "row": 5 },
+            "lowerLeft": { "column": "E", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 5 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 6 },
+            "below": { "column": "F", "row": 4 },
+            "upperRight": { "column": "G", "row": 5 },
+            "lowerRight": { "column": "G", "row": 4 },
+            "upperLeft": { "column": "E", "row": 6 },
+            "lowerLeft": { "column": "E", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 7 },
+            "below": { "column": "F", "row": 5 },
+            "upperRight": { "column": "G", "row": 6 },
+            "lowerRight": { "column": "G", "row": 5 },
+            "upperLeft": { "column": "E", "row": 7 },
+            "lowerLeft": { "column": "E", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "F", "row": 6 },
+            "upperRight": null,
+            "lowerRight": { "column": "G", "row": 6 },
+            "upperLeft": { "column": "E", "row": 8 },
+            "lowerLeft": { "column": "E", "row": 7 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "G", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "H", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "F", "row": 3 },
+            "lowerLeft": { "column": "F", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 4 },
+            "below": { "column": "G", "row": 2 },
+            "upperRight": { "column": "H", "row": 3 },
+            "lowerRight": { "column": "H", "row": 2 },
+            "upperLeft": { "column": "F", "row": 4 },
+            "lowerLeft": { "column": "F", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 5 },
+            "below": { "column": "G", "row": 3 },
+            "upperRight": { "column": "H", "row": 4 },
+            "lowerRight": { "column": "H", "row": 3 },
+            "upperLeft": { "column": "F", "row": 5 },
+            "lowerLeft": { "column": "F", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 6 },
+            "below": { "column": "G", "row": 4 },
+            "upperRight": { "column": "H", "row": 5 },
+            "lowerRight": { "column": "H", "row": 4 },
+            "upperLeft": { "column": "F", "row": 6 },
+            "lowerLeft": { "column": "F", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "G", "row": 5 },
+            "upperRight": null,
+            "lowerRight": { "column": "H", "row": 5 },
+            "upperLeft": { "column": "F", "row": 7 },
+            "lowerLeft": { "column": "F", "row": 6 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "H", "row": 2 },
+          "piece": {
+            "abbreviation": "WY",
+            "potential": true,
+            "colorName": "White",
+            "type": "YINSH"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "I", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "G", "row": 3 },
+            "lowerLeft": { "column": "G", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 4 },
+            "below": { "column": "H", "row": 2 },
+            "upperRight": { "column": "I", "row": 3 },
+            "lowerRight": { "column": "I", "row": 2 },
+            "upperLeft": { "column": "G", "row": 4 },
+            "lowerLeft": { "column": "G", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 5 },
+            "below": { "column": "H", "row": 3 },
+            "upperRight": { "column": "I", "row": 4 },
+            "lowerRight": { "column": "I", "row": 3 },
+            "upperLeft": { "column": "G", "row": 5 },
+            "lowerLeft": { "column": "G", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "H", "row": 4 },
+            "upperRight": null,
+            "lowerRight": { "column": "I", "row": 4 },
+            "upperLeft": { "column": "G", "row": 6 },
+            "lowerLeft": { "column": "G", "row": 5 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "I", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 3 },
+            "below": null,
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 3 },
+            "lowerLeft": { "column": "H", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 4 },
+            "below": { "column": "I", "row": 2 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 4 },
+            "lowerLeft": { "column": "H", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "I", "row": 3 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 5 },
+            "lowerLeft": { "column": "H", "row": 4 }
+          }
+        }
+      ]
+    ],
+    "upwardRightLines": [
+      [
+        {
+          "coordinate": { "column": "B", "row": 2 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "C", "row": 3 },
+            "lowerRight": { "column": "C", "row": 2 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 3 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 4 },
+            "below": { "column": "C", "row": 2 },
+            "upperRight": { "column": "D", "row": 4 },
+            "lowerRight": { "column": "D", "row": 3 },
+            "upperLeft": { "column": "B", "row": 3 },
+            "lowerLeft": { "column": "B", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 4 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 5 },
+            "below": { "column": "D", "row": 3 },
+            "upperRight": { "column": "E", "row": 5 },
+            "lowerRight": { "column": "E", "row": 4 },
+            "upperLeft": { "column": "C", "row": 4 },
+            "lowerLeft": { "column": "C", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 5 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": true,
+          "neighbors": {
+            "above": { "column": "E", "row": 6 },
+            "below": { "column": "E", "row": 4 },
+            "upperRight": { "column": "F", "row": 5 },
+            "lowerRight": { "column": "F", "row": 4 },
+            "upperLeft": { "column": "D", "row": 5 },
+            "lowerLeft": { "column": "D", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 5 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 6 },
+            "below": { "column": "F", "row": 4 },
+            "upperRight": { "column": "G", "row": 5 },
+            "lowerRight": { "column": "G", "row": 4 },
+            "upperLeft": { "column": "E", "row": 6 },
+            "lowerLeft": { "column": "E", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 6 },
+            "below": { "column": "G", "row": 4 },
+            "upperRight": { "column": "H", "row": 5 },
+            "lowerRight": { "column": "H", "row": 4 },
+            "upperLeft": { "column": "F", "row": 6 },
+            "lowerLeft": { "column": "F", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "H", "row": 4 },
+            "upperRight": null,
+            "lowerRight": { "column": "I", "row": 4 },
+            "upperLeft": { "column": "G", "row": 6 },
+            "lowerLeft": { "column": "G", "row": 5 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 4 },
+            "below": { "column": "B", "row": 2 },
+            "upperRight": { "column": "C", "row": 4 },
+            "lowerRight": { "column": "C", "row": 3 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 5 },
+            "below": { "column": "C", "row": 3 },
+            "upperRight": { "column": "D", "row": 5 },
+            "lowerRight": { "column": "D", "row": 4 },
+            "upperLeft": { "column": "B", "row": 4 },
+            "lowerLeft": { "column": "B", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 6 },
+            "below": { "column": "D", "row": 4 },
+            "upperRight": { "column": "E", "row": 6 },
+            "lowerRight": { "column": "E", "row": 5 },
+            "upperLeft": { "column": "C", "row": 5 },
+            "lowerLeft": { "column": "C", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 7 },
+            "below": { "column": "E", "row": 5 },
+            "upperRight": { "column": "F", "row": 6 },
+            "lowerRight": { "column": "F", "row": 5 },
+            "upperLeft": { "column": "D", "row": 6 },
+            "lowerLeft": { "column": "D", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 7 },
+            "below": { "column": "F", "row": 5 },
+            "upperRight": { "column": "G", "row": 6 },
+            "lowerRight": { "column": "G", "row": 5 },
+            "upperLeft": { "column": "E", "row": 7 },
+            "lowerLeft": { "column": "E", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "G", "row": 5 },
+            "upperRight": null,
+            "lowerRight": { "column": "H", "row": 5 },
+            "upperLeft": { "column": "F", "row": 7 },
+            "lowerLeft": { "column": "F", "row": 6 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 5 },
+            "below": { "column": "B", "row": 3 },
+            "upperRight": { "column": "C", "row": 5 },
+            "lowerRight": { "column": "C", "row": 4 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 6 },
+            "below": { "column": "C", "row": 4 },
+            "upperRight": { "column": "D", "row": 6 },
+            "lowerRight": { "column": "D", "row": 5 },
+            "upperLeft": { "column": "B", "row": 5 },
+            "lowerLeft": { "column": "B", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 7 },
+            "below": { "column": "D", "row": 5 },
+            "upperRight": { "column": "E", "row": 7 },
+            "lowerRight": { "column": "E", "row": 6 },
+            "upperLeft": { "column": "C", "row": 6 },
+            "lowerLeft": { "column": "C", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 8 },
+            "below": { "column": "E", "row": 6 },
+            "upperRight": { "column": "F", "row": 7 },
+            "lowerRight": { "column": "F", "row": 6 },
+            "upperLeft": { "column": "D", "row": 7 },
+            "lowerLeft": { "column": "D", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "F", "row": 6 },
+            "upperRight": null,
+            "lowerRight": { "column": "G", "row": 6 },
+            "upperLeft": { "column": "E", "row": 8 },
+            "lowerLeft": { "column": "E", "row": 7 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "B", "row": 4 },
+            "upperRight": { "column": "C", "row": 6 },
+            "lowerRight": { "column": "C", "row": 5 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "C", "row": 5 },
+            "upperRight": { "column": "D", "row": 7 },
+            "lowerRight": { "column": "D", "row": 6 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "B", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "D", "row": 6 },
+            "upperRight": { "column": "E", "row": 8 },
+            "lowerRight": { "column": "E", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "C", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 8 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "E", "row": 7 },
+            "upperRight": null,
+            "lowerRight": { "column": "F", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "D", "row": 7 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "C", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "D", "row": 3 },
+            "lowerRight": { "column": "D", "row": 2 },
+            "upperLeft": { "column": "B", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 4 },
+            "below": { "column": "D", "row": 2 },
+            "upperRight": { "column": "E", "row": 4 },
+            "lowerRight": { "column": "E", "row": 3 },
+            "upperLeft": { "column": "C", "row": 3 },
+            "lowerLeft": { "column": "C", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 5 },
+            "below": { "column": "E", "row": 3 },
+            "upperRight": { "column": "F", "row": 4 },
+            "lowerRight": { "column": "F", "row": 3 },
+            "upperLeft": { "column": "D", "row": 4 },
+            "lowerLeft": { "column": "D", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 5 },
+            "below": { "column": "F", "row": 3 },
+            "upperRight": { "column": "G", "row": 4 },
+            "lowerRight": { "column": "G", "row": 3 },
+            "upperLeft": { "column": "E", "row": 5 },
+            "lowerLeft": { "column": "E", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 5 },
+            "below": { "column": "G", "row": 3 },
+            "upperRight": { "column": "H", "row": 4 },
+            "lowerRight": { "column": "H", "row": 3 },
+            "upperLeft": { "column": "F", "row": 5 },
+            "lowerLeft": { "column": "F", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 5 },
+            "below": { "column": "H", "row": 3 },
+            "upperRight": { "column": "I", "row": 4 },
+            "lowerRight": { "column": "I", "row": 3 },
+            "upperLeft": { "column": "G", "row": 5 },
+            "lowerLeft": { "column": "G", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "I", "row": 3 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 5 },
+            "lowerLeft": { "column": "H", "row": 4 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "D", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "E", "row": 3 },
+            "lowerRight": { "column": "E", "row": 2 },
+            "upperLeft": { "column": "C", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 4 },
+            "below": { "column": "E", "row": 2 },
+            "upperRight": { "column": "F", "row": 3 },
+            "lowerRight": { "column": "F", "row": 2 },
+            "upperLeft": { "column": "D", "row": 3 },
+            "lowerLeft": { "column": "D", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 4 },
+            "below": { "column": "F", "row": 2 },
+            "upperRight": { "column": "G", "row": 3 },
+            "lowerRight": { "column": "G", "row": 2 },
+            "upperLeft": { "column": "E", "row": 4 },
+            "lowerLeft": { "column": "E", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 4 },
+            "below": { "column": "G", "row": 2 },
+            "upperRight": { "column": "H", "row": 3 },
+            "lowerRight": { "column": "H", "row": 2 },
+            "upperLeft": { "column": "F", "row": 4 },
+            "lowerLeft": { "column": "F", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 4 },
+            "below": { "column": "H", "row": 2 },
+            "upperRight": { "column": "I", "row": 3 },
+            "lowerRight": { "column": "I", "row": 2 },
+            "upperLeft": { "column": "G", "row": 4 },
+            "lowerLeft": { "column": "G", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 4 },
+            "below": { "column": "I", "row": 2 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 4 },
+            "lowerLeft": { "column": "H", "row": 3 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "E", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "F", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "D", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "G", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "E", "row": 3 },
+            "lowerLeft": { "column": "E", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "H", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "F", "row": 3 },
+            "lowerLeft": { "column": "F", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 2 },
+          "piece": {
+            "abbreviation": "WY",
+            "potential": true,
+            "colorName": "White",
+            "type": "YINSH"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "I", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "G", "row": 3 },
+            "lowerLeft": { "column": "G", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 3 },
+            "below": null,
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 3 },
+            "lowerLeft": { "column": "H", "row": 2 }
+          }
+        }
+      ]
+    ],
+    "downwardRightLines": [
+      [
+        {
+          "coordinate": { "column": "B", "row": 2 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "C", "row": 3 },
+            "lowerRight": { "column": "C", "row": 2 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "D", "row": 3 },
+            "lowerRight": { "column": "D", "row": 2 },
+            "upperLeft": { "column": "B", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "E", "row": 3 },
+            "lowerRight": { "column": "E", "row": 2 },
+            "upperLeft": { "column": "C", "row": 2 },
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "F", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "D", "row": 2 },
+            "lowerLeft": null
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 4 },
+            "below": { "column": "B", "row": 2 },
+            "upperRight": { "column": "C", "row": 4 },
+            "lowerRight": { "column": "C", "row": 3 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 3 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 4 },
+            "below": { "column": "C", "row": 2 },
+            "upperRight": { "column": "D", "row": 4 },
+            "lowerRight": { "column": "D", "row": 3 },
+            "upperLeft": { "column": "B", "row": 3 },
+            "lowerLeft": { "column": "B", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 4 },
+            "below": { "column": "D", "row": 2 },
+            "upperRight": { "column": "E", "row": 4 },
+            "lowerRight": { "column": "E", "row": 3 },
+            "upperLeft": { "column": "C", "row": 3 },
+            "lowerLeft": { "column": "C", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 4 },
+            "below": { "column": "E", "row": 2 },
+            "upperRight": { "column": "F", "row": 3 },
+            "lowerRight": { "column": "F", "row": 2 },
+            "upperLeft": { "column": "D", "row": 3 },
+            "lowerLeft": { "column": "D", "row": 2 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "G", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "E", "row": 3 },
+            "lowerLeft": { "column": "E", "row": 2 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "B", "row": 5 },
+            "below": { "column": "B", "row": 3 },
+            "upperRight": { "column": "C", "row": 5 },
+            "lowerRight": { "column": "C", "row": 4 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 5 },
+            "below": { "column": "C", "row": 3 },
+            "upperRight": { "column": "D", "row": 5 },
+            "lowerRight": { "column": "D", "row": 4 },
+            "upperLeft": { "column": "B", "row": 4 },
+            "lowerLeft": { "column": "B", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 4 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 5 },
+            "below": { "column": "D", "row": 3 },
+            "upperRight": { "column": "E", "row": 5 },
+            "lowerRight": { "column": "E", "row": 4 },
+            "upperLeft": { "column": "C", "row": 4 },
+            "lowerLeft": { "column": "C", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 5 },
+            "below": { "column": "E", "row": 3 },
+            "upperRight": { "column": "F", "row": 4 },
+            "lowerRight": { "column": "F", "row": 3 },
+            "upperLeft": { "column": "D", "row": 4 },
+            "lowerLeft": { "column": "D", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 4 },
+            "below": { "column": "F", "row": 2 },
+            "upperRight": { "column": "G", "row": 3 },
+            "lowerRight": { "column": "G", "row": 2 },
+            "upperLeft": { "column": "E", "row": 4 },
+            "lowerLeft": { "column": "E", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "H", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "F", "row": 3 },
+            "lowerLeft": { "column": "F", "row": 2 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "B", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "B", "row": 4 },
+            "upperRight": { "column": "C", "row": 6 },
+            "lowerRight": { "column": "C", "row": 5 },
+            "upperLeft": null,
+            "lowerLeft": null
+          }
+        },
+        {
+          "coordinate": { "column": "C", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "C", "row": 6 },
+            "below": { "column": "C", "row": 4 },
+            "upperRight": { "column": "D", "row": 6 },
+            "lowerRight": { "column": "D", "row": 5 },
+            "upperLeft": { "column": "B", "row": 5 },
+            "lowerLeft": { "column": "B", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 6 },
+            "below": { "column": "D", "row": 4 },
+            "upperRight": { "column": "E", "row": 6 },
+            "lowerRight": { "column": "E", "row": 5 },
+            "upperLeft": { "column": "C", "row": 5 },
+            "lowerLeft": { "column": "C", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 5 },
+          "piece": {
+            "abbreviation": "BG",
+            "potential": false,
+            "colorName": "Black",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": true,
+          "neighbors": {
+            "above": { "column": "E", "row": 6 },
+            "below": { "column": "E", "row": 4 },
+            "upperRight": { "column": "F", "row": 5 },
+            "lowerRight": { "column": "F", "row": 4 },
+            "upperLeft": { "column": "D", "row": 5 },
+            "lowerLeft": { "column": "D", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 5 },
+            "below": { "column": "F", "row": 3 },
+            "upperRight": { "column": "G", "row": 4 },
+            "lowerRight": { "column": "G", "row": 3 },
+            "upperLeft": { "column": "E", "row": 5 },
+            "lowerLeft": { "column": "E", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 4 },
+            "below": { "column": "G", "row": 2 },
+            "upperRight": { "column": "H", "row": 3 },
+            "lowerRight": { "column": "H", "row": 2 },
+            "upperLeft": { "column": "F", "row": 4 },
+            "lowerLeft": { "column": "F", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 2 },
+          "piece": {
+            "abbreviation": "WY",
+            "potential": true,
+            "colorName": "White",
+            "type": "YINSH"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 3 },
+            "below": null,
+            "upperRight": { "column": "I", "row": 2 },
+            "lowerRight": null,
+            "upperLeft": { "column": "G", "row": 3 },
+            "lowerLeft": { "column": "G", "row": 2 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "C", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "C", "row": 5 },
+            "upperRight": { "column": "D", "row": 7 },
+            "lowerRight": { "column": "D", "row": 6 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "B", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "D", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "D", "row": 7 },
+            "below": { "column": "D", "row": 5 },
+            "upperRight": { "column": "E", "row": 7 },
+            "lowerRight": { "column": "E", "row": 6 },
+            "upperLeft": { "column": "C", "row": 6 },
+            "lowerLeft": { "column": "C", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 7 },
+            "below": { "column": "E", "row": 5 },
+            "upperRight": { "column": "F", "row": 6 },
+            "lowerRight": { "column": "F", "row": 5 },
+            "upperLeft": { "column": "D", "row": 6 },
+            "lowerLeft": { "column": "D", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 5 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 6 },
+            "below": { "column": "F", "row": 4 },
+            "upperRight": { "column": "G", "row": 5 },
+            "lowerRight": { "column": "G", "row": 4 },
+            "upperLeft": { "column": "E", "row": 6 },
+            "lowerLeft": { "column": "E", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 5 },
+            "below": { "column": "G", "row": 3 },
+            "upperRight": { "column": "H", "row": 4 },
+            "lowerRight": { "column": "H", "row": 3 },
+            "upperLeft": { "column": "F", "row": 5 },
+            "lowerLeft": { "column": "F", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 4 },
+            "below": { "column": "H", "row": 2 },
+            "upperRight": { "column": "I", "row": 3 },
+            "lowerRight": { "column": "I", "row": 2 },
+            "upperLeft": { "column": "G", "row": 4 },
+            "lowerLeft": { "column": "G", "row": 3 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 2 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 3 },
+            "below": null,
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 3 },
+            "lowerLeft": { "column": "H", "row": 2 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "D", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "D", "row": 6 },
+            "upperRight": { "column": "E", "row": 8 },
+            "lowerRight": { "column": "E", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "C", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "E", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "E", "row": 8 },
+            "below": { "column": "E", "row": 6 },
+            "upperRight": { "column": "F", "row": 7 },
+            "lowerRight": { "column": "F", "row": 6 },
+            "upperLeft": { "column": "D", "row": 7 },
+            "lowerLeft": { "column": "D", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "F", "row": 7 },
+            "below": { "column": "F", "row": 5 },
+            "upperRight": { "column": "G", "row": 6 },
+            "lowerRight": { "column": "G", "row": 5 },
+            "upperLeft": { "column": "E", "row": 7 },
+            "lowerLeft": { "column": "E", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "G", "row": 6 },
+            "below": { "column": "G", "row": 4 },
+            "upperRight": { "column": "H", "row": 5 },
+            "lowerRight": { "column": "H", "row": 4 },
+            "upperLeft": { "column": "F", "row": 6 },
+            "lowerLeft": { "column": "F", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "H", "row": 5 },
+            "below": { "column": "H", "row": 3 },
+            "upperRight": { "column": "I", "row": 4 },
+            "lowerRight": { "column": "I", "row": 3 },
+            "upperLeft": { "column": "G", "row": 5 },
+            "lowerLeft": { "column": "G", "row": 4 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 3 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": { "column": "I", "row": 4 },
+            "below": { "column": "I", "row": 2 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 4 },
+            "lowerLeft": { "column": "H", "row": 3 }
+          }
+        }
+      ],
+      [
+        {
+          "coordinate": { "column": "E", "row": 8 },
+          "piece": {
+            "abbreviation": "WG",
+            "potential": false,
+            "colorName": "White",
+            "type": "GIPF"
+          },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "E", "row": 7 },
+            "upperRight": null,
+            "lowerRight": { "column": "F", "row": 7 },
+            "upperLeft": null,
+            "lowerLeft": { "column": "D", "row": 7 }
+          }
+        },
+        {
+          "coordinate": { "column": "F", "row": 7 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "F", "row": 6 },
+            "upperRight": null,
+            "lowerRight": { "column": "G", "row": 6 },
+            "upperLeft": { "column": "E", "row": 8 },
+            "lowerLeft": { "column": "E", "row": 7 }
+          }
+        },
+        {
+          "coordinate": { "column": "G", "row": 6 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "G", "row": 5 },
+            "upperRight": null,
+            "lowerRight": { "column": "H", "row": 5 },
+            "upperLeft": { "column": "F", "row": 7 },
+            "lowerLeft": { "column": "F", "row": 6 }
+          }
+        },
+        {
+          "coordinate": { "column": "H", "row": 5 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "H", "row": 4 },
+            "upperRight": null,
+            "lowerRight": { "column": "I", "row": 4 },
+            "upperLeft": { "column": "G", "row": 6 },
+            "lowerLeft": { "column": "G", "row": 5 }
+          }
+        },
+        {
+          "coordinate": { "column": "I", "row": 4 },
+          "isDot": false,
+          "isSpot": true,
+          "isCenter": false,
+          "neighbors": {
+            "above": null,
+            "below": { "column": "I", "row": 3 },
+            "upperRight": null,
+            "lowerRight": null,
+            "upperLeft": { "column": "H", "row": 5 },
+            "lowerLeft": { "column": "H", "row": 4 }
+          }
+        }
+      ]
+    ]
+  }
+}

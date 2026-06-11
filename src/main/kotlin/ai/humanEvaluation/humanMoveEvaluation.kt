@@ -179,8 +179,13 @@ fun minimaxAddPieces(depth: Int = 7, state: State): BestMove {
 }
 
 fun scoreState(state: State): Int {
+	// TODO how to score control over the board/line
+	// TODO how to score attacking positions, i.e. 4 in the row
+	// TODO how to skip positions that don't improve the current player's position
+
   // evaluate state & calculate score
   val possibleMoves = identifyAvailableMoves(state)
+
 
   if (possibleMoves.isEmpty()) {
     val winner = determineWinner(state)
@@ -194,6 +199,8 @@ fun scoreState(state: State): Int {
       }
     }
   }
+
+
 
   return enforcePieceRemovalRules(state).let { newState: State ->
     newState.currentPlayer.recombinePieces()
@@ -267,7 +274,7 @@ fun evaluateState() {}
 fun evaluatePossibleMoves(possibleMoves: List<PossibleMove>, initialState: State) {}
 
 fun alphabetaAddPieces(
-    depth: Int = 7,
+    depth: Int = 3,
     state: State,
     gameTree: HashMap<String, AlphaBetaScore>,
     alphaBetaScore: AlphaBetaScore,
