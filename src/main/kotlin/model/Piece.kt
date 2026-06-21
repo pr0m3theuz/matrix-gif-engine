@@ -70,7 +70,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('G'),
             potential = false,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.GIPF,
         )
       }
@@ -81,7 +81,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('T'),
             potential = true,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.TAMSK,
         )
       }
@@ -92,7 +92,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('Z'),
             potential = true,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.ZERTZ,
         )
       }
@@ -103,7 +103,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('D'),
             potential = true,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.DVONN,
         )
       }
@@ -114,7 +114,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('Y'),
             potential = true,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.YINSH,
         )
       }
@@ -125,7 +125,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('P'),
             potential = true,
 //            color = player.color,
-            colorName = player.name,
+            colorName = player.name.name,
             type = PieceType.PUNCT,
         )
       }

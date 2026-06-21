@@ -235,31 +235,31 @@ fun enforcePieceRemovalRules(state: State): State {
                       chooseToRemovePiecesWithPotential(
                           line,
                           newState.currentPlayer,
-                      ), // Result not used
+                      ), // TODO Result not used
               )
             }
             .flatten()
             .distinctBy { it.node?.coordinate }
       } else {
-        /*
-        6/ It will occur that more than one row-of-4 of the same
-        color are lined up at the same time. If these rows do
-        not intersect each other, then they are removed (at
-        least partially) following the standard procedure.
-        If they do intersect, the player playing that color
-        may choose which row they will deal with first. If
-        they remove the piece on the intersecting spot, the
-        second row is broken up and the remaining pieces of
-        that row stay on the board. If it is a stack and it is left
-        on the intersecting spot, then the second row is still
-        intact, which means that it must also be dealt with.
-        (See illustration 5: Black may choose between fi rst
-        dealing with the row of 4 pieces or the row of 5
-        pieces. If the piece on the intersecting spot is a
-        stack and Black removes it from the board, then
-        the other row in not complete anymore; if Black
-        leaves the stack on the board, they must also deal
-        with that other row.)
+        /**
+		        6/ It will occur that more than one row-of-4 of the same
+		        color are lined up at the same time. If these rows do
+		        not intersect each other, then they are removed (at
+		        least partially) following the standard procedure.
+		        If they do intersect, the player playing that color
+		        may choose which row they will deal with first. If
+		        they remove the piece on the intersecting spot, the
+		        second row is broken up and the remaining pieces of
+		        that row stay on the board. If it is a stack and it is left
+		        on the intersecting spot, then the second row is still
+		        intact, which means that it must also be dealt with.
+		        (See illustration 5: Black may choose between fi rst
+		        dealing with the row of 4 pieces or the row of 5
+		        pieces. If the piece on the intersecting spot is a
+		        stack and Black removes it from the board, then
+		        the other row in not complete anymore; if Black
+		        leaves the stack on the board, they must also deal
+		        with that other row.)
         */
         val intersectingCoordinates: Set<Coordinate> =
             linesWithFourPiecesInARow

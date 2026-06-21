@@ -3,9 +3,14 @@ package org.example.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+enum class PlayerName() {
+	WHITE,
+	BLACK
+}
+
 @Serializable
 data class Player(
-    val name: String,
+    val name: PlayerName,
     val abbreviation: String,
 //    val color: Color,
     val piecesInReserve: MutableList<Piece> = mutableListOf(),
@@ -94,7 +99,7 @@ data class Player(
                         abbreviation = this.abbreviation.plus(key.name.first()),
                         potential = true,
 //                        color = this.color,
-                        colorName = this.name,
+                        colorName = this.name.name,
                         type = key,
                     )
                   }
@@ -105,7 +110,7 @@ data class Player(
                         abbreviation = this.abbreviation.plus(key.name.first()),
                         potential = false,
 //                        color = this.color,
-                        colorName = this.name,
+                        colorName = this.name.name,
                         type = key,
                     )
                 )

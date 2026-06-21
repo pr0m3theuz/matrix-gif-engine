@@ -88,31 +88,31 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 
 	// 1. Next Player's components
 	var nextReservePotentials =
-		nextPlayer.piecesInReserve.count { it.colorName == "Black" && it.potential } * 2
+		nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
 	var nextReserveBasics =
-		nextPlayer.piecesInReserve.count { it.colorName == "Black" && !it.potential }
+		nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
 	var nextCapturedPotentials =
-		nextPlayer.capturedPieces.count { it.colorName == "Black" && it.potential } * 2
+		nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
 	var nextCapturedBasics =
-		nextPlayer.capturedPieces.count { it.colorName == "Black" && !it.potential }
+		nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
 
 	// 2. Current Player's components
 	var currentReservePotentials =
-		currentPlayer.piecesInReserve.count { it.colorName == "Black" && it.potential } * 2
+		currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
 	var currentReserveBasics =
-		currentPlayer.piecesInReserve.count { it.colorName == "Black" && !it.potential }
+		currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
 	var currentCapturedPotentials =
-		currentPlayer.capturedPieces.count { it.colorName == "Black" && it.potential } * 2
+		currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
 	var currentCapturedBasics =
-		currentPlayer.capturedPieces.count { it.colorName == "Black" && !it.potential }
+		currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
 
 	// 3. Board components
 	var boardPotentials =
-		board.nodes.count { it.piece?.colorName == "Black" && it.piece?.potential == true } * 2
+		board.nodes.count { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.potential == true } * 2
 	var boardBasics =
-		board.nodes.count { it.piece?.colorName == "Black" && it.piece?.potential == false }
+		board.nodes.count { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.potential == false }
 	var boardStacks =
-		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == "Black" } ?: 0 }
+		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.BLACK.name } ?: 0 }
 
 	val totalBlackPieces =
 		nextReservePotentials +
@@ -142,31 +142,31 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 
 	// 1. Next Player's components
 	nextReservePotentials =
-		nextPlayer.piecesInReserve.count { it.colorName == "White" && it.potential } * 2
+		nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
 	nextReserveBasics =
-		nextPlayer.piecesInReserve.count { it.colorName == "White" && !it.potential }
+		nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
 	nextCapturedPotentials =
-		nextPlayer.capturedPieces.count { it.colorName == "White" && it.potential } * 2
+		nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
 	nextCapturedBasics =
-		nextPlayer.capturedPieces.count { it.colorName == "White" && !it.potential }
+		nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
 
 	// 2. Current Player's components
 	currentReservePotentials =
-		currentPlayer.piecesInReserve.count { it.colorName == "White" && it.potential } * 2
+		currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
 	currentReserveBasics =
-		currentPlayer.piecesInReserve.count { it.colorName == "White" && !it.potential }
+		currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
 	currentCapturedPotentials =
-		currentPlayer.capturedPieces.count { it.colorName == "White" && it.potential } * 2
+		currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
 	currentCapturedBasics =
-		currentPlayer.capturedPieces.count { it.colorName == "White" && !it.potential }
+			currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
 
 	// 3. Board components
 	boardPotentials =
-		board.nodes.count { it.piece?.colorName == "White" && it.piece?.potential == true } * 2
+		board.nodes.count { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.potential == true } * 2
 	boardBasics =
-		board.nodes.count { it.piece?.colorName == "White" && it.piece?.potential == false }
+		board.nodes.count { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.potential == false }
 	boardStacks =
-		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == "White" } ?: 0 }
+		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.WHITE.name } ?: 0 }
 
 	val totalWhitePieces =
 		nextReservePotentials +
@@ -209,14 +209,14 @@ fun initializeState(): State {
   // Create players
   val whitePlayer =
       Player(
-          name = "White",
+          name = PlayerName.WHITE,
           abbreviation = "W",
 //          color = Color.WHITE,
       )
 
   val blackPlayer =
       Player(
-          name = "Black",
+          name = PlayerName.BLACK,
           abbreviation = "B",
 //          color = Color.BLACK,
       )

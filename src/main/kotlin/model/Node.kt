@@ -12,6 +12,7 @@ data class Node(
 	val isSpot: Boolean, // play area
 	val isCenter: Boolean,
 	var neighbors: NodeNeighbors? = null,
+	val bitmask: ULong
 ) {
   fun deepCopy(): Node {
     val string = Json.encodeToString(serializer(), this)
@@ -141,6 +142,7 @@ fun constructNodes(
 	center: Coordinate,
 ): Set<Node> {
   val nodes = mutableSetOf<Node>()
+	var nodeCount = 0
   letters.forEach { letter ->
     // A B C D E F G H I J
     // 0 1 2 3 4 5 6 7 8 9
@@ -167,10 +169,15 @@ fun constructNodes(
               isSpot = !isDot,
               isCenter = coordinate == center,
               piece = null,
+							bitmask = if (isDot) 0UL else 1UL shl nodeCount
           )
       )
+	    // if node is a Spot, increment bit shift
+	    if (!isDot) nodeCount += 1
     }
   }
+
+	// TODO add check to make sure bitmask and coordinates match expectations
 
   return nodes
 }

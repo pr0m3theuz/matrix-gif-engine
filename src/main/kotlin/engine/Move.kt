@@ -34,7 +34,7 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
         it.piece != null &&
             it.piece?.type !in setOf(PieceType.GIPF, PieceType.TAMSK) &&
             it.piece?.potential == true &&
-            it.piece?.colorName == state.currentPlayer.name &&
+            it.piece?.colorName == state.currentPlayer.name.name &&
             it.piece?.isNeutralized == false
       }
 
@@ -232,10 +232,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -254,10 +254,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -276,10 +276,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -322,10 +322,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -344,10 +344,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -366,10 +366,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name
+                                it.piece?.colorName != state.currentPlayer.name.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name
+                                    state.nextPlayer.name.name
                               }
                             }
                       }
@@ -935,9 +935,9 @@ fun retrieveAndCapturePieces(
               check(node.piece?.type in validTypes) {
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
-              node.piece?.stackedPieces?.last()?.colorName == player.name
+              node.piece?.stackedPieces?.last()?.colorName == player.name.name
             } else {
-              node.piece?.colorName == player.name
+              node.piece?.colorName == player.name.name
             }
           }
           .map { node ->
@@ -965,9 +965,9 @@ fun retrieveAndCapturePieces(
           }
           .toMutableList()
 
-  check(retrievedPieces.all { piece -> piece.retrievedPiece?.colorName == player.name }) {
+  check(retrievedPieces.all { piece -> piece.retrievedPiece?.colorName == player.name.name }) {
     val invalidColors =
-        retrievedPieces.map { it.retrievedPiece?.colorName }.filter { it != player.name }.distinct()
+        retrievedPieces.map { it.retrievedPiece?.colorName }.filter { it != player.name.name }.distinct()
 
     "Sanity check failed: Player '${player.name}' cannot retrieve pieces belonging to: $invalidColors"
   }
@@ -1006,9 +1006,9 @@ fun retrieveAndCapturePieces(
                 "Expected DVONN or PUNCT piece, but found: ${node.piece?.type ?: "Empty Node/No Piece"}"
               }
 
-              node.piece?.stackedPieces?.last()?.colorName != player.name
+              node.piece?.stackedPieces?.last()?.colorName != player.name.name
             } else {
-              node.piece?.colorName != player.name
+              node.piece?.colorName != player.name.name
             }
           }
           .map { node ->
