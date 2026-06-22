@@ -1810,18 +1810,14 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   }
 }
 
-fun Bitboard.retrieveAndCapturePieces(columnInfos: List<ColumnInfo>, player: Player) {
-  // TODO create pieces for retrieval and capturing
-  // TODO return retrieved and captured pieces
+fun Bitboard.identifyPlayerPiecesWithPotential(
+    columnInfos: List<ColumnInfo>,
+    player: Player,
+): List<ULong> {
   require(columnInfos.isNotEmpty()) { "There must be at least one column" }
-  when (player.name) {
-    PlayerName.WHITE -> {}
 
-    PlayerName.BLACK -> {}
-  }
+  // TODO handle intersecting lines, but do i?
 
-  // TODO Minimax/MCTS — what it would be like to remove/leave any number of these pieces
-  //   use line score heuristic and pieces in reserve
   val playerPiecesWithPotential = columnInfos.map { column ->
     column.positions.filter { bitmask ->
       val result =
@@ -1839,8 +1835,28 @@ fun Bitboard.retrieveAndCapturePieces(columnInfos: List<ColumnInfo>, player: Pla
     }
   }
 
-  // TODO these have to be removed
-  //
+  return playerPiecesWithPotential.flatten()
+}
+
+fun Bitboard.createPlayerPiecesWithPotentialPowerset(potentials: List<ULong>): List<List<ULong>> {
+	// TODO Minimax/MCTS — what it would be like to remove at least one of these pieces if all pieces
+	//   have potentials
+	//   use line score heuristic and pieces in reserve
+	// todo return of a list containing different combinations of bit positions
+  return potentials.fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
+    // For every item, take the current sublists (accumulator)
+    // and add a new set of sublists where the item is appended
+    accumulator + accumulator.map { it + item }
+  }.filter { it.isNotEmpty() }
+}
+
+
+
+fun Bitboard.retrieveAndCapturePieces(columnInfos: List<ColumnInfo>, selectedPiecesWithPotentialPowerset: List<ULong>, player: Player) {
+  // TODO create pieces for retrieval and capturing
+  // TODO return retrieved and captured pieces
+  require(columnInfos.isNotEmpty()) { "There must be at least one column" }
+
   val playerPiecesWithoutPotential = columnInfos.map { column ->
     column.positions.filter { bitmask ->
       val result =
@@ -1884,146 +1900,94 @@ fun Bitboard.retrieveAndCapturePieces(columnInfos: List<ColumnInfo>, player: Pla
           }
           .flatten()
 
-  val layers = 5 // whiteDVONNLayer.size.minus(1)
   val neutralizedPieces = mutableListOf<Piece>()
   neutralizedBitmasks.forEach { bitmask ->
     for (i in whiteDVONNLayer.indices.reversed()) {
-      // if layer [i] is even it is the color of the base layer
-      // if layer [i] is odd it is the opposing color
-      //			when (player.name) {
-      //				PlayerName.WHITE -> TODO()
-      //				PlayerName.BLACK -> TODO()
-      //			}
-      val isEven = i % 2 == 0
 
-      if (
-          whiteDVONNLayer[i] == 0UL &&
-              blackDVONNLayer[i] == 0UL &&
-              whitePUNCTLayer[i] == 0UL &&
-              blackPUNCTLayer[i] == 0UL
-      )
-          continue
+      // 1. Check exactly which piece exists at this layer for this bitmask
+      val hasWhiteDVONN = (whiteDVONNLayer[i] and bitmask) == bitmask
+      val hasBlackDVONN = (blackDVONNLayer[i] and bitmask) == bitmask
+      val hasWhitePUNCT = (whitePUNCTLayer[i] and bitmask) == bitmask
+      val hasBlackPUNCT = (blackPUNCTLayer[i] and bitmask) == bitmask
+
+      // If this specific coordinate/layer is empty, check the next layer down
+      if (!hasWhiteDVONN && !hasBlackDVONN && !hasWhitePUNCT && !hasBlackPUNCT) {
+        continue
+      }
+
+      // 2. Identify color and type
+      val isEven = (i % 2 == 0)
 
       if (i > 0) {
-        val playerDVONNName =
-            when (bitmask) {
-              (whiteDVONNLayer[i] and bitmask) -> {
-                when (isEven) {
-                  true -> PlayerName.WHITE
-                  false -> PlayerName.BLACK
-                }
-              }
-              (blackDVONNLayer[i] and bitmask) -> {
-                when (isEven) {
-                  true -> PlayerName.BLACK
-                  false -> PlayerName.WHITE
-                }
-              }
-              else -> null
-            }
+        when {
+          hasWhiteDVONN || hasBlackDVONN -> {
+            // Determine base color based on which board it came from
+            val baseColor = if (hasWhiteDVONN) PlayerName.WHITE else PlayerName.BLACK
+            // Flip color if layer is odd
+            val finalColor =
+                if (isEven) baseColor
+                else if (baseColor == PlayerName.WHITE) PlayerName.BLACK else PlayerName.WHITE
 
-        val playerPUNCTName =
-            when (bitmask) {
-              (whitePUNCTLayer[i] and bitmask) -> {
-                when (isEven) {
-                  true -> PlayerName.WHITE
-                  false -> PlayerName.BLACK
-                }
-              }
-              (blackPUNCTLayer[i] and bitmask) -> {
-                when (isEven) {
-                  true -> PlayerName.BLACK
-                  false -> PlayerName.WHITE
-                }
-              }
-              else -> null
-            }
+            neutralizedPieces.add(
+                Piece(
+                    abbreviation = "${finalColor.name.first()}D",
+                    potential = false,
+                    colorName = finalColor.name,
+                    type = PieceType.DVONN,
+                    isNeutralized = false,
+                    stackedPieces = mutableListOf(),
+                )
+            )
 
-        if (playerDVONNName == null && playerPUNCTName == null) continue
+            blackDVONNLayer[i] = blackDVONNLayer[i] xor bitmask
+            whiteDVONNLayer[i] = whiteDVONNLayer[i] xor bitmask
+          }
 
-        playerDVONNName?.let {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${it.name.first()}${PieceType.DVONN.name.first()}",
-                  potential = false,
-                  colorName = it.name,
-                  type = PieceType.DVONN,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
+          hasWhitePUNCT || hasBlackPUNCT -> {
+            val baseColor = if (hasWhitePUNCT) PlayerName.WHITE else PlayerName.BLACK
+            val finalColor =
+                if (isEven) baseColor
+                else if (baseColor == PlayerName.WHITE) PlayerName.BLACK else PlayerName.WHITE
+
+            neutralizedPieces.add(
+                Piece(
+                    abbreviation = "${finalColor.name.first()}P",
+                    potential = false,
+                    colorName = finalColor.name,
+                    type = PieceType.PUNCT,
+                    isNeutralized = false,
+                    stackedPieces = mutableListOf(),
+                )
+            )
+
+            blackPUNCTLayer[i] = blackPUNCTLayer[i] xor bitmask
+            whitePUNCTLayer[i] = whitePUNCTLayer[i] xor bitmask
+          }
         }
-
-        playerPUNCTName?.let {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${it.name.first()}${PieceType.DVONN.name.first()}",
-                  potential = false,
-                  colorName = it.name,
-                  type = PieceType.DVONN,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
-        }
-
-	      break
-      } else {
-        val whiteHasPotential = (whitePotentials and bitmask) == bitmask
-        val blackHasPotential = (blackPotentials and bitmask) == bitmask
-
-        if ((whiteDVONNLayer[0] and bitmask) == bitmask) {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${PlayerName.WHITE.name.first()}${PieceType.DVONN.name.first()}",
-                  potential = whiteHasPotential,
-                  colorName = PlayerName.WHITE.name,
-                  type = PieceType.DVONN,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
-        }
-
-        if ((blackDVONNLayer[0] and bitmask) == bitmask) {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${PlayerName.BLACK.name.first()}${PieceType.DVONN.name.first()}",
-                  potential = blackHasPotential,
-                  colorName = PlayerName.BLACK.name,
-                  type = PieceType.DVONN,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
-        }
-
-        if ((whitePUNCTLayer[0] and bitmask) == bitmask) {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${PlayerName.WHITE.name.first()}${PieceType.PUNCT.name.first()}",
-                  potential = whiteHasPotential,
-                  colorName = PlayerName.WHITE.name,
-                  type = PieceType.PUNCT,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
-        }
-        if ((blackPUNCTLayer[0] and bitmask) == bitmask) {
-          neutralizedPieces.add(
-              Piece(
-                  abbreviation = "${PlayerName.BLACK.name.first()}${PieceType.PUNCT.name.first()}",
-                  potential = blackHasPotential,
-                  colorName = PlayerName.BLACK.name,
-                  type = PieceType.PUNCT,
-                  isNeutralized = false,
-                  stackedPieces = mutableListOf(),
-              )
-          )
-        }
-	      break
       }
+
+      // Base layer logic (i == 0) handled by playerPiecesWithPotential
+
+      //			} else {
+      //				// Base layer logic (i == 0)
+      //				val whiteHasPotential = (whitePotentials and bitmask) == bitmask
+      //				val blackHasPotential = (blackPotentials and bitmask) == bitmask
+      //
+      //				when {
+      //					hasWhiteDVONN -> neutralizedPieces.add(createBasePiece(PlayerName.WHITE,
+      // PieceType.DVONN, whiteHasPotential))
+      //					hasBlackDVONN -> neutralizedPieces.add(createBasePiece(PlayerName.BLACK,
+      // PieceType.DVONN, blackHasPotential))
+      //					hasWhitePUNCT -> neutralizedPieces.add(createBasePiece(PlayerName.WHITE,
+      // PieceType.PUNCT, whiteHasPotential))
+      //					hasBlackPUNCT -> neutralizedPieces.add(createBasePiece(PlayerName.BLACK,
+      // PieceType.PUNCT, blackHasPotential))
+      //				}
+      //			}
+
+      // 3. We found the top-most piece for this bitmask.
+      // Break out of the layer loop so we don't grab blocked pieces underneath.
+      break
     }
   }
 
@@ -2031,38 +1995,68 @@ fun Bitboard.retrieveAndCapturePieces(columnInfos: List<ColumnInfo>, player: Pla
 
   val pieces =
       // TODO set bits to zero. create function to clear bit.
-      playerPiecesWithoutPotential.plus(opponentPiecesAndNotNeutralized).flatten().mapNotNull {
-          bitmask ->
-        // construct piece and place it on the matching node
-        var piece = createPiece(bitmask)
+      playerPiecesWithoutPotential
+          .plus(opponentPiecesAndNotNeutralized)
+          .flatten()
+	        .plus(selectedPiecesWithPotentialPowerset)
+          .mapNotNull { bitmask ->
+            // construct piece and place it on the matching node
+            var piece = createPiece(bitmask)
 
-        piece =
-            if (piece != null) {
-              when (piece.type) {
-                PieceType.GIPF -> piece
-                PieceType.TAMSK -> piece
-                PieceType.ZERTZ -> piece
-                PieceType.DVONN -> {
-                  if (piece.stackedPieces.isNotEmpty()) {
-                    piece.stackedPieces.removeLast()
-                  } else {
-                    piece
+            piece =
+                if (piece != null) {
+                  when (piece.type) {
+                    PieceType.GIPF -> {
+                      whiteGIPF = whiteGIPF xor bitmask
+                      blackGIPF = blackGIPF xor bitmask
+                      piece
+                    }
+                    PieceType.TAMSK -> {
+                      whiteTAMSK = whiteTAMSK xor bitmask
+                      blackTAMSK = blackTAMSK xor bitmask
+                      piece
+                    }
+                    PieceType.ZERTZ -> {
+                      whiteZERTZ = whiteZERTZ xor bitmask
+                      blackZERTZ = blackZERTZ xor bitmask
+                      piece
+                    }
+                    PieceType.DVONN -> {
+                      if (piece.stackedPieces.isNotEmpty()) {
+                        piece.stackedPieces.removeLast()
+                      } else {
+                        whiteDVONNLayer[0] = whiteDVONNLayer[0] xor bitmask
+                        blackDVONNLayer[0] = blackDVONNLayer[0] xor bitmask
+                        piece
+                      }
+                    }
+                    PieceType.YINSH -> {
+                      whiteYINCH = whiteYINCH xor bitmask
+                      blackYINCH = blackYINCH xor bitmask
+                      piece
+                    }
+                    PieceType.PUNCT -> {
+                      if (piece.stackedPieces.isNotEmpty()) {
+                        piece.stackedPieces.removeLast()
+                      } else {
+                        whitePUNCTLayer[0] = whitePUNCTLayer[0] xor bitmask
+                        blackPUNCTLayer[0] = blackPUNCTLayer[0] xor bitmask
+                        piece
+                      }
+                    }
                   }
+                } else {
+                  null
                 }
-                PieceType.YINSH -> piece
-                PieceType.PUNCT -> {
-                  if (piece.stackedPieces.isNotEmpty()) {
-                    piece.stackedPieces.removeLast()
-                  } else {
-                    piece
-                  }
-                }
-              }
-            } else {
-              null
-            }
-        piece
-      }
+
+	          if (piece != null && piece.potential) {
+							whitePotentials = whitePotentials xor bitmask
+		          blackPotentials = blackPotentials xor bitmask
+	          }
+
+            piece
+          }
+          .plus(neutralizedPieces)
 
   val retrievedCapturedPieces =
       RetrievedCapturedPieces(
@@ -2234,4 +2228,20 @@ private fun Bitboard.createPiece(bitmask: ULong): Piece? {
         stackedPieces = stackedPieces,
     )
   }
+}
+
+// Helper function to keep the i == 0 block clean
+private fun createBasePiece(
+    player: PlayerName,
+    pieceType: PieceType,
+    hasPotential: Boolean,
+): Piece {
+  return Piece(
+      abbreviation = "${player.name.first()}${pieceType.name.first()}",
+      potential = hasPotential,
+      colorName = player.name,
+      type = pieceType,
+      isNeutralized = false,
+      stackedPieces = mutableListOf(),
+  )
 }

@@ -234,12 +234,12 @@ fun scoreState(state: State): Int {
           it.potential || it.type == PieceType.GIPF
         } +
             newState.board.nodes.count { node ->
-              node.piece?.colorName == state.currentPlayer.name &&
+              node.piece?.colorName == state.currentPlayer.name.name &&
                   node.piece?.isNeutralized == false
             } +
             newState.board.nodes.count { node ->
               node.piece?.isNeutralized == true &&
-                  node.piece?.stackedPieces?.lastOrNull()?.colorName == newState.currentPlayer.name
+                  node.piece?.stackedPieces?.lastOrNull()?.colorName == newState.currentPlayer.name.name
             }
 
     val opponentControllablePieces =
@@ -247,11 +247,11 @@ fun scoreState(state: State): Int {
           it.potential || it.type == PieceType.GIPF
         } +
             newState.board.nodes.count { node ->
-              node.piece?.colorName == state.nextPlayer.name && node.piece?.isNeutralized == false
+              node.piece?.colorName == state.nextPlayer.name.name && node.piece?.isNeutralized == false
             } +
             newState.board.nodes.count { node ->
               node.piece?.isNeutralized == true &&
-                  node.piece?.stackedPieces?.lastOrNull()?.colorName == newState.nextPlayer.name
+                  node.piece?.stackedPieces?.lastOrNull()?.colorName == newState.nextPlayer.name.name
             }
 
     val score =
