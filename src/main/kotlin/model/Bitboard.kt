@@ -454,6 +454,8 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
     applyShiftToAll(fromMask, toMask)
   }
 
+
+
   return vacantBitFound
 }
 
@@ -709,7 +711,7 @@ fun Bitboard.convertBitboardToBoard(board: Board): Board {
 
   val newBoard = board.deepCopy()
 
-  for (bit in 0..40) {
+  for (bit in 0..39) {
     val bitmask = 1UL shl bit
     if ((globalOccupancy and bitmask) == 0UL) {
       // TODO does this update in place
@@ -2099,11 +2101,6 @@ fun Bitboard.getDvonnMoves(
 
         PlayerName.BLACK -> {
           blackDVONNLayer[0] and blackPotentials and blackNeutralized.inv()
-        }
-
-        else -> {
-          // no valid moves were found
-          return validMoves
         }
       }
 

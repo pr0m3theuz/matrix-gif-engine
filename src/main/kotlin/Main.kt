@@ -45,7 +45,7 @@ fun main() {
   }
 
   gameState.printStateSummary()
-  println("Player: ${determineWinner(gameState)?.name} won")
+  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer)?.name} won")
 	println("State: ${Json.encodeToString(gameState)}")
 
 }

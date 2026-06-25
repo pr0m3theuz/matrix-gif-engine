@@ -169,7 +169,7 @@ fun constructNodes(
               isSpot = !isDot,
               isCenter = coordinate == center,
               piece = null,
-							bitmask = if (isDot) 0UL else 1UL shl nodeCount
+							bitmask = if (!isDot) 1UL shl nodeCount else 18446744073709551615UL
           )
       )
 	    // if node is a Spot, increment bit shift

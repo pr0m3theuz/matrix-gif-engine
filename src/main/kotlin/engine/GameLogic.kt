@@ -3,11 +3,14 @@ package org.example.engine
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.humanEvaluation.AlphaBetaScore
+import org.example.ai.humanEvaluation.AlphaBetaScoreBit
 import org.example.ai.humanEvaluation.alphabetaAddPieces
+import org.example.ai.humanEvaluation.alphabetaBitboardAddPieces
 import org.example.model.*
 import kotlin.collections.HashMap
 
 fun playerTurn(state: State): State {
+	// TODO Replace with bitboard equivalent
   var newState = enforcePieceRemovalRules(state)
 
   // recombine player pieces
@@ -49,7 +52,8 @@ fun playerTurn(state: State): State {
         "but found pieces remaining on: $dots"
   }
 
-  newState = enforcePieceRemovalRules(newState)
+	// TODO Replace with bitboard equivalent
+	newState = enforcePieceRemovalRules(newState)
 
   // recombine player pieces
   newState.currentPlayer.combinePieces()
@@ -104,28 +108,54 @@ fun playerMove(state: State): State {
   val savedBoardState = state.board.deepCopy()
   val savedLines = state.lines.deepCopy()
 
-	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
+//	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
 
-	val bestMove = alphabetaAddPieces(
-		state = state.deepCopy(), gameTree = gameTree,
-		alphaBetaScore = AlphaBetaScore()
+	val bitboard = convertBoardToBitboard(state.board)
+
+	val bestMove = alphabetaBitboardAddPieces(
+		depth = 1,
+		bitboard = bitboard,
+		currentPlayer = state.currentPlayer,
+		opponentPlayer = state.nextPlayer,
+		alphaBetaScore = AlphaBetaScoreBit()
 	).move
 
 	when (bestMove?.moveType) {
 		MoveType.AddPiece -> {
 
-			val node = bestMove.selectableDots.first().node
+			val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
 
 			node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
+			require(
+				bestMove.targetBit != null &&
+				bestMove.pushDirection != null &&
+				bestMove.columnInfos.isNotEmpty() &&
+				bestMove.piece != null
+			)
+
+			if(bestMove.sourceBit == null) {
+				bitboard.addPieceToBitboard(
+					addAtIndex = bestMove.targetBit,
+					pushDirection = bestMove.pushDirection,
+					col = bestMove.columnInfos.first(),
+					piece = bestMove.piece
+				)
+			} else {
+				bitboard.useTamskPotential(
+					player = state.currentPlayer,
+					sourceIndex = bestMove.sourceBit,
+					targetIndex = bestMove.targetBit,
+					col = bestMove.columnInfos.first(),
+					pushDirection = bestMove.pushDirection,
+				)
+			}
+
+			bitboard.assertPieceCount(currentPlayer = state.currentPlayer, nextPlayer = state.nextPlayer)
+
 			// Move piece in the selected spot(node) based on selected push direction
 			val newBoard =
-				shiftPiece(
-					currentNode = bestMove.selectableDots.first().node,
-					moveDirection = bestMove.pushDirection!!,
-					board = savedBoardState,
-					lines = savedLines,
-				)
+				bitboard.convertBitboardToBoard(savedBoardState)
 
 			val newState =
 				state
@@ -153,14 +183,36 @@ fun playerMove(state: State): State {
 			return newState
 		}
 		MoveType.UsePotential -> {
-			require(bestMove.eligiblePotentialPieceNode != null)
+			require(bestMove.sourceBit != null && bestMove.targetBit != null) {}
+
+			bitboard.usePiecePotential(possibleBitMove = bestMove)
+
+			// Move piece in the selected spot(node) based on selected push direction
+			val newBoard =
+				bitboard.convertBitboardToBoard(savedBoardState)
 
 			val newState =
-				usePiecePotential(
-					node = bestMove.eligiblePotentialPieceNode.deepCopy(),
-					eligibleNodesForPotential = bestMove.eligiblePotentialTargetNodes,
-					state = state,
-				)
+				state
+					.deepCopy()
+					.copy(
+						board = newBoard,
+						lines = constructLines(newBoard.nodes),
+					)
+
+			val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
+
+			if (newState.board.nodes.any { it.isDot && it.piece != null }) {
+				check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
+					val dots = occupiedDots.map {
+						"${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
+					}
+
+					"Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
+							"but found pieces remaining on: $dots"
+				}
+			}
+
+			newState.assertPieceCount()
 
 			return newState
 		}
@@ -195,14 +247,11 @@ fun selectPieceFromReserve(pieces: List<Piece>): Piece? {
   return pieces.random()
 }
 
-fun
-		enforcePieceRemovalRules(state: State): State {
+fun enforcePieceRemovalRules(state: State): State {
 
   state.assertPieceCount()
 
   val newState = state.deepCopy()
-
-  newState.assertPieceCount()
 
   // TODO "Implement logic for instances where all of the current player's pieces have their
   // potential == true"
