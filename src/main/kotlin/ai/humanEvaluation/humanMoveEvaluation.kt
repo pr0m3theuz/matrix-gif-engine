@@ -596,6 +596,7 @@ fun alphabetaBitboardAddPieces(
 
 	// TODO create check for bitboard pieces
 //  state.assertPieceCount()
+  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
   //  val bitboard = convertBoardToBitboard(state.board)
 
@@ -630,6 +631,8 @@ fun alphabetaBitboardAddPieces(
 		bitboard.removeRetrieveAndCapturePiecesFromBitboard(
 			move.retrievedCapturedPiecesBit
 		)
+
+		bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 	}
 
   val possibleBitMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
@@ -654,6 +657,8 @@ fun alphabetaBitboardAddPieces(
 	  }
 
 	  bestPiecesToRetrieveCapture1.move?.retrievedCapturedPiecesBit?.let { bitboard.undoRetrieveAndCapturePieces(it) }
+
+	  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	  // TODO create scoreBitBoardState
 	  return BestBitMove(score = scoreBitboardState(bitboard, currentPlayer, opponentPlayer).toFloat())
@@ -697,6 +702,8 @@ fun alphabetaBitboardAddPieces(
 
 	              check(vacantBitFound != null) { "Invalid board state: No vacant bit found for piece deployment." }
 
+	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 	              // TODO Check if there is Tamsk Potential Move
 								var tamskMoveScore: BestBitMove? = null
 	              val isTamskPieceAtCenter = bitboard.getTamskMoves(currentPlayer)
@@ -716,6 +723,7 @@ fun alphabetaBitboardAddPieces(
 		              )
 								}
 
+	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
                 // TODO Need to score piece removals
                 // TODO enforce PieceRemovalRules & handle intersecting lines
@@ -794,9 +802,14 @@ fun alphabetaBitboardAddPieces(
 									)
 	              }
 
+	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	              // d. UNDO the piece removals to evaluate the next choice
+
 	              currentPlayer.uncombinePieces(newlyStackedPieces)
+
+	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 
 	              bestPiecesToRetrieveCapture2.move?.retrievedCapturedPiecesBit?.mapNotNull {
 		              it.retrievedPiece
@@ -812,6 +825,7 @@ fun alphabetaBitboardAddPieces(
 
 	              bestPiecesToRetrieveCapture2.move?.retrievedCapturedPiecesBit?.let { bitboard.undoRetrieveAndCapturePieces(it) }
 
+	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
                 //	              val gameStateHash =
                 //		              MessageDigest.getInstance("MD5")
@@ -865,6 +879,8 @@ fun alphabetaBitboardAddPieces(
 		      )
 	      }
 
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 	      // TODO enforce PieceRemovalRules & handle intersecting lines
 	      val bestPiecesToRetrieveCapture3= resolveBoardRemovals(
 		      currentPlayer = currentPlayer,
@@ -896,7 +912,9 @@ fun alphabetaBitboardAddPieces(
 		      )
 	      }
 
-        val move =
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	      val move =
             BestBitMove(
                 move = possibleBitMove,
                 score =
@@ -914,7 +932,9 @@ fun alphabetaBitboardAddPieces(
 	      // TODO undo use piece potential
 	      bitboard.undoUsePiecePotential(possibleBitMove)
 
-				// d. UNDO the piece removals to evaluate the next choice
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	      // d. UNDO the piece removals to evaluate the next choice
 	      currentPlayer.uncombinePieces(newlyStackedPieces)
 
 	      bestPiecesToRetrieveCapture3.move?.retrievedCapturedPiecesBit?.mapNotNull {
@@ -931,7 +951,9 @@ fun alphabetaBitboardAddPieces(
 
 	      bestPiecesToRetrieveCapture3.move?.retrievedCapturedPiecesBit?.let { bitboard.undoRetrieveAndCapturePieces(it) }
 
-        if (move.score.unaryMinus() > alphaBetaScore.alpha) {
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	      if (move.score.unaryMinus() > alphaBetaScore.alpha) {
           alphaBetaScore.alpha = move.score.unaryMinus()
           alphaBetaScore.move = move.move
           //          gameTree[gameStateHash] = alphaBetaScore
@@ -963,6 +985,8 @@ fun alphabetaBitboardAddPieces(
 	// TODO Actually retrieveAndCapturePieces using move.retrievedCapturedPiecesBit list
 	currentPlayer.uncombinePieces(newlyStackedPieces)
 
+	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 	bestPiecesToRetrieveCapture1.move?.retrievedCapturedPiecesBit?.mapNotNull {
 		it.retrievedPiece
 	}?.forEach { piece ->
@@ -980,7 +1004,9 @@ fun alphabetaBitboardAddPieces(
 		)
 	}
 
-  return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
+	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
 }
 
 fun resolveBoardRemovals(
@@ -990,8 +1016,9 @@ fun resolveBoardRemovals(
     depth: Int,
     alphaBetaScore: AlphaBetaScoreBit,
 ): BestBitMove { // or BestMove, depending on your return type
+	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-  val linesWithFourInARow = bitboard.evaluateLinesForFourInARow(currentPlayer)
+	val linesWithFourInARow = bitboard.evaluateLinesForFourInARow(currentPlayer)
 
   if (linesWithFourInARow.isNotEmpty()) {
     // 1. Generate your powerset of choices for these lines
@@ -1042,7 +1069,9 @@ fun resolveBoardRemovals(
 
 	        val newlyStackedPieces = currentPlayer.combinePieces()
 
-          // b. Recurse! Call resolveBoardRemovals() again for the SAME player
+	        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	        // b. Recurse! Call resolveBoardRemovals() again for the SAME player
           //    to handle any chain reactions caused by the removal
           val bestPiecesToRemove =
               resolveBoardRemovals(
@@ -1081,6 +1110,8 @@ fun resolveBoardRemovals(
           // d. UNDO the piece removals to evaluate the next choice
 	        currentPlayer.uncombinePieces(newlyStackedPieces)
 
+	        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 	        for (piece in retrievedPieces) {
             currentPlayer.piecesInReserve.remove(piece)
           }
@@ -1097,6 +1128,8 @@ fun resolveBoardRemovals(
 
           bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
           bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
+
+	        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	        // c. Update alpha/beta scores
           if (move.score.unaryMinus() > alphaBetaScore.alpha) {
@@ -1137,7 +1170,9 @@ fun resolveBoardRemovals(
 
 	      val newlyStackedPieces = currentPlayer.combinePieces()
 
-        val move =
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+	      val move =
             BestBitMove(
                 move =
                     PossibleBitMove(
@@ -1160,6 +1195,8 @@ fun resolveBoardRemovals(
 	      // d. UNDO the piece removals to evaluate the next choice
 	      currentPlayer.uncombinePieces(newlyStackedPieces)
 
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
 	      for (piece in retrievedPieces) {
           currentPlayer.piecesInReserve.remove(piece)
         }
@@ -1169,6 +1206,8 @@ fun resolveBoardRemovals(
         }
 
 	      bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
+
+	      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	      // c. Update alpha/beta scores
         if (move.score.unaryMinus() > alphaBetaScore.alpha) {

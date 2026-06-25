@@ -4,6 +4,7 @@ package org.example.model
 
 import kotlin.collections.map
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
 
@@ -1877,13 +1878,13 @@ fun Bitboard.useTamskPotential(
 }
 
 fun Bitboard.undoTamskPotential(
-	sourceIndex: ULong,
-	removeAtIndex: ULong,
-	vacantBitFound: ULong,
-	pushDirection: PushDirection,
-	col: ColumnInfo,
-	player: Player,
-	wasIndexOccupied: Boolean,
+    sourceIndex: ULong,
+    removeAtIndex: ULong,
+    vacantBitFound: ULong,
+    pushDirection: PushDirection,
+    col: ColumnInfo,
+    player: Player,
+    wasIndexOccupied: Boolean,
 ): ULong {
   val isSourceValid = (sourceIndex and boardCenterSpotMask) == boardCenterSpotMask
   val isTargetValid = (removeAtIndex and openningSpotsLineMask) == removeAtIndex
@@ -1912,36 +1913,35 @@ fun Bitboard.undoTamskPotential(
     }
   }
 
-	when (player.name) {
-		PlayerName.WHITE -> {
-			whiteTAMSK = whiteTAMSK and removeAtIndex.inv()
-			whitePotentials = whitePotentials or sourceIndex
-		}
+  when (player.name) {
+    PlayerName.WHITE -> {
+      whiteTAMSK = whiteTAMSK and removeAtIndex.inv()
+      whitePotentials = whitePotentials or sourceIndex
+    }
 
-		PlayerName.BLACK -> {
-			blackTAMSK = blackTAMSK and removeAtIndex.inv()
-			blackPotentials = blackPotentials or sourceIndex
-		}
-	}
+    PlayerName.BLACK -> {
+      blackTAMSK = blackTAMSK and removeAtIndex.inv()
+      blackPotentials = blackPotentials or sourceIndex
+    }
+  }
 
-	if (wasIndexOccupied) {
-		when (pushDirection) {
-			// If the original move pushed UP, we must pull DOWN to undo
-			PushDirection.UP,
-			PushDirection.UPPER_RIGHT,
-			PushDirection.LOWER_RIGHT -> {
-				executePullDown(col, vacantBitFound)
-			}
+  if (wasIndexOccupied) {
+    when (pushDirection) {
+      // If the original move pushed UP, we must pull DOWN to undo
+      PushDirection.UP,
+      PushDirection.UPPER_RIGHT,
+      PushDirection.LOWER_RIGHT -> {
+        executePullDown(col, vacantBitFound)
+      }
 
-			// If the original move pushed DOWN, we must pull UP to undo
-			PushDirection.DOWN,
-			PushDirection.UPPER_LEFT,
-			PushDirection.LOWER_LEFT -> {
-				executePullUp(col, vacantBitFound)
-			}
-		}
-	}
-
+      // If the original move pushed DOWN, we must pull UP to undo
+      PushDirection.DOWN,
+      PushDirection.UPPER_LEFT,
+      PushDirection.LOWER_LEFT -> {
+        executePullUp(col, vacantBitFound)
+      }
+    }
+  }
 
   return vacantBitFound
 }
@@ -3358,5 +3358,163 @@ fun Bitboard.identifyAvailableMoves(
   } else {
     //		emptyList<PossibleMove>()
     throw IllegalStateException("Player ${currentPlayer.name} has no available moves left!")
+  }
+}
+
+fun Bitboard.assertPieceCount(
+    EXPECTED_TOTAL: Int = 66 / 2,
+    MAXIMUM_PIECES: Int = 66,
+    currentPlayer: Player,
+    nextPlayer: Player,
+) {
+  // 1. Next Player's components
+  var nextReservePotentials =
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
+  var nextReserveBasics =
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+  var nextCapturedPotentials =
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
+  var nextCapturedBasics =
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+
+  // 2. Current Player's components
+  var currentReservePotentials =
+      currentPlayer.piecesInReserve.count {
+        it.colorName == PlayerName.BLACK.name && it.potential
+      } * 2
+  var currentReserveBasics =
+      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+  var currentCapturedPotentials =
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } *
+          2
+  var currentCapturedBasics =
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+
+  // 3. Board components
+  var boardBasics =
+      blackGIPF.countOneBits() +
+          blackZERTZ.countOneBits() +
+          blackTAMSK.countOneBits() +
+          blackYINCH.countOneBits()
+
+  var boardStacks =
+      blackDVONNLayer[0].countOneBits() +
+          blackDVONNLayer[2].countOneBits() +
+          blackDVONNLayer[4].countOneBits() +
+          blackPUNCTLayer[0].countOneBits() +
+          blackPUNCTLayer[2].countOneBits() +
+          blackPUNCTLayer[4].countOneBits() +
+          whiteDVONNLayer[1].countOneBits() +
+          whiteDVONNLayer[3].countOneBits() +
+          whiteDVONNLayer[5].countOneBits() +
+          whitePUNCTLayer[1].countOneBits() +
+          whitePUNCTLayer[3].countOneBits() +
+          whitePUNCTLayer[5].countOneBits()
+
+  var boardPotentials = blackPotentials.countOneBits()
+
+  val totalBlackPieces =
+      nextReservePotentials +
+          nextReserveBasics +
+          nextCapturedPotentials +
+          nextCapturedBasics +
+          currentReservePotentials +
+          currentReserveBasics +
+          currentCapturedPotentials +
+          currentCapturedBasics +
+          boardPotentials +
+          boardBasics +
+          boardStacks
+
+  check(totalBlackPieces == EXPECTED_TOTAL) {
+    """
+    Critical State Corruption: Total Black pieces ($totalBlackPieces) does not match expected maximum ($EXPECTED_TOTAL).
+    Breakdown:
+    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
+    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
+    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
+    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
+    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
+    """
+        .trimIndent()
+  }
+
+  // 1. Next Player's components
+  nextReservePotentials =
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
+  nextReserveBasics =
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+  nextCapturedPotentials =
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
+  nextCapturedBasics =
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+
+  // 2. Current Player's components
+  currentReservePotentials =
+      currentPlayer.piecesInReserve.count {
+        it.colorName == PlayerName.WHITE.name && it.potential
+      } * 2
+  currentReserveBasics =
+      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+  currentCapturedPotentials =
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } *
+          2
+  currentCapturedBasics =
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+
+  // 3. Board components
+  boardBasics =
+      whiteGIPF.countOneBits() +
+          whiteZERTZ.countOneBits() +
+          whiteTAMSK.countOneBits() +
+          whiteYINCH.countOneBits()
+
+  boardStacks =
+      whiteDVONNLayer[0].countOneBits() +
+          whiteDVONNLayer[2].countOneBits() +
+          whiteDVONNLayer[4].countOneBits() +
+          whitePUNCTLayer[0].countOneBits() +
+          whitePUNCTLayer[2].countOneBits() +
+          whitePUNCTLayer[4].countOneBits() +
+          blackDVONNLayer[1].countOneBits() +
+          blackDVONNLayer[3].countOneBits() +
+          blackDVONNLayer[5].countOneBits() +
+          blackPUNCTLayer[1].countOneBits() +
+          blackPUNCTLayer[3].countOneBits() +
+          blackPUNCTLayer[5].countOneBits()
+
+  boardPotentials = whitePotentials.countOneBits()
+
+  val totalWhitePieces =
+      nextReservePotentials +
+          nextReserveBasics +
+          nextCapturedPotentials +
+          nextCapturedBasics +
+          currentReservePotentials +
+          currentReserveBasics +
+          currentCapturedPotentials +
+          currentCapturedBasics +
+          boardPotentials +
+          boardBasics +
+          boardStacks
+
+  check(totalWhitePieces == EXPECTED_TOTAL) {
+    """
+    Critical State Corruption: Total White pieces ($totalWhitePieces) does not match expected maximum ($EXPECTED_TOTAL).
+    Breakdown:
+    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
+    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
+    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
+    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
+    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
+    """
+        .trimIndent()
+  }
+
+  val totalPieces = totalBlackPieces + totalWhitePieces
+  check(totalPieces == MAXIMUM_PIECES) {
+    "Game Piece Desynchronization: Total pieces in play ($totalPieces) exceeds the maximum piece count ($MAXIMUM_PIECES). " +
+        "Pieces have been illegally spawned or deleted." +
+        "\nGame State: \n${Json.encodeToString(this)}"
   }
 }
