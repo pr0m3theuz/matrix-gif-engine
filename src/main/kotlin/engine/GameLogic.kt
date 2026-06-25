@@ -73,15 +73,30 @@ fun playerTurn(state: State): State {
 data class PossibleMove(
     val piece: Piece? = null,
     val selectableDots: Set<NodeConnections> = emptySet(),
+    val selectedBit: ULong = 0UL,
     val pushDirection: PushDirection? = null,
     val eligiblePotentialPieceNode: Node? = null,
     val eligiblePotentialTargetNodes: Set<Node> = emptySet(),
     val moveType: MoveType,
 )
 
+@Serializable
+data class PossibleBitMove(
+	val piece: Piece? = null,
+	val columnInfos: List<ColumnInfo> = emptyList(),
+	val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
+	val sourceBit: ULong? = null,
+	val targetBit: ULong? = null,
+	val pieceType: PieceType? = null,
+	val pieceColor: PlayerName? = null,
+	val pushDirection: PushDirection? = null,
+	val moveType: MoveType,
+)
+
 enum class MoveType {
   AddPiece,
   UsePotential,
+	RetrieveCapturePieces,
 }
 
 fun playerMove(state: State): State {
@@ -149,6 +164,7 @@ fun playerMove(state: State): State {
 
 			return newState
 		}
+		MoveType.RetrieveCapturePieces -> { }
 		null -> {
 			return state
 		}
@@ -179,7 +195,8 @@ fun selectPieceFromReserve(pieces: List<Piece>): Piece? {
   return pieces.random()
 }
 
-fun enforcePieceRemovalRules(state: State): State {
+fun
+		enforcePieceRemovalRules(state: State): State {
 
   state.assertPieceCount()
 
@@ -358,7 +375,7 @@ fun enforcePieceRemovalRules(state: State): State {
 }
 
 fun chooseToRemovePiecesWithPotential(line: Set<Node>, player: Player): Boolean {
-  return line.filter { it.piece?.colorName == player.name }.all { it.piece?.potential == true }
+  return line.filter { it.piece?.colorName == player.name.name }.all { it.piece?.potential == true }
 }
 
 fun evaluateCapturedPieces(state: State): Boolean {
@@ -386,7 +403,7 @@ fun isTamskPieceAtCenter(
   if (piece == null) return false
 
   // Is the piece a TAMSK piece && the current player's piece && potential == true
-  return piece.type == PieceType.TAMSK && piece.colorName == player.name && piece.potential
+  return piece.type == PieceType.TAMSK && piece.colorName == player.name.name && piece.potential
 }
 
 fun determineWinner(state: State): Player? {

@@ -34,6 +34,7 @@ data class RetrievedCapturedPieces(
 	val nodes: List<Node>,
 )
 
+
 @Serializable
 data class RetrievedCapturedPieceNode(
 	val retrievedPiece: Piece? = null,
@@ -43,3 +44,11 @@ data class RetrievedCapturedPieceNode(
 	val keepRetrievedPieceInPlay: Boolean = false,
 )
 
+@Serializable
+data class RetrievedCapturedPieceBit(
+	val retrievedPiece: Piece? = null,
+	val capturedPiece: Piece? = null,
+	val bitmask: ULong,
+	val isNeutralized: Boolean = false,
+	val keepRetrievedPieceInPlay: Boolean = false,
+)

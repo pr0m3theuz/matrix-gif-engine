@@ -203,9 +203,9 @@ fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Nod
           check(node.piece?.type in setOf(PieceType.DVONN, PieceType.PUNCT)) {
             "Only Dvonn and Pünct pieces can be neutralized. \n Node: ${Json.encodeToString<Node>(node)}"
           }
-          node.piece?.stackedPieces?.last()?.colorName == player.name
+          node.piece?.stackedPieces?.last()?.colorName == player.name.name
         } else {
-          node.piece?.colorName == player.name
+          node.piece?.colorName == player.name.name
         }
       }
     }
@@ -244,6 +244,16 @@ data class LineScore(
 )
 
 fun scoreLines(player: Player, lines: List<Set<Node>>) {
+	/**
+	* TODO heuristics: features are piece mobility, line-control, potential energy of perimeter
+  * pieces, number of playable pieces in reserve, capturing opponent gipf and other pieces, central node
+  * occupation is only important for Tamsk pieces.¬
+  * What specific mathematical features (e.g., piece mobility, line-control, central node
+  * occupation, potential energy of perimeter pieces) are you encoding into your static heuristic
+  * evaluation function for the Alpha-Beta agent, and what methodology will you use to tune the
+  * weights of these features so that the baseline agent is legitimately competitive?
+  */
+
   /**
    * ============================================================================
    * MOVEMENT AND INTERACTION RULES: DVONN & PUNCT POTENTIALS
@@ -285,35 +295,36 @@ fun scoreLines(player: Player, lines: List<Set<Node>>) {
    *   the previous player's move), they MUST remove it before making a standard move.
    */
   lines.map { line ->
-	  val currentPlayerPieces = mutableListOf(mutableListOf<Node>())
-	  val opponentPlayerPieces = mutableListOf(mutableListOf<Node>())
+    val currentPlayerPieces = mutableListOf(mutableListOf<Node>())
+    val opponentPlayerPieces = mutableListOf(mutableListOf<Node>())
 
-	  val result =
-		  line.sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row })).fold(
-			  initial = mutableListOf<Node>() to mutableListOf<List<Node>>()
-		  ) { (currentList, allLists), currentNode: Node ->
+    val result =
+        line
+            .sortedWith(compareBy({ it.coordinate.column }, { it.coordinate.row }))
+            .fold(initial = mutableListOf<Node>() to mutableListOf<List<Node>>()) {
+                (currentList, allLists),
+                currentNode: Node ->
+              if (currentList.isEmpty()) {
+                mutableListOf(currentNode) to allLists
+              } else {
+                if (currentList.last().piece?.colorName == currentNode.piece?.colorName) {
+                  currentList.apply { add(currentNode) } to allLists
+                } else if (currentList.last().piece == currentNode.piece) {
+                  currentList.apply { add(currentNode) } to allLists
+                } else {
+                  mutableListOf(currentNode) to allLists.apply { add(currentList) }
+                }
+              }
+            }
+            .let { it.second.apply { add(it.first) } }
 
-			  if (currentList.isEmpty()) {
-				  mutableListOf(currentNode) to allLists
-			  } else {
-				  if (currentList.last().piece?.colorName == currentNode.piece?.colorName) {
-					  currentList.apply { add(currentNode) } to allLists
-				  } else if (currentList.last().piece == currentNode.piece) {
-					  currentList.apply { add(currentNode) } to allLists
-				  } else {
-					  mutableListOf(currentNode) to allLists.apply { add(currentList) }
-				  }
-			  }
-		  }.let { it.second.apply { add(it.first) } }
+    // TODO who is dominating this line
+    result.sortByDescending { it.size }
 
-	  // TODO who is dominating this line
-	  result.sortByDescending { it.size }
+    val grouped = result.groupBy { it.first().piece?.colorName }
 
-	  val grouped = result.groupBy { it.first().piece?.colorName }
+    println(grouped.maxBy { it.value.size })
 
-	  println(grouped.maxBy { it.value.size })
-
-	  result
+    result
   }
-
 }
