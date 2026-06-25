@@ -11,7 +11,7 @@ fun playerTurn(state: State): State {
   var newState = enforcePieceRemovalRules(state)
 
   // recombine player pieces
-  newState.currentPlayer.recombinePieces()
+  newState.currentPlayer.combinePieces()
 
   state.assertPieceCount()
 
@@ -52,7 +52,7 @@ fun playerTurn(state: State): State {
   newState = enforcePieceRemovalRules(newState)
 
   // recombine player pieces
-  newState.currentPlayer.recombinePieces()
+  newState.currentPlayer.combinePieces()
 
   newState.assertPieceCount()
 
@@ -406,23 +406,23 @@ fun isTamskPieceAtCenter(
   return piece.type == PieceType.TAMSK && piece.colorName == player.name.name && piece.potential
 }
 
-fun determineWinner(state: State): Player? {
+fun determineWinner(currentPlayer: Player, nextPlayer: Player): Player? {
 	// TODO refactor
 
   return if (
-      state.currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
-          state.currentPlayer.piecesInReserve.any { piece ->
+      currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
+          currentPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
           }
   ) {
-    state.currentPlayer
+    currentPlayer
   } else if (
-      state.nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
-          state.nextPlayer.piecesInReserve.any { piece ->
+      nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
+          nextPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
           }
   ) {
-    state.nextPlayer
+    nextPlayer
   } else {
     null
   }
