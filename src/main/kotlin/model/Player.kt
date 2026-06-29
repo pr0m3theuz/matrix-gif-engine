@@ -22,10 +22,12 @@ data class Player(
   }
 
   fun addPiecesToReserve(pieces: List<Piece>) {
+		check(pieces.all { piece -> piece.colorName == this.name.name }) {}
     this.piecesInReserve.addAll(pieces)
   }
 
   fun addCapturedPieces(pieces: List<Piece>) {
+	  check(pieces.all { piece -> piece.colorName != this.name.name }) {}
     this.capturedPieces.addAll(pieces)
   }
 

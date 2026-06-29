@@ -113,7 +113,7 @@ fun playerMove(state: State): State {
 	val bitboard = convertBoardToBitboard(state.board)
 
 	val bestMove = alphabetaBitboardAddPieces(
-		depth = 1,
+		depth = 2,
 		bitboard = bitboard,
 		currentPlayer = state.currentPlayer,
 		opponentPlayer = state.nextPlayer,
