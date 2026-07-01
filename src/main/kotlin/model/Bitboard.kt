@@ -2,13 +2,14 @@
 
 package org.example.model
 
+import kotlin.collections.forEachIndexed
 import kotlin.collections.map
+import kotlin.io.println
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
-import kotlin.collections.forEachIndexed
-import kotlin.io.println
+import kotlin.collections.windowed
 
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
@@ -131,6 +132,7 @@ data class ColumnInfo(
     val columnMask: ULong,
     //	val destinationMask: ULong,
     val positions: List<ULong>,
+    val submasks: List<ULong>,
     val shiftPairs: List<Pair<ULong, ULong>>, // (fromMask, toMask)
     val lineOrientation: LineOrientation,
     val pushDirections: Pair<PushDirection, PushDirection>,
@@ -165,6 +167,14 @@ val columnInfos: List<ColumnInfo> =
               (0 until arr.size).map { k ->
                 1UL shl arr[k]
               },
+		      submasks =
+			      (0 until arr.size).map { k ->
+				      1UL shl arr[k]
+			      }.windowed(4).map { sublist ->
+				      sublist.fold(0UL) { acc, lng ->
+					      acc or lng
+				      }
+			      },
           shiftPairs =
               (0 until arr.size - 1).map { k ->
                 (1UL shl arr[k]) to (1UL shl arr[k + 1])
@@ -182,6 +192,14 @@ val columnInfos: List<ColumnInfo> =
                   (0 until arr.size).map { k ->
                     1UL shl arr[k]
                   },
+	          submasks =
+		          (0 until arr.size).map { k ->
+			          1UL shl arr[k]
+		          }.windowed(4).map { sublist ->
+			          sublist.fold(0UL) { acc, lng ->
+				          acc or lng
+			          }
+		          },
               shiftPairs =
                   (0 until arr.size - 1).map { k ->
                     (1UL shl arr[k]) to (1UL shl arr[k + 1])
@@ -198,6 +216,14 @@ val columnInfos: List<ColumnInfo> =
                   (0 until arr.size).map { k ->
                     1UL shl arr[k]
                   },
+	          submasks =
+		          (0 until arr.size).map { k ->
+			          1UL shl arr[k]
+		          }.windowed(4).map { sublist ->
+			          sublist.fold(0UL) { acc, lng ->
+				          acc or lng
+			          }
+		          },
               shiftPairs =
                   (0 until arr.size - 1).map { k ->
                     (1UL shl arr[k]) to (1UL shl arr[k + 1])
@@ -1121,21 +1147,22 @@ fun Bitboard.addPieceToBitboard(
   // and guarantees post-condition verification for every single bitboard.
   fun safeAddAndCheck(board: ULong, boardName: String): ULong {
     if (isDebugEnabled) {
-	    println(
-		    "$boardName Board before restoring $boardName piece\n" +
-				    "addAtIndex: 0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
-				    "$boardName bitboard:  0b${board.toString(2).padStart(40, '0')}"
-	    )
+      println(
+          "$boardName Board before restoring $boardName piece\n" +
+              "addAtIndex: 0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
+              "$boardName bitboard:  0b${board.toString(2).padStart(40, '0')}"
+      )
     }
     val newBoard = board or addAtIndex
     check((newBoard and addAtIndex) == addAtIndex) {
       "ADD FAILED: Failed to add ${piece.colorName} ${piece.type} to $boardName bitboard at index $addAtIndex."
     }
     if (isDebugEnabled) {
-	    println(
-		    "$boardName Board after restoring $boardName piece\n" +
-				    "addAtIndex: 0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
-				    "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"			  )
+      println(
+          "$boardName Board after restoring $boardName piece\n" +
+              "addAtIndex: 0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
+              "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+      )
     }
     if (isDebugEnabled) println("Successfully added bit to $boardName.")
     return newBoard
@@ -1256,11 +1283,11 @@ fun Bitboard.undoAddPieceToBitboard(
   // This ensures the piece actually exists before removal, and is gone after.
   fun safeRemoveAndCheck(board: ULong, boardName: String): ULong {
     if (isDebugEnabled) {
-	    println(
-		    "$boardName Board before removing $boardName piece:\n" +
-				    "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
-				    "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
-	    )
+      println(
+          "$boardName Board before removing $boardName piece:\n" +
+              "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
+              "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
+      )
     }
     check((board and removeAtIndex) != 0UL) {
       "UNDO FAILED: Expected ${piece.colorName} ${piece.type} in $boardName bitboard at $removeAtIndex, but it was missing."
@@ -1271,10 +1298,10 @@ fun Bitboard.undoAddPieceToBitboard(
     }
     if (isDebugEnabled) {
       println(
-		      "$boardName Board after removing $boardName piece\n" +
-				      "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
-				      "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
-		      )
+          "$boardName Board after removing $boardName piece\n" +
+              "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
+              "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+      )
     }
     if (isDebugEnabled) println("Successfully removed bit from $boardName.")
     return newBoard
@@ -1627,7 +1654,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               whiteDVONNLayer[i] =
-                  safeAddAndCheck(whiteDVONNLayer[i], "White DVONN", possibleBitMove.targetBit)
+                  safeAddAndCheck(whiteDVONNLayer[i], "White DVONN [$i]", possibleBitMove.targetBit)
               break
             }
             // place white on top of black
@@ -1638,7 +1665,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               blackDVONNLayer[i] =
-                  safeAddAndCheck(blackDVONNLayer[i], "Black DVONN", possibleBitMove.targetBit)
+                  safeAddAndCheck(blackDVONNLayer[i], "Black DVONN [$i]", possibleBitMove.targetBit)
               break
             }
           }
@@ -1657,7 +1684,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               whitePUNCTLayer[i] =
-                  safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT", possibleBitMove.targetBit)
+                  safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT [$i]", possibleBitMove.targetBit)
               break
             }
             // place white on top of black
@@ -1668,7 +1695,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               blackPUNCTLayer[i] =
-                  safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT", possibleBitMove.targetBit)
+                  safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT [$i]", possibleBitMove.targetBit)
               break
             }
           }
@@ -1709,7 +1736,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               whiteDVONNLayer[i] =
-                  safeAddAndCheck(whiteDVONNLayer[i], "White DVONN", possibleBitMove.targetBit)
+                  safeAddAndCheck(whiteDVONNLayer[i], "White DVONN [$i]", possibleBitMove.targetBit)
               break
             }
             // place black on top of white on top of black
@@ -1720,7 +1747,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               blackDVONNLayer[i] =
-                  safeAddAndCheck(blackDVONNLayer[i], "Black DVONN", possibleBitMove.targetBit)
+                  safeAddAndCheck(blackDVONNLayer[i], "Black DVONN [$i]", possibleBitMove.targetBit)
               break
             }
           }
@@ -1739,7 +1766,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               whitePUNCTLayer[i] =
-                  safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT", possibleBitMove.targetBit)
+                  safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT [$i]", possibleBitMove.targetBit)
               break
             }
             // place black on top of white on top of black
@@ -1750,7 +1777,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
                         possibleBitMove.targetBit
             ) {
               blackPUNCTLayer[i] =
-                  safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT", possibleBitMove.targetBit)
+                  safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT [$i]", possibleBitMove.targetBit)
               break
             }
           }
@@ -1910,7 +1937,10 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
             // place white on top of black on top of white
             if (
                 i % 2 == 0 &&
-                    (whiteDVONNLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
+                    (whiteDVONNLayer[i] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit &&
+                    (whiteDVONNLayer[i - 1] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit
             ) {
               whiteDVONNLayer[i] =
                   safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN", possibleBitMove.targetBit)
@@ -1919,7 +1949,8 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
             // place white on top of black
             if (
                 i % 2 == 1 &&
-                    (blackDVONNLayer[i] and possibleBitMove.targetBit) == 0UL &&
+                    (blackDVONNLayer[i] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit &&
                     (blackDVONNLayer[i - 1] and possibleBitMove.targetBit) ==
                         possibleBitMove.targetBit
             ) {
@@ -1938,7 +1969,8 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
             // place white on top of black on top of white
             if (
                 i % 2 == 0 &&
-                    (whitePUNCTLayer[i] and possibleBitMove.targetBit) == 0UL &&
+                    (whitePUNCTLayer[i] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit &&
                     (whitePUNCTLayer[i - 1] and possibleBitMove.targetBit) ==
                         possibleBitMove.targetBit
             ) {
@@ -1949,7 +1981,10 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
             // place white on top of black
             if (
                 i % 2 == 1 &&
-                    (blackPUNCTLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
+                    (blackPUNCTLayer[i] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit &&
+                    (blackPUNCTLayer[i - 1] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit
             ) {
               blackPUNCTLayer[i] =
                   safeRemoveAndCheck(blackPUNCTLayer[i], "Black DVONN", possibleBitMove.targetBit)
@@ -2027,11 +2062,13 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
             if (
                 i % 2 == 1 &&
                     // TODO find top layer and remove bit
-                    (whiteDVONNLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
-            //							(whiteDVONNLayer[i - 1] and possibleBitMove.targetBit) ==
-            // possibleBitMove.targetBit
+                    (whiteDVONNLayer[i] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit &&
+                    (whiteDVONNLayer[i - 1] and possibleBitMove.targetBit) ==
+                        possibleBitMove.targetBit
             ) {
-              whiteDVONNLayer[i] = whiteDVONNLayer[i] and possibleBitMove.targetBit.inv()
+              whiteDVONNLayer[i] =
+                  safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN", possibleBitMove.targetBit)
               break
             }
             // place black on top of white on top of black
@@ -2040,7 +2077,8 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
                     // TODO find top layer and remove bit
                     (blackDVONNLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
             ) {
-              blackDVONNLayer[i] = blackDVONNLayer[i] and possibleBitMove.targetBit.inv()
+              blackDVONNLayer[i] =
+                  safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN", possibleBitMove.targetBit)
               break
             }
           }
@@ -2057,7 +2095,8 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
                     // TODO find top layer and remove bit
                     (whitePUNCTLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
             ) {
-              whitePUNCTLayer[i] = whitePUNCTLayer[i] or possibleBitMove.targetBit
+              whitePUNCTLayer[i] =
+                  safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT", possibleBitMove.targetBit)
               break
             }
             // place black on top of white on top of black
@@ -2066,7 +2105,8 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
                     // TODO find top layer and remove bit
                     (blackPUNCTLayer[i] and possibleBitMove.targetBit) == possibleBitMove.targetBit
             ) {
-              blackPUNCTLayer[i] = blackPUNCTLayer[i] and possibleBitMove.targetBit.inv()
+              blackPUNCTLayer[i] =
+                  safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT", possibleBitMove.targetBit)
               break
             }
           }
@@ -2109,9 +2149,9 @@ fun Bitboard.getTamskMoves(player: Player): PossibleBitMove? {
   // If the intersection doesn't perfectly match the center spot mask, no move exists.
   if (tamskPieceAtCenter != boardCenterSpotMask) {
     if (isDebugEnabled) {
-        println("No valid TAMSK piece found at center for ${player.name}. Returning null.")
-		  println("--- GET TAMSK MOVES COMPLETED ---")
-	  }
+      println("No valid TAMSK piece found at center for ${player.name}. Returning null.")
+      println("--- GET TAMSK MOVES COMPLETED ---")
+    }
     return null
   }
 
@@ -2930,38 +2970,72 @@ fun Bitboard.getPunctMoves(
 }
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
-	// --- 0. CONFIGURABLE DEBUGGING ---
-	val isDebugEnabled = true
-	if (isDebugEnabled) {
-		println("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---")
-		println("Player: ${player.name}")
-	}
+  // --- 0. CONFIGURABLE DEBUGGING ---
+  val isDebugEnabled = true
+  if (isDebugEnabled) {
+    println("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---")
+    println("Player: ${player.name}")
+  }
+
   val playerPieces =
       when (player.name) {
         PlayerName.WHITE -> whitePieces
         PlayerName.BLACK -> blackPieces
       }
 
-
-  return columnInfos.filterIndexed { index, column ->
-	if (isDebugEnabled) {
-		println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-		println("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
-	}
-    if ((column.columnMask and playerPieces).countOneBits() < 4) {
-	    if (isDebugEnabled) {
-		    println("--- NO 4 IN A LINE $index ---")
-	    }
-      false
-    } else {
-	    if (isDebugEnabled) {
-		    println("--- FOUND FOUR IN A LINE $index ---") // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
-	    }
-      column.positions.windowed(4).any { sublist ->
-        sublist.all { position -> (position and playerPieces) == position }
-      }
+	var stooopid: String? = null
+	val columns = columnInfos.filterIndexed { index, column ->
+    if (isDebugEnabled) {
+      println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+      println("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
     }
+
+		val result = column.submasks.any { submask ->
+			println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
+			println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+			println("Result: ${(submask and playerPieces) == submask}")
+			(submask and playerPieces) == submask
+		}
+
+		if (isDebugEnabled) {
+			if (result) println("--- FOUND FOUR IN A ROW IN LINE $index ---") else println("--- NO 4 IN A ROW IN LINE $index ---")
+    }
+
+//    if ((column.columnMask and playerPieces).countOneBits() < 4) {
+//      if (isDebugEnabled) {
+//        println("--- NO 4 IN A LINE $index ---")
+//      }
+//      false
+//    } else {
+//      if (isDebugEnabled) {
+//        println(
+//            "--- FOUND FOUR IN A LINE $index ---"
+//        ) // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
+//      }
+//
+//	    println("column.positions.windowed(4).any: ${
+//		    column.positions.windowed(4).any { sublist ->
+//			    val sum = sublist.fold(0UL) { acc, lng ->
+//				    acc or lng
+//			    }
+//			    (sum and playerPieces) == sum
+//		    }
+//			}")
+
+	  if (index == 2 && !result) {
+	    println("stooopid!")
+	    stooopid = "stooopid"
+	  }
+
+	  result
+
   }
+
+	if (stooopid != null && columns.isNotEmpty()) {
+		println("fukme!")
+	}
+
+	return columns
 }
 
 fun Bitboard.identifyPlayerPiecesWithPotential(
@@ -2978,13 +3052,13 @@ fun Bitboard.identifyPlayerPiecesWithPotential(
           when (player.name) {
             PlayerName.WHITE -> {
               // pieces with potential and not neutralized
-	            (whitePotentials and bitmask) == bitmask &&
-			            (whiteNeutralized.inv() and bitmask) == bitmask
+              (whitePotentials and bitmask) == bitmask &&
+                  (whiteNeutralized.inv() and bitmask) == bitmask
             }
 
             PlayerName.BLACK -> {
-	            (blackPotentials and bitmask) == bitmask &&
-			            (blackNeutralized.inv() and bitmask) == bitmask
+              (blackPotentials and bitmask) == bitmask &&
+                  (blackNeutralized.inv() and bitmask) == bitmask
             }
           }
       result
@@ -2995,7 +3069,8 @@ fun Bitboard.identifyPlayerPiecesWithPotential(
 }
 
 fun Bitboard.createPlayerPiecesWithPotentialPowerset(potentials: List<ULong>): List<List<ULong>> {
-	// TODO causes stack overflow error, but an empty list is necessary as a player can leave the stack in play
+  // TODO causes stack overflow error, but an empty list is necessary as a player can leave the
+  // stack in play
   // TODO Minimax/MCTS — what it would be like to remove at least one of these pieces if all pieces
   //   have potentials
   //   use line score heuristic and pieces in reserve
@@ -3018,90 +3093,114 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
   // TODO return retrieved and captured pieces
   require(columnInfos.isNotEmpty()) { "There must be at least one column" }
 
-	// --- 0. CONFIGURABLE DEBUGGING ---
-	val isDebugEnabled = true
-	if (isDebugEnabled) {
-		println("--- CREATE RETRIEVE & CAPTURED PIECES CALLED ---")
-	}
-
-
-  val playerPiecesNotNeutralizedWithoutPotential = columnInfos.map { column ->
-    column.positions.filter { bitmask ->
-      val result =
-          when (player.name) {
-            PlayerName.WHITE -> {
-							// TODO FIX - includes neutralized pieces
-              // pieces without potential and not neutralized
-              (whitePotentials.inv() and bitmask) == bitmask &&
-              (whiteNeutralized.inv() and bitmask) == bitmask
-            }
-
-            PlayerName.BLACK -> {
-              (blackPotentials.inv() and bitmask) == bitmask &&
-              (blackNeutralized.inv() and bitmask) == bitmask
-            }
-          }
-      result
-    }
+  // --- 0. CONFIGURABLE DEBUGGING ---
+  val isDebugEnabled = true
+  if (isDebugEnabled) {
+    println("--- CREATE RETRIEVE & CAPTURED PIECES CALLED ---")
   }
 
-  val opponentPiecesAndNotNeutralized = columnInfos.map { column ->
-    column.positions.filter { bitmask ->
-      val result =
-          when (player.name) {
-            PlayerName.WHITE -> {
-              // opponent pieces and not neutralized
-//	            (blackPotentials.inv() and bitmask) == bitmask &&
-			            (blackNeutralized.inv() and bitmask) == bitmask
+  val playerPiecesNotNeutralizedWithoutPotential =
+      columnInfos
+          .map { column ->
+            column.positions.filter { bitmask ->
+              val result =
+                  when (player.name) {
+                    PlayerName.WHITE -> {
+                      // TODO FIX - includes neutralized pieces
+                      // pieces without potential and not neutralized
+	                    (whitePieces and bitmask) == bitmask &&
+			                    (whitePotentials.inv() and bitmask) == bitmask &&
+			                   (blackNeutralized.inv() and bitmask) == bitmask
+                    }
 
-            }
-
-            PlayerName.BLACK -> {
-//	            (whitePotentials.inv() and bitmask) == bitmask &&
-			            (whiteNeutralized.inv() and bitmask) == bitmask
+                    PlayerName.BLACK -> {
+											(blackPieces and bitmask) == bitmask &&
+						              (blackPotentials.inv() and bitmask) == bitmask &&
+                          (whiteNeutralized.inv() and bitmask) == bitmask
+                    }
+                  }
+              result
             }
           }
-      result
-    }
-  }
+          .flatten()
+
+  val opponentPiecesAndNotNeutralized =
+      columnInfos
+          .map { column ->
+            column.positions.filter { bitmask ->
+              val result =
+                  when (player.name) {
+                    PlayerName.WHITE -> {
+                      // opponent pieces and not neutralized
+                      //	            (blackPotentials.inv() and bitmask) == bitmask &&
+											(blackPieces and bitmask) == bitmask &&
+                      (blackNeutralized.inv() and bitmask) == bitmask
+                    }
+
+                    PlayerName.BLACK -> {
+                      //	            (whitePotentials.inv() and bitmask) == bitmask &&
+	                    (whitePieces and bitmask) == bitmask &&
+                      (whiteNeutralized.inv() and bitmask) == bitmask
+                    }
+                  }
+              result
+            }
+          }
+          .flatten()
 
   // stacked DVONN and PUNCT Pieces
   val neutralizedBitmasks =
       columnInfos
           .map { column ->
             column.positions.filter { bitmask ->
-							// TODO THis
+              // TODO THis
               (whiteNeutralized and bitmask) == bitmask || (blackNeutralized and bitmask) == bitmask
             }
           }
           .flatten()
 
-
-	// --- 1. PRE-CONDITION CHECKS ---
-
-	// --- LOCAL HELPER: BASE LAYER REMOVAL ---
-	fun safeRemoveAndCheck(board: ULong, boardName: String, bitmask: ULong, piece: Piece): ULong {
-		if (isDebugEnabled) {
-			println(
-				"$boardName Board before removing $boardName piece:\n" +
-						"removeAtIndex:           0b${bitmask.toString(2).padStart(40, '0')}\n" +
-						"$boardName bitboard:     0b${board.toString(2).padStart(40, '0')}"
-			)
+  // --- 1. PRE-CONDITION CHECKS ---
+	if (neutralizedBitmasks.isNotEmpty()) {
+		check(
+			neutralizedBitmasks.any {
+				!playerPiecesNotNeutralizedWithoutPotential.contains(it)
+			}
+		) {
+			"playerPiecesNotNeutralizedWithoutPotential should not contain any bits from neutralizedBitmasks"
 		}
-		val newBoard = board and bitmask.inv()
-		check((newBoard and bitmask) == 0UL) {
-			"Failed to remove ${piece.colorName} ${piece.type} from $boardName."
-		}
-		if (isDebugEnabled) {
-			println(
-				"$boardName Board after removing $boardName piece\n" +
-						"removeAtIndex:            0b${bitmask.toString(2).padStart(40, '0')}\n" +
-						"new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
-			)
-		}
-		if (isDebugEnabled) println("  -> Successfully removed from $boardName.")
-		return newBoard
 	}
+
+  check(
+      !selectedPiecesWithPotentialPowerset.any {
+        playerPiecesNotNeutralizedWithoutPotential.contains(it)
+      }
+  ) {
+    "playerPiecesNotNeutralizedWithoutPotential should not contain any bits from selectedPiecesWithPotentialPowerset"
+  }
+
+  // --- LOCAL HELPER: BASE LAYER REMOVAL ---
+  fun safeRemoveAndCheck(board: ULong, boardName: String, bitmask: ULong, piece: Piece): ULong {
+    if (isDebugEnabled) {
+      println(
+          "$boardName Board before removing $boardName piece:\n" +
+              "removeAtIndex:           0b${bitmask.toString(2).padStart(40, '0')}\n" +
+              "$boardName bitboard:     0b${board.toString(2).padStart(40, '0')}"
+      )
+    }
+    val newBoard = board and bitmask.inv()
+    check((newBoard and bitmask) == 0UL) {
+      "Failed to remove ${piece.colorName} ${piece.type} from $boardName."
+    }
+    if (isDebugEnabled) {
+      println(
+          "$boardName Board after removing $boardName piece\n" +
+              "removeAtIndex:            0b${bitmask.toString(2).padStart(40, '0')}\n" +
+              "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+      )
+    }
+    if (isDebugEnabled) println("  -> Successfully removed from $boardName.")
+    return newBoard
+  }
 
   val neutralizedPieces = mutableListOf<RetrievedCapturedPieceBit>()
   neutralizedBitmasks.forEach { bitmask ->
@@ -3143,15 +3242,18 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
 
             neutralizedPieces.add(
                 RetrievedCapturedPieceBit(
-                    retrievedPiece = if (baseColor == finalColor) piece else null,
-                    capturedPiece = if (baseColor != finalColor) piece else null,
+                    retrievedPiece = if (finalColor == player.name) piece else null,
+                    capturedPiece = if (finalColor != player.name) piece else null,
                     bitmask = bitmask,
                     isNeutralized = true,
                 )
             )
 
-            blackDVONNLayer[i] = safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN[$i]", bitmask, piece)
-            whiteDVONNLayer[i] = safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN[$i]", bitmask, piece)
+            blackDVONNLayer[i] =
+                safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN [$i]", bitmask, piece)
+            whiteDVONNLayer[i] =
+                safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN [$i]", bitmask, piece)
+            break
           }
 
           hasWhitePUNCT || hasBlackPUNCT -> {
@@ -3172,15 +3274,18 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
 
             neutralizedPieces.add(
                 RetrievedCapturedPieceBit(
-                    retrievedPiece = if (baseColor == finalColor) piece else null,
-                    capturedPiece = if (baseColor != finalColor) piece else null,
+	                  retrievedPiece = if (finalColor == player.name) piece else null,
+	                  capturedPiece = if (finalColor != player.name) piece else null,
                     bitmask = bitmask,
                     isNeutralized = true,
                 )
             )
 
-            blackPUNCTLayer[i] = safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]", bitmask, piece)
-            whitePUNCTLayer[i] = safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]", bitmask, piece)
+            blackPUNCTLayer[i] =
+                safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT [$i]", bitmask, piece)
+            whitePUNCTLayer[i] =
+                safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT [$i]", bitmask, piece)
+            break
           }
         }
       }
@@ -3213,92 +3318,102 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
   // TODO handle DVONN and PUNCT carefully. remove bit from top down to 0 layer
 
   // TODO set bits to zero. create function to clear bit.
-	val pieces = playerPiecesNotNeutralizedWithoutPotential
-      .plus(opponentPiecesAndNotNeutralized)
-      .flatten()
-      .plus(selectedPiecesWithPotentialPowerset)
-      .map { bitmask ->
-        // construct piece and place it on the matching node
-        val piece = createPiece(bitmask)
+  val pieces =
+      playerPiecesNotNeutralizedWithoutPotential
+          .plus(opponentPiecesAndNotNeutralized)
+          .plus(selectedPiecesWithPotentialPowerset)
+          .map { bitmask ->
+            // construct piece and place it on the matching node
+            val piece = createPiece(bitmask)
 
-        if (piece != null) {
-          when (piece.type) {
-            PieceType.GIPF -> {
-              whiteGIPF = safeRemoveAndCheck(whiteGIPF, "White GIPF", bitmask, piece)
-              blackGIPF = safeRemoveAndCheck(blackGIPF, "Black GIPF", bitmask, piece)
-            }
+            if (piece != null) {
+              when (piece.type) {
+                PieceType.GIPF -> {
+                  whiteGIPF = safeRemoveAndCheck(whiteGIPF, "White GIPF", bitmask, piece)
+                  blackGIPF = safeRemoveAndCheck(blackGIPF, "Black GIPF", bitmask, piece)
+                }
 
-            PieceType.TAMSK -> {
-              whiteTAMSK = safeRemoveAndCheck(whiteTAMSK, "White TAMSK", bitmask, piece)
-              blackTAMSK = safeRemoveAndCheck(blackTAMSK, "Black TAMSK", bitmask, piece)
-            }
+                PieceType.TAMSK -> {
+                  whiteTAMSK = safeRemoveAndCheck(whiteTAMSK, "White TAMSK", bitmask, piece)
+                  blackTAMSK = safeRemoveAndCheck(blackTAMSK, "Black TAMSK", bitmask, piece)
+                }
 
-            PieceType.ZERTZ -> {
-              whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", bitmask, piece)
-              blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", bitmask, piece)
-            }
+                PieceType.ZERTZ -> {
+                  whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", bitmask, piece)
+                  blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", bitmask, piece)
+                }
 
-            PieceType.DVONN -> {
-              if (piece.stackedPieces.isNotEmpty()) {
-                throw IllegalStateException("")
-              } else {
-                whiteDVONNLayer[0] = safeRemoveAndCheck(whiteDVONNLayer[0], "White DVONN[0]", bitmask, piece)
-                blackDVONNLayer[0] = safeRemoveAndCheck(blackDVONNLayer[0], "Black DVONN[0]", bitmask, piece)
+                PieceType.DVONN -> {
+                  if (piece.stackedPieces.isNotEmpty()) {
+                    throw IllegalStateException("")
+                  } else {
+                    whiteDVONNLayer[0] =
+                        safeRemoveAndCheck(whiteDVONNLayer[0], "White DVONN [0]", bitmask, piece)
+                    blackDVONNLayer[0] =
+                        safeRemoveAndCheck(blackDVONNLayer[0], "Black DVONN [0]", bitmask, piece)
+                  }
+                }
+
+                PieceType.YINSH -> {
+                  whiteYINSH = safeRemoveAndCheck(whiteYINSH, "White YINSH", bitmask, piece)
+                  blackYINSH = safeRemoveAndCheck(blackYINSH, "Black YINSH", bitmask, piece)
+                }
+
+                PieceType.PUNCT -> {
+                  if (piece.stackedPieces.isNotEmpty()) {
+                    throw IllegalStateException("")
+                  } else {
+                    whitePUNCTLayer[0] =
+                        safeRemoveAndCheck(whitePUNCTLayer[0], "White PUNCT [0]", bitmask, piece)
+                    blackPUNCTLayer[0] =
+                        safeRemoveAndCheck(blackPUNCTLayer[0], "Black PUNCT [0]", bitmask, piece)
+                  }
+                }
+              }
+
+              if (piece.potential) {
+                whitePotentials =
+                    safeRemoveAndCheck(whitePotentials, "White Potentials", bitmask, piece)
+                blackPotentials =
+                    safeRemoveAndCheck(blackPotentials, "Black Potentials", bitmask, piece)
               }
             }
-
-            PieceType.YINSH -> {
-              whiteYINSH = safeRemoveAndCheck(whiteYINSH, "White YINSH", bitmask, piece)
-              blackYINSH = safeRemoveAndCheck(blackYINSH, "Black YINSH", bitmask, piece)
-            }
-
-            PieceType.PUNCT -> {
-              if (piece.stackedPieces.isNotEmpty()) {
-                throw IllegalStateException("")
-              } else {
-                whitePUNCTLayer[0] = safeRemoveAndCheck(whitePUNCTLayer[0], "White PUNCT[0]", bitmask, piece)
-                blackPUNCTLayer[0] = safeRemoveAndCheck(blackPUNCTLayer[0], "Black PUNCT[0]", bitmask, piece)
-              }
-            }
+            RetrievedCapturedPieceBit(
+                retrievedPiece = if (piece?.colorName == player.name.name) piece else null,
+                capturedPiece = if (piece?.colorName != player.name.name) piece else null,
+                bitmask = bitmask,
+                isNeutralized = false,
+            )
           }
+          .plus(neutralizedPieces)
+          .filter { it.retrievedPiece != null || it.capturedPiece != null }
 
-        if (piece.potential) {
-          whitePotentials = safeRemoveAndCheck(whitePotentials, "White Potentials", bitmask, piece)
-          blackPotentials = safeRemoveAndCheck(blackPotentials, "Black Potentials", bitmask, piece)
-        }
+  if (isDebugEnabled) {
+    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
+  }
 
-        }
-        RetrievedCapturedPieceBit(
-            retrievedPiece = if (piece?.colorName == player.name.name) piece else null,
-            capturedPiece = if (piece?.colorName != player.name.name) piece else null,
-            bitmask = bitmask,
-            isNeutralized = false,
-        )
-      }
-      .plus(neutralizedPieces).filter { it.retrievedPiece != null || it.capturedPiece != null }
+  // TODO Check captured pieces aren't categorized as retrieved pieces and vice versa
+  val targetColor = player.name.name
 
-	if (isDebugEnabled) {
-		println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
-	}
+  check(pieces.mapNotNull { it.retrievedPiece }.all { it.colorName == targetColor }) {
+    val invalidRetrieved =
+        pieces
+            .mapNotNull { it.retrievedPiece }
+            .filter { it.colorName != targetColor }
+            .map { "${it.type}(${it.colorName})" }
+    "Scoring Violation: Player '$targetColor' attempted to retrieve opponent pieces: $invalidRetrieved"
+  }
 
-	// TODO Check captured pieces aren't categorized as retrieved pieces and vice versa
-	val targetColor = player.name.name
+  check(pieces.mapNotNull { it.capturedPiece }.all { it.colorName != targetColor }) {
+    val invalidCaptured =
+        pieces
+            .mapNotNull { it.capturedPiece }
+            .filter { it.colorName == targetColor }
+            .map { it.type }
+    "Scoring Violation: Player '$targetColor' accidentally captured their own pieces: $invalidCaptured"
+  }
 
-	check(pieces.mapNotNull { it.retrievedPiece }.all { it.colorName == targetColor }) {
-		val invalidRetrieved = pieces.mapNotNull { it.retrievedPiece }
-			.filter { it.colorName != targetColor }
-			.map { "${it.type}(${it.colorName})" }
-		"Scoring Violation: Player '$targetColor' attempted to retrieve opponent pieces: $invalidRetrieved"
-	}
-
-	check(pieces.mapNotNull { it.capturedPiece }.all { it.colorName != targetColor }) {
-		val invalidCaptured = pieces.mapNotNull { it.capturedPiece }
-			.filter { it.colorName == targetColor }
-			.map { it.type }
-		"Scoring Violation: Player '$targetColor' accidentally captured their own pieces: $invalidCaptured"
-	}
-
-	return pieces
+  return pieces
 }
 
 fun Bitboard.getsSelectedPiecesWithPotentialPowerset(
@@ -3309,70 +3424,69 @@ fun Bitboard.getsSelectedPiecesWithPotentialPowerset(
     // construct piece and place it on the matching node
     val piece = createPiece(bitmask)
 
-	  val activePlayerColor = player.name.name
+    val activePlayerColor = player.name.name
 
-	  check(piece?.colorName == activePlayerColor) {
-		  "Action Denied: Player '$activePlayerColor' cannot interact with this piece. " +
-				  "Found: ${piece?.type ?: "Empty Space"} belonging to '${piece?.colorName ?: "Nobody"}'." +
-				  "\n bitmask: 0b${bitmask.toString(2).padStart(40, '0')}"
-	  }
+    check(piece?.colorName == activePlayerColor) {
+      "Action Denied: Player '$activePlayerColor' cannot interact with this piece. " +
+          "Found: ${piece?.type ?: "Empty Space"} belonging to '${piece?.colorName ?: "Nobody"}'." +
+          "\n bitmask: 0b${bitmask.toString(2).padStart(40, '0')}"
+    }
 
-	  check(piece.stackedPieces.isEmpty()) {
-		  val hiddenTypes = piece.stackedPieces.map { "${it.type}(${it.colorName})" }
-		  "Inconsistency failure: Expected an unstacked basic piece, but found a stack containing " +
-				  "${piece.stackedPieces.size} hidden pieces: $hiddenTypes."
-	  }
+    check(piece.stackedPieces.isEmpty()) {
+      val hiddenTypes = piece.stackedPieces.map { "${it.type}(${it.colorName})" }
+      "Inconsistency failure: Expected an unstacked basic piece, but found a stack containing " +
+          "${piece.stackedPieces.size} hidden pieces: $hiddenTypes."
+    }
 
-	  check(piece.potential) {
-		  "State violation: Expected a 'Potential' piece structure, but found a basic, standard piece instead. " +
-				  "Piece Type: ${piece.type}, Color: ${piece.colorName}, Abbreviation: ${piece.abbreviation}."
-	  }
+    check(piece.potential) {
+      "State violation: Expected a 'Potential' piece structure, but found a basic, standard piece instead. " +
+          "Piece Type: ${piece.type}, Color: ${piece.colorName}, Abbreviation: ${piece.abbreviation}."
+    }
 
-	  when (piece.type) {
-	    PieceType.GIPF -> {
-	      whiteGIPF = whiteGIPF and bitmask.inv()
-	      blackGIPF = blackGIPF and bitmask.inv()
-	    }
+    when (piece.type) {
+      PieceType.GIPF -> {
+        whiteGIPF = whiteGIPF and bitmask.inv()
+        blackGIPF = blackGIPF and bitmask.inv()
+      }
 
-	    PieceType.TAMSK -> {
-	      whiteTAMSK = whiteTAMSK and bitmask.inv()
-	      blackTAMSK = blackTAMSK and bitmask.inv()
-	    }
+      PieceType.TAMSK -> {
+        whiteTAMSK = whiteTAMSK and bitmask.inv()
+        blackTAMSK = blackTAMSK and bitmask.inv()
+      }
 
-	    PieceType.ZERTZ -> {
-	      whiteZERTZ = whiteZERTZ and bitmask.inv()
-	      blackZERTZ = blackZERTZ and bitmask.inv()
-	    }
+      PieceType.ZERTZ -> {
+        whiteZERTZ = whiteZERTZ and bitmask.inv()
+        blackZERTZ = blackZERTZ and bitmask.inv()
+      }
 
-	    PieceType.DVONN -> {
-	      if (piece.stackedPieces.isNotEmpty()) {
-	        throw IllegalStateException("")
-	      } else {
-	        whiteDVONNLayer[0] = whiteDVONNLayer[0] and bitmask.inv()
-	        blackDVONNLayer[0] = blackDVONNLayer[0] and bitmask.inv()
-	      }
-	    }
+      PieceType.DVONN -> {
+        if (piece.stackedPieces.isNotEmpty()) {
+          throw IllegalStateException("")
+        } else {
+          whiteDVONNLayer[0] = whiteDVONNLayer[0] and bitmask.inv()
+          blackDVONNLayer[0] = blackDVONNLayer[0] and bitmask.inv()
+        }
+      }
 
-	    PieceType.YINSH -> {
-	      whiteYINSH = whiteYINSH and bitmask.inv()
-	      blackYINSH = blackYINSH and bitmask.inv()
-	    }
+      PieceType.YINSH -> {
+        whiteYINSH = whiteYINSH and bitmask.inv()
+        blackYINSH = blackYINSH and bitmask.inv()
+      }
 
-	    PieceType.PUNCT -> {
-	      if (piece.stackedPieces.isNotEmpty()) {
-	        throw IllegalStateException("")
-	      } else {
-	        whitePUNCTLayer[0] = whitePUNCTLayer[0] and bitmask.inv()
-	        blackPUNCTLayer[0] = blackPUNCTLayer[0] and bitmask.inv()
-	      }
-	    }
-	  }
+      PieceType.PUNCT -> {
+        if (piece.stackedPieces.isNotEmpty()) {
+          throw IllegalStateException("")
+        } else {
+          whitePUNCTLayer[0] = whitePUNCTLayer[0] and bitmask.inv()
+          blackPUNCTLayer[0] = blackPUNCTLayer[0] and bitmask.inv()
+        }
+      }
+    }
 
     if (piece.potential) {
       whitePotentials = whitePotentials and bitmask.inv()
       blackPotentials = blackPotentials and bitmask.inv()
     }
-
 
     RetrievedCapturedPieceBit(
         retrievedPiece = if (piece.colorName == player.name.name) piece else null,
@@ -3386,180 +3500,178 @@ fun Bitboard.getsSelectedPiecesWithPotentialPowerset(
 fun Bitboard.undoRetrieveAndCapturePieces(
     retrievedCapturedPiecesBits: List<RetrievedCapturedPieceBit>
 ) {
-	// --- 0. CONFIGURABLE DEBUGGING ---
-	val isDebugEnabled = true
-	if (isDebugEnabled) {
-		println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
-		println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
-	}
+  // --- 0. CONFIGURABLE DEBUGGING ---
+  val isDebugEnabled = true
+  if (isDebugEnabled) {
+    println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
+    println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
+  }
 
   retrievedCapturedPiecesBits.forEachIndexed { index, data ->
-	  val (retrievedPiece, capturedPiece, bitmask, isNeutralized, keepRetrievedPieceInPlay) = data
-	  val piece = retrievedPiece ?: capturedPiece
+    val (retrievedPiece, capturedPiece, bitmask, isNeutralized, keepRetrievedPieceInPlay) = data
+    val piece = retrievedPiece ?: capturedPiece
 
-	  if (piece == null) {
-		  if (isDebugEnabled)
-			  println("Item $index: Both retrieved and captured pieces are null. Skipping.")
-		  return@forEachIndexed
-	  }
+    if (piece == null) {
+      if (isDebugEnabled)
+          println("Item $index: Both retrieved and captured pieces are null. Skipping.")
+      return@forEachIndexed
+    }
 
-	  if (isDebugEnabled) {
-		  println("Processing Piece $index: ${piece.colorName} ${piece.type} at $bitmask")
-		  println("  -> isNeutralized: $isNeutralized | Potential: ${piece.potential}")
-	  }
+    if (isDebugEnabled) {
+      println("Processing Piece $index: ${piece.colorName} ${piece.type} at $bitmask")
+      println("  -> isNeutralized: $isNeutralized | Potential: ${piece.potential}")
+    }
 
-	  // --- 1. PRE-CONDITION CHECKS ---
-	  require(bitmask.countOneBits() == 1) {
-		  "CRITICAL ERROR: Removal bitmask must be exactly one bit. Got: $bitmask"
-	  }
+    // --- 1. PRE-CONDITION CHECKS ---
+    require(bitmask.countOneBits() == 1) {
+      "CRITICAL ERROR: Removal bitmask must be exactly one bit. Got: $bitmask"
+    }
 
-	  fun safeAddAndCheck(board: ULong, boardName: String): ULong {
-		  if (isDebugEnabled) {
-			  println(
-				  "$boardName Board before restoring $boardName piece\n" +
-						  "addAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
-						  "$boardName bitboard:  0b${board.toString(2).padStart(40, '0')}"
-			  )
-		  }
-		  val newBoard = board or bitmask
-		  check((newBoard and bitmask) == bitmask) {
-			  "ADD FAILED: Failed to add ${piece.colorName} ${piece.type} to $boardName bitboard at index $bitmask."
-		  }
-		  if (isDebugEnabled) {
-			  println(
-				  "$boardName Board after restoring $boardName piece\n" +
-						  "addAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
-						  "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"			  )
-		  }
-		  if (isDebugEnabled) println("Successfully added bit to $boardName.")
-		  return newBoard
-	  }
-
-
-	  when (piece.colorName) {
-      PlayerName.WHITE.name -> {
-	      when (piece.type) {
-		      PieceType.GIPF -> whiteGIPF = safeAddAndCheck(whiteGIPF, "White GIPF")
-		      PieceType.TAMSK -> whiteTAMSK = safeAddAndCheck(whiteTAMSK, "White TAMSK")
-		      PieceType.ZERTZ -> whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ")
-		      PieceType.YINSH -> whiteYINSH = safeAddAndCheck(whiteYINSH, "White YINSH")
-		      else -> {} // DVONN and PUNCT handled below
-	      }
+    fun safeAddAndCheck(board: ULong, boardName: String): ULong {
+      if (isDebugEnabled) {
+        println(
+            "$boardName Board before restoring $boardName piece\n" +
+                "addAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
+                "$boardName bitboard:  0b${board.toString(2).padStart(40, '0')}"
+        )
       }
-		  PlayerName.BLACK.name -> {
-			  when (piece.type) {
-				  PieceType.GIPF -> blackGIPF = safeAddAndCheck(blackGIPF, "Black GIPF")
-				  PieceType.TAMSK -> blackTAMSK = safeAddAndCheck(blackTAMSK, "Black TAMSK")
-				  PieceType.ZERTZ -> blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ")
-				  PieceType.YINSH -> blackYINSH = safeAddAndCheck(blackYINSH, "Black YINSH")
-				  else -> {} // DVONN and PUNCT handled below
-			  }
+      val newBoard = board or bitmask
+      check((newBoard and bitmask) == bitmask) {
+        "ADD FAILED: Failed to add ${piece.colorName} ${piece.type} to $boardName bitboard at index $bitmask."
+      }
+      if (isDebugEnabled) {
+        println(
+            "$boardName Board after restoring $boardName piece\n" +
+                "addAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
+                "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+        )
+      }
+      if (isDebugEnabled) println("Successfully added bit to $boardName.")
+      return newBoard
+    }
+
+    when (piece.colorName) {
+      PlayerName.WHITE.name -> {
+        when (piece.type) {
+          PieceType.GIPF -> whiteGIPF = safeAddAndCheck(whiteGIPF, "White GIPF")
+          PieceType.TAMSK -> whiteTAMSK = safeAddAndCheck(whiteTAMSK, "White TAMSK")
+          PieceType.ZERTZ -> whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ")
+          PieceType.YINSH -> whiteYINSH = safeAddAndCheck(whiteYINSH, "White YINSH")
+          else -> {} // DVONN and PUNCT handled below
+        }
+      }
+      PlayerName.BLACK.name -> {
+        when (piece.type) {
+          PieceType.GIPF -> blackGIPF = safeAddAndCheck(blackGIPF, "Black GIPF")
+          PieceType.TAMSK -> blackTAMSK = safeAddAndCheck(blackTAMSK, "Black TAMSK")
+          PieceType.ZERTZ -> blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ")
+          PieceType.YINSH -> blackYINSH = safeAddAndCheck(blackYINSH, "Black YINSH")
+          else -> {} // DVONN and PUNCT handled below
+        }
       }
     }
 
     if (isNeutralized) {
-	    var pieceRemoved = false
+      var pieceRemoved = false
       for (i in 1..5) {
-	      if (pieceRemoved) break
-	      
-	      when (piece.colorName) {
-		      PlayerName.WHITE.name -> {
-			      when (piece.type) {
-				      PieceType.DVONN -> {
-					      // place white on top of black on top of white
-					      if (
-						      i % 2 == 0 &&
-						      (whiteDVONNLayer[i] and bitmask) == 0UL &&
-						      (whiteDVONNLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      whiteDVONNLayer[i] = safeAddAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
-						      pieceRemoved = true
-					      }
-					      // place white on top of black
-					      if (
-						      i % 2 == 1 &&
-						      (blackDVONNLayer[i] and bitmask) == 0UL &&
-						      (blackDVONNLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      blackDVONNLayer[i] = safeAddAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
-						      pieceRemoved = true
-					      }
-				      }
+        if (pieceRemoved) break
 
+        when (piece.colorName) {
+          PlayerName.WHITE.name -> {
+            when (piece.type) {
+              PieceType.DVONN -> {
+                // place white on top of black on top of white
+                if (
+                    i % 2 == 0 &&
+                        (whiteDVONNLayer[i] and bitmask) == 0UL &&
+                        (whiteDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whiteDVONNLayer[i] = safeAddAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
+                  pieceRemoved = true
+                }
+                // place white on top of black
+                if (
+                    i % 2 == 1 &&
+                        (blackDVONNLayer[i] and bitmask) == 0UL &&
+                        (blackDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackDVONNLayer[i] = safeAddAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
+                  pieceRemoved = true
+                }
+              }
 
-				      PieceType.PUNCT -> {
-					      // place white on top of black on top of white
-					      if (
-						      i % 2 == 0 &&
-						      (whitePUNCTLayer[i] and bitmask) == 0UL &&
-						      (whitePUNCTLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      whitePUNCTLayer[i] = safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
-						      pieceRemoved = true
-					      }
-					      // place white on top of black
-					      if (
-						      i % 2 == 1 &&
-						      (blackPUNCTLayer[i] and bitmask) == 0UL &&
-						      (blackPUNCTLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      blackPUNCTLayer[i] = safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
-						      pieceRemoved = true
-					      }
-				      }
-				      else -> {}
-			      }
-		      }
+              PieceType.PUNCT -> {
+                // place white on top of black on top of white
+                if (
+                    i % 2 == 0 &&
+                        (whitePUNCTLayer[i] and bitmask) == 0UL &&
+                        (whitePUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whitePUNCTLayer[i] = safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
+                  pieceRemoved = true
+                }
+                // place white on top of black
+                if (
+                    i % 2 == 1 &&
+                        (blackPUNCTLayer[i] and bitmask) == 0UL &&
+                        (blackPUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackPUNCTLayer[i] = safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
+                  pieceRemoved = true
+                }
+              }
+              else -> {}
+            }
+          }
 
-		      PlayerName.BLACK.name -> {
-			      when (piece.type) {
-				      PieceType.DVONN -> {
-					      // place black on top of white
-					      if (
-						      i % 2 == 1 &&
-						      (whiteDVONNLayer[i] and bitmask) == 0UL &&
-						      (whiteDVONNLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      whiteDVONNLayer[i] = safeAddAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
-						      pieceRemoved = true
-					      }
-					      // place black on top of white on top of black
-					      if (
-						      i % 2 == 0 &&
-						      (blackDVONNLayer[i] and bitmask) == 0UL &&
-						      (blackDVONNLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      blackDVONNLayer[i] = safeAddAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
-						      pieceRemoved = true
-					      }
+          PlayerName.BLACK.name -> {
+            when (piece.type) {
+              PieceType.DVONN -> {
+                // place black on top of white
+                if (
+                    i % 2 == 1 &&
+                        (whiteDVONNLayer[i] and bitmask) == 0UL &&
+                        (whiteDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whiteDVONNLayer[i] = safeAddAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
+                  pieceRemoved = true
+                }
+                // place black on top of white on top of black
+                if (
+                    i % 2 == 0 &&
+                        (blackDVONNLayer[i] and bitmask) == 0UL &&
+                        (blackDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackDVONNLayer[i] = safeAddAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
+                  pieceRemoved = true
+                }
+              }
 
-				      }
+              PieceType.PUNCT -> {
+                // place black on top of white
+                if (
+                    i % 2 == 1 &&
+                        (whitePUNCTLayer[i] and bitmask) == 0UL &&
+                        (whitePUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whitePUNCTLayer[i] = safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
+                  pieceRemoved = true
+                }
+                // place black on top of white on top of black
+                if (
+                    i % 2 == 0 &&
+                        (blackPUNCTLayer[i] and bitmask) == 0UL &&
+                        (blackPUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackPUNCTLayer[i] = safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
+                  pieceRemoved = true
+                }
+              }
 
-				      PieceType.PUNCT -> {
-					      // place black on top of white
-					      if (
-						      i % 2 == 1 &&
-						      (whitePUNCTLayer[i] and bitmask) == 0UL &&
-						      (whitePUNCTLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      whitePUNCTLayer[i] = safeAddAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
-						      pieceRemoved = true
-					      }
-					      // place black on top of white on top of black
-					      if (
-						      i % 2 == 0 &&
-						      (blackPUNCTLayer[i] and bitmask) == 0UL &&
-						      (blackPUNCTLayer[i - 1] and bitmask) == bitmask
-					      ) {
-						      blackPUNCTLayer[i] = safeAddAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
-						      pieceRemoved = true
-					      }
-				      }
-
-				      else -> {}
-			      }
-		      }
-	      }
+              else -> {}
+            }
+          }
+        }
       }
     } else {
       when (piece.colorName) {
@@ -3606,7 +3718,7 @@ fun Bitboard.undoRetrieveAndCapturePieces(
     }
   }
 
-	println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
+  println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
 }
 
 fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
@@ -3642,24 +3754,24 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
 
     // --- LOCAL HELPER: BASE LAYER REMOVAL ---
     fun safeRemoveAndCheck(board: ULong, boardName: String): ULong {
-	    if (isDebugEnabled) {
-		    println(
-			    "$boardName Board before removing $boardName piece:\n" +
-					    "removeAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
-					    "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
-		    )
-	    }
+      if (isDebugEnabled) {
+        println(
+            "$boardName Board before removing $boardName piece:\n" +
+                "removeAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
+                "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
+        )
+      }
       val newBoard = board and bitmask.inv()
       check((newBoard and bitmask) == 0UL) {
         "Failed to remove ${piece.colorName} ${piece.type} from $boardName."
       }
-	    if (isDebugEnabled) {
-		    println(
-			    "$boardName Board after removing $boardName piece\n" +
-					    "removeAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
-					    "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
-		    )
-	    }
+      if (isDebugEnabled) {
+        println(
+            "$boardName Board after removing $boardName piece\n" +
+                "removeAtIndex: 0b${bitmask.toString(2).padStart(40, '0')}\n" +
+                "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+        )
+      }
       if (isDebugEnabled) println("  -> Successfully removed from $boardName.")
       return newBoard
     }
@@ -3668,7 +3780,7 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
     when (piece.colorName) {
       PlayerName.WHITE.name -> {
         when (piece.type) {
-          PieceType.GIPF ->  whiteGIPF = safeRemoveAndCheck(whiteGIPF, "White GIPF")
+          PieceType.GIPF -> whiteGIPF = safeRemoveAndCheck(whiteGIPF, "White GIPF")
           PieceType.TAMSK -> whiteTAMSK = safeRemoveAndCheck(whiteTAMSK, "White TAMSK")
           PieceType.ZERTZ -> whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ")
           PieceType.YINSH -> whiteYINSH = safeRemoveAndCheck(whiteYINSH, "White YINSH")
@@ -3688,9 +3800,9 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
 
     // --- 3. HANDLE DVONN / PUNCT STACKS ---
     if (isNeutralized) {
-	    var pieceRemoved = false
+      var pieceRemoved = false
       for (i in 5 downTo 1) {
-	      if (pieceRemoved) break
+        if (pieceRemoved) break
 
         when (piece.colorName) {
           PlayerName.WHITE.name -> {
@@ -3703,7 +3815,7 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
                         (whiteDVONNLayer[i - 1] and bitmask) == bitmask
                 ) {
                   whiteDVONNLayer[i] = safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
-	                pieceRemoved = true
+                  pieceRemoved = true
                 }
                 // place white on top of black
                 if (
@@ -3712,31 +3824,30 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
                         (blackDVONNLayer[i - 1] and bitmask) == bitmask
                 ) {
                   blackDVONNLayer[i] = safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
-	                pieceRemoved = true
+                  pieceRemoved = true
                 }
               }
 
               PieceType.PUNCT -> {
 
-                  // place white on top of black on top of white
-                  if (
-                      i % 2 == 0 &&
-                          (whitePUNCTLayer[i] and bitmask) == bitmask &&
-                          (whitePUNCTLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    whitePUNCTLayer[i] = safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
-	                  pieceRemoved = true
-                  }
-                  // place white on top of black
-                  if (
-                      i % 2 == 1 &&
-                          (blackPUNCTLayer[i] and bitmask) == bitmask &&
-                          (blackPUNCTLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    blackPUNCTLayer[i] = safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
-	                  pieceRemoved = true
-                  }
-
+                // place white on top of black on top of white
+                if (
+                    i % 2 == 0 &&
+                        (whitePUNCTLayer[i] and bitmask) == bitmask &&
+                        (whitePUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whitePUNCTLayer[i] = safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
+                  pieceRemoved = true
+                }
+                // place white on top of black
+                if (
+                    i % 2 == 1 &&
+                        (blackPUNCTLayer[i] and bitmask) == bitmask &&
+                        (blackPUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackPUNCTLayer[i] = safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
+                  pieceRemoved = true
+                }
               }
 
               else -> {}
@@ -3747,47 +3858,46 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
             when (piece.type) {
               PieceType.DVONN -> {
 
-                  // place black on top of white
-                  if (
-                      i % 2 == 1 &&
-                          (whiteDVONNLayer[i] and bitmask) == bitmask &&
-                          (whiteDVONNLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    whiteDVONNLayer[i] = safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
-	                  pieceRemoved = true
-                  }
-                  // place black on top of white on top of black
-                  if (
-                      i % 2 == 0 &&
-                          (blackDVONNLayer[i] and bitmask) == bitmask &&
-                          (blackDVONNLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    blackDVONNLayer[i] = safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
-	                  pieceRemoved = true
-                  }
-
+                // place black on top of white
+                if (
+                    i % 2 == 1 &&
+                        (whiteDVONNLayer[i] and bitmask) == bitmask &&
+                        (whiteDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whiteDVONNLayer[i] = safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN[$i]")
+                  pieceRemoved = true
+                }
+                // place black on top of white on top of black
+                if (
+                    i % 2 == 0 &&
+                        (blackDVONNLayer[i] and bitmask) == bitmask &&
+                        (blackDVONNLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackDVONNLayer[i] = safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN[$i]")
+                  pieceRemoved = true
+                }
               }
 
               PieceType.PUNCT -> {
-                  // place black on top of white
-                  if (
-                      i % 2 == 1 &&
-                          (whitePUNCTLayer[i] and bitmask) == bitmask &&
-                          (whitePUNCTLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    whitePUNCTLayer[i] = safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
-	                  pieceRemoved = true
-                  }
-                  // place black on top of white on top of black
-                  if (
-                      i % 2 == 0 &&
-                          (blackPUNCTLayer[i] and bitmask) == bitmask &&
-                          (blackPUNCTLayer[i - 1] and bitmask) == bitmask
-                  ) {
-                    blackPUNCTLayer[i] = safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
-	                  pieceRemoved = true
-                  }
+                // place black on top of white
+                if (
+                    i % 2 == 1 &&
+                        (whitePUNCTLayer[i] and bitmask) == bitmask &&
+                        (whitePUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  whitePUNCTLayer[i] = safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT[$i]")
+                  pieceRemoved = true
                 }
+                // place black on top of white on top of black
+                if (
+                    i % 2 == 0 &&
+                        (blackPUNCTLayer[i] and bitmask) == bitmask &&
+                        (blackPUNCTLayer[i - 1] and bitmask) == bitmask
+                ) {
+                  blackPUNCTLayer[i] = safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT[$i]")
+                  pieceRemoved = true
+                }
+              }
 
               else -> {}
             }
@@ -3839,7 +3949,8 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
     }
   }
 
-	if (isDebugEnabled) println("--- REMOVE/RETRIEVE COMPLETED ---")
+
+  if (isDebugEnabled) println("--- REMOVE/RETRIEVE COMPLETED ---")
 }
 
 private fun Bitboard.createPiece(bitmask: ULong): Piece? {
