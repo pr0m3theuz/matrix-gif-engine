@@ -234,6 +234,7 @@ val columnInfos: List<ColumnInfo> =
         }
 
 @OptIn(ExperimentalUnsignedTypes::class)
+@Serializable
 data class Bitboard(
     var whiteGIPF: ULong = 0UL,
     //
@@ -259,6 +260,78 @@ data class Bitboard(
     var blackZERTZ: ULong = 0UL,
     var blackPotentials: ULong = 0UL,
 ) {
+  fun deepCopy(): Bitboard {
+    // TODO Optimize
+    val string = Json.encodeToString(serializer(), this)
+    return Json.decodeFromString(serializer(), string)
+  }
+
+  fun diff(oldBitboard: Bitboard) {
+    // --- 0. CONFIGURABLE DEBUGGING ---
+    val isDebugEnabled = false
+    if (isDebugEnabled) {
+      println("--- BITBOARD DIFF CALLED ---")
+    }
+
+    // --- 1. PRE-CONDITION WARNING ---
+    require(this !== oldBitboard) {
+      "LOGIC WARNING: You are diffing a bitboard against the exact same instance in memory. The result will be entirely empty."
+    }
+
+    // --- 2. LOCAL HELPER FOR ARRAY DIFFING ---
+    // This elegantly replaces all four of your manual array initialization loops
+    fun diffLayers(current: ULongArray, old: ULongArray, boardName: String): ULongArray {
+      require(current.size == old.size) { "STATE ERROR: Layer sizes do not match for $boardName." }
+      return ULongArray(current.size) { i ->
+        current[i] xor old[i] // XOR captures exactly which bits flipped (added or removed)
+      }
+    }
+
+    // --- 3. EXECUTE DIFF ---
+    val diffBoard = Bitboard(
+      whiteGIPF = this.whiteGIPF xor oldBitboard.whiteGIPF,
+      whiteDVONNLayer = diffLayers(this.whiteDVONNLayer, oldBitboard.whiteDVONNLayer, "White DVONN"),
+      whitePUNCTLayer = diffLayers(this.whitePUNCTLayer, oldBitboard.whitePUNCTLayer, "White PUNCT"),
+      whiteTAMSK = this.whiteTAMSK xor oldBitboard.whiteTAMSK,
+      whiteYINSH = this.whiteYINSH xor oldBitboard.whiteYINSH,
+      whiteZERTZ = this.whiteZERTZ xor oldBitboard.whiteZERTZ,
+      whitePotentials = this.whitePotentials xor oldBitboard.whitePotentials, // FIXED TYPO
+
+      blackGIPF = this.blackGIPF xor oldBitboard.blackGIPF,
+      blackDVONNLayer = diffLayers(this.blackDVONNLayer, oldBitboard.blackDVONNLayer, "Black DVONN"),
+      blackPUNCTLayer = diffLayers(this.blackPUNCTLayer, oldBitboard.blackPUNCTLayer, "Black PUNCT"),
+      blackTAMSK = this.blackTAMSK xor oldBitboard.blackTAMSK,
+      blackYINSH = this.blackYINSH xor oldBitboard.blackYINSH,
+      blackZERTZ = this.blackZERTZ xor oldBitboard.blackZERTZ,
+      blackPotentials = this.blackPotentials xor oldBitboard.blackPotentials, // FIXED TYPO
+    )
+
+    if (isDebugEnabled) {
+      // Optional: Count total changes to easily see if anything happened
+      val totalChanges =
+        diffBoard.whiteGIPF.countOneBits() +
+            diffBoard.whiteTAMSK.countOneBits() +
+            diffBoard.whiteYINSH.countOneBits() +
+            diffBoard.whiteZERTZ.countOneBits() +
+            diffBoard.whitePotentials.countOneBits() +
+            diffBoard.whiteDVONNLayer.sumOf { it.countOneBits() } +
+            diffBoard.whitePUNCTLayer.sumOf { it.countOneBits() } +
+
+            diffBoard.blackGIPF.countOneBits() +
+            diffBoard.blackTAMSK.countOneBits() +
+            diffBoard.blackYINSH.countOneBits() +
+            diffBoard.blackZERTZ.countOneBits() +
+            diffBoard.blackPotentials.countOneBits() +
+            diffBoard.blackDVONNLayer.sumOf { it.countOneBits() } +
+            diffBoard.blackPUNCTLayer.sumOf { it.countOneBits() }
+
+      println("Total changes: $totalChanges")
+      println("Diff complete. Total bits flipped across calculated layers.")
+      println("--- BITBOARD DIFF COMPLETED ---")
+    }
+
+//    return diffBoard
+  }
 
   // region From Gemini TODO
   val globalOccupancy: ULong
@@ -2975,6 +3048,7 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   if (isDebugEnabled) {
     println("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---")
     println("Player: ${player.name}")
+    println("Bitboard State: $this")
   }
 
   val playerPieces =
@@ -2991,9 +3065,11 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
     }
 
 		val result = column.submasks.any { submask ->
-			println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
-			println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-			println("Result: ${(submask and playerPieces) == submask}")
+      if (isDebugEnabled) {
+        println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
+        println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+        println("Result: ${(submask and playerPieces) == submask}")
+      }
 			(submask and playerPieces) == submask
 		}
 
@@ -3022,18 +3098,9 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
 //		    }
 //			}")
 
-	  if (index == 2 && !result) {
-	    println("stooopid!")
-	    stooopid = "stooopid"
-	  }
-
 	  result
 
   }
-
-	if (stooopid != null && columns.isNotEmpty()) {
-		println("fukme!")
-	}
 
 	return columns
 }
@@ -3388,10 +3455,6 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
           .plus(neutralizedPieces)
           .filter { it.retrievedPiece != null || it.capturedPiece != null }
 
-  if (isDebugEnabled) {
-    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
-  }
-
   // TODO Check captured pieces aren't categorized as retrieved pieces and vice versa
   val targetColor = player.name.name
 
@@ -3411,6 +3474,15 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
             .filter { it.colorName == targetColor }
             .map { it.type }
     "Scoring Violation: Player '$targetColor' accidentally captured their own pieces: $invalidCaptured"
+  }
+
+  if (isDebugEnabled) {
+    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
+    println("Bitboard State: $this")
+    println("Pieces retrieved & captured (count: ${pieces.size}):\n${pieces.forEachIndexed { index, piece -> 
+      println("Piece $index: $piece")
+    }}")
+    println("================")
   }
 
   return pieces
@@ -3504,7 +3576,9 @@ fun Bitboard.undoRetrieveAndCapturePieces(
   val isDebugEnabled = true
   if (isDebugEnabled) {
     println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
+    println("Bitboard State: $this")
     println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
+    println("Processing $retrievedCapturedPiecesBits")
   }
 
   retrievedCapturedPiecesBits.forEachIndexed { index, data ->
@@ -3719,6 +3793,8 @@ fun Bitboard.undoRetrieveAndCapturePieces(
   }
 
   println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
+  println("Bitboard State: $this")
+  println("======================")
 }
 
 fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
@@ -3729,7 +3805,9 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
   val isDebugEnabled = true
   if (isDebugEnabled) {
     println("--- REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
+    println("Bitboard State: $this")
     println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
+    println("Processing $retrievedCapturedPiecesBits")
   }
 
   retrievedCapturedPiecesBits.forEachIndexed { index, data ->
@@ -4267,19 +4345,54 @@ fun Bitboard.assertPieceCount(
           boardBasics +
           boardStacks
 
-  if (totalBlackPieces > EXPECTED_TOTAL) println("oooooooooooooo")
+  if (totalBlackPieces > EXPECTED_TOTAL) {
+    println("oooooooooooooo")
+  }
 
   check(totalBlackPieces == EXPECTED_TOTAL) {
+    val nextReserveRaw = nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential }
+    val nextCapturedRaw = nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+    val currentReserveRaw = currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential }
+    val currentCapturedRaw = currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+
     """
-    Critical State Corruption: Total Black pieces ($totalBlackPieces) does not match expected maximum ($EXPECTED_TOTAL).
-    Breakdown:
-    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
-    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
-    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
-    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
-    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
-    """
-        .trimIndent()
+    CRITICAL STATE CORRUPTION: Total Black piece weight ($totalBlackPieces) != Expected ($EXPECTED_TOTAL)
+    
+    1. NEXT PLAYER
+       ├── Reserve (Black pieces held)
+       │   ├── Potentials: $nextReserveRaw (weighted: $nextReservePotentials)
+       │   └── Basics:     $nextReserveBasics
+       └── Captured (By Next Player)
+           ├── Potentials: $nextCapturedRaw (weighted: $nextCapturedPotentials)
+           └── Basics:     $nextCapturedBasics
+           
+    2. CURRENT PLAYER
+       ├── Reserve (Black pieces held)
+       │   ├── Potentials: $currentReserveRaw (weighted: $currentReservePotentials)
+       │   └── Basics:     $currentReserveBasics
+       └── Captured (By Current Player)
+           ├── Potentials: $currentCapturedRaw (weighted: $currentCapturedPotentials)
+           └── Basics:     $currentCapturedBasics
+           
+    3. ACTIVE BOARD
+       ├── Potentials (Weighted): $boardPotentials
+       ├── Flat Basics (Single pieces on board)
+       │   ├── GIPF:  ${blackGIPF.countOneBits()}
+       │   ├── ZERTZ: ${blackZERTZ.countOneBits()}
+       │   ├── TAMSK: ${blackTAMSK.countOneBits()}
+       │   └── YINSH: ${blackYINSH.countOneBits()}
+       └── Stacks (Layered/hidden pieces)
+           ├── DVONN (Black layers 0,2,4): ${blackDVONNLayer[0].countOneBits() + blackDVONNLayer[2].countOneBits() + blackDVONNLayer[4].countOneBits()}
+           ├── DVONN (White layers 1,3,5): ${whiteDVONNLayer[1].countOneBits() + whiteDVONNLayer[3].countOneBits() + whiteDVONNLayer[5].countOneBits()}
+           ├── PUNCT (Black layers 0,2,4): ${blackPUNCTLayer[0].countOneBits() + blackPUNCTLayer[2].countOneBits() + blackPUNCTLayer[4].countOneBits()}
+           └── PUNCT (White layers 1,3,5): ${whitePUNCTLayer[1].countOneBits() + whitePUNCTLayer[3].countOneBits() + whitePUNCTLayer[5].countOneBits()}
+           
+    SUMMARY EVALUATION:
+    - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
+    - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
+     - Bitboard: $this
+    ======================================================================
+    """.trimIndent()
   }
 
   // 1. Next Player's components
@@ -4341,19 +4454,54 @@ fun Bitboard.assertPieceCount(
           boardBasics +
           boardStacks
 
-  if (totalWhitePieces > EXPECTED_TOTAL) println("oooooooooooooo")
+  if (totalWhitePieces > EXPECTED_TOTAL) {
+    println("oooooooooooooo")
+  }
 
   check(totalWhitePieces == EXPECTED_TOTAL) {
+    val nextReserveRaw = nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential }
+    val nextCapturedRaw = nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+    val currentReserveRaw = currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential }
+    val currentCapturedRaw = currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+
     """
-    Critical State Corruption: Total White pieces ($totalWhitePieces) does not match expected maximum ($EXPECTED_TOTAL).
-    Breakdown:
-    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
-    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
-    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
-    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
-    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
-    """
-        .trimIndent()
+      CRITICAL STATE CORRUPTION: Total White piece weight ($totalWhitePieces) != Expected ($EXPECTED_TOTAL)
+      
+      1. NEXT PLAYER (WHITE)
+         ├── Reserve
+         │   ├── Potentials: $nextReserveRaw (weighted: $nextReservePotentials)
+         │   └── Basics:     $nextReserveBasics
+         └── Captured (By Next Player)
+             ├── Potentials: $nextCapturedRaw (weighted: $nextCapturedPotentials)
+             └── Basics:     $nextCapturedBasics
+             
+      2. CURRENT PLAYER (BLACK/OTHER)
+         ├── Reserve (White pieces held)
+         │   ├── Potentials: $currentReserveRaw (weighted: $currentReservePotentials)
+         │   └── Basics:     $currentReserveBasics
+         └── Captured (White pieces captured)
+             ├── Potentials: $currentCapturedRaw (weighted: $currentCapturedPotentials)
+             └── Basics:     $currentCapturedBasics
+             
+      3. ACTIVE BOARD
+         ├── Potentials (Weighted): $boardPotentials
+         ├── Flat Basics (Single pieces on board)
+         │   ├── GIPF:  ${whiteGIPF.countOneBits()}
+         │   ├── ZERTZ: ${whiteZERTZ.countOneBits()}
+         │   ├── TAMSK: ${whiteTAMSK.countOneBits()}
+         │   └── YINSH: ${whiteYINSH.countOneBits()}
+         └── Stacks (Layered/hidden pieces)
+             ├── DVONN (White layers 0,2,4): ${whiteDVONNLayer[0].countOneBits() + whiteDVONNLayer[2].countOneBits() + whiteDVONNLayer[4].countOneBits()}
+             ├── DVONN (Black layers 1,3,5): ${blackDVONNLayer[1].countOneBits() + blackDVONNLayer[3].countOneBits() + blackDVONNLayer[5].countOneBits()}
+             ├── PUNCT (White layers 0,2,4): ${whitePUNCTLayer[0].countOneBits() + whitePUNCTLayer[2].countOneBits() + whitePUNCTLayer[4].countOneBits()}
+             └── PUNCT (Black layers 1,3,5): ${blackPUNCTLayer[1].countOneBits() + blackPUNCTLayer[3].countOneBits() + blackPUNCTLayer[5].countOneBits()}
+             
+      SUMMARY EVALUATION:
+      - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
+      - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
+      - Bitboard: $this
+      ======================================================================
+      """.trimIndent()
   }
 
   val totalPieces = totalBlackPieces + totalWhitePieces
