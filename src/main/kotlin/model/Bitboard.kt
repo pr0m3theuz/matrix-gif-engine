@@ -6,6 +6,7 @@ import kotlin.collections.forEachIndexed
 import kotlin.collections.map
 import kotlin.io.println
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
@@ -266,11 +267,13 @@ data class Bitboard(
     return Json.decodeFromString(serializer(), string)
   }
 
-  fun diff(oldBitboard: Bitboard) {
+  fun diff(oldBitboard: Bitboard): Bitboard {
     // --- 0. CONFIGURABLE DEBUGGING ---
     val isDebugEnabled = false
     if (isDebugEnabled) {
       println("--- BITBOARD DIFF CALLED ---")
+      println("Original Bitboard State: ${Json.encodeToString(oldBitboard) }}")
+      println("Current Bitboard State: ${Json.encodeToString(this) }}")
     }
 
     // --- 1. PRE-CONDITION WARNING ---
@@ -327,10 +330,11 @@ data class Bitboard(
 
       println("Total changes: $totalChanges")
       println("Diff complete. Total bits flipped across calculated layers.")
+      println("Diff Bitboard State: ${Json.encodeToString(oldBitboard) }}")
       println("--- BITBOARD DIFF COMPLETED ---")
     }
 
-//    return diffBoard
+    return diffBoard
   }
 
   // region From Gemini TODO
@@ -525,7 +529,7 @@ val Bitboard.vacantLines
 
 fun Bitboard.executePushUp(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true // Toggle for detailed trace logs
+  val isDebugEnabled = false // Toggle for detailed trace logs
   if (isDebugEnabled) {
     println("--- EXECUTE PUSH UP CALLED ---")
     println("Column: $col")
@@ -596,7 +600,7 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
 
 fun Bitboard.executePushDown(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- EXECUTE PUSH DOWN CALLED ---")
     println("Column: $col")
@@ -1160,7 +1164,7 @@ fun Bitboard.addPieceToBitboard(
     piece: Piece,
 ): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true // Toggle this to true to see detailed trace logs
+  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
   if (isDebugEnabled) {
     println("--- ADD PIECE CALLED ---")
     println("Piece: ${piece.colorName} ${piece.type}")
@@ -1318,7 +1322,7 @@ fun Bitboard.undoAddPieceToBitboard(
     wasIndexOccupied: Boolean, // Required to know if we need to revert a shift
 ) {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true // Toggle this to true to see detailed trace logs
+  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
   if (isDebugEnabled) {
     println("--- UNDO ADD PIECE CALLED ---")
     println("Piece: ${piece.colorName} ${piece.type}")
@@ -1626,7 +1630,7 @@ fun Bitboard.usePiecePotential(possibleBitMove: PossibleBitMove) {
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials =
       if (possibleBitMove.pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
-  val isDebugEnabled = true // Toggle this to true to see detailed trace logs
+  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
   if (isDebugEnabled) {
     println("--- USE POTENTIAL CALLED ---")
     println("Piece: ${possibleBitMove.pieceColor.name} ${possibleBitMove.pieceType}")
@@ -1879,7 +1883,7 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials =
       if (possibleBitMove.pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
-  val isDebugEnabled = true // Toggle this to true to see detailed trace logs
+  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
   if (isDebugEnabled) {
     println("--- UNDO USE POTENTIAL CALLED ---")
     println("Piece: ${possibleBitMove.pieceColor.name} ${possibleBitMove.pieceType}")
@@ -2199,7 +2203,7 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
 
 fun Bitboard.getTamskMoves(player: Player): PossibleBitMove? {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- GET TAMSK MOVES CALLED ---")
     println("Player: ${player.name}")
@@ -2259,7 +2263,7 @@ fun Bitboard.useTamskPotential(
   // NEW: Verify the player actually has a piece at the source index before moving it
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- USE TAMSK POTENTIAL CALLED ---")
     println("Player: ${player.name} | Source: $sourceIndex | Target: $targetIndex")
@@ -2478,7 +2482,7 @@ fun Bitboard.undoTamskPotential(
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- UNDO TAMSK POTENTIAL CALLED ---")
     println("Player: ${player.name} | Source: $sourceIndex | RemoveAt: $removeAtIndex")
@@ -3044,11 +3048,11 @@ fun Bitboard.getPunctMoves(
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---")
     println("Player: ${player.name}")
-    println("Bitboard State: $this")
+    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
   }
 
   val playerPieces =
@@ -3065,12 +3069,13 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
     }
 
 		val result = column.submasks.any { submask ->
-      if (isDebugEnabled) {
+      val fourInARow = (submask and playerPieces) == submask
+      if (isDebugEnabled && fourInARow) {
         println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
         println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-        println("Result: ${(submask and playerPieces) == submask}")
+        println("Result: $fourInARow")
       }
-			(submask and playerPieces) == submask
+      fourInARow
 		}
 
 		if (isDebugEnabled) {
@@ -3100,6 +3105,10 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
 
 	  result
 
+  }
+
+  if (isDebugEnabled) {
+    println("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---")
   }
 
 	return columns
@@ -3161,7 +3170,7 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
   require(columnInfos.isNotEmpty()) { "There must be at least one column" }
 
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- CREATE RETRIEVE & CAPTURED PIECES CALLED ---")
   }
@@ -3477,12 +3486,13 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
   }
 
   if (isDebugEnabled) {
-    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
-    println("Bitboard State: $this")
-    println("Pieces retrieved & captured (count: ${pieces.size}):\n${pieces.forEachIndexed { index, piece -> 
+    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
+    println("Pieces retrieved & captured (count: ${pieces.size}):")
+    pieces.forEachIndexed { index, piece ->
       println("Piece $index: $piece")
-    }}")
-    println("================")
+    }
+    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
+    println("====================================================")
   }
 
   return pieces
@@ -3573,12 +3583,14 @@ fun Bitboard.undoRetrieveAndCapturePieces(
     retrievedCapturedPiecesBits: List<RetrievedCapturedPieceBit>
 ) {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
-    println("Bitboard State: $this")
+    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
     println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
-    println("Processing $retrievedCapturedPiecesBits")
+    retrievedCapturedPiecesBits.forEachIndexed { index, piece ->
+      println("piece $index: $piece")
+    }
   }
 
   retrievedCapturedPiecesBits.forEachIndexed { index, data ->
@@ -3610,7 +3622,7 @@ fun Bitboard.undoRetrieveAndCapturePieces(
         )
       }
       val newBoard = board or bitmask
-      check((newBoard and bitmask) == bitmask) {
+      check(newBoard != board) {
         "ADD FAILED: Failed to add ${piece.colorName} ${piece.type} to $boardName bitboard at index $bitmask."
       }
       if (isDebugEnabled) {
@@ -3792,9 +3804,9 @@ fun Bitboard.undoRetrieveAndCapturePieces(
     }
   }
 
+  println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
   println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
-  println("Bitboard State: $this")
-  println("======================")
+  println("=============================================")
 }
 
 fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
@@ -3802,12 +3814,14 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
 ) {
 
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = true
+  val isDebugEnabled = false
   if (isDebugEnabled) {
     println("--- REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
-    println("Bitboard State: $this")
+    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
     println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
-    println("Processing $retrievedCapturedPiecesBits")
+    retrievedCapturedPiecesBits.forEachIndexed { index, piece ->
+      println("piece $index: $piece")
+    }
   }
 
   retrievedCapturedPiecesBits.forEachIndexed { index, data ->
@@ -3839,9 +3853,30 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
                 "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
         )
       }
+
+      val wasIndexOccupied = (board and bitmask) == bitmask
+
+      check(wasIndexOccupied) {
+        """
+          STATE ERROR:  ${piece.colorName} ${piece.type} Piece cannot be removed from unoccupied index ($bitmask) in $boardName: $board.
+          Bitboard State: ${Json.encodeToString<Bitboard>(this)}
+          Processing ${retrievedCapturedPiecesBits.size} pieces...
+          ${retrievedCapturedPiecesBits.forEachIndexed { index, piece ->
+            println("piece $index: $piece")
+          }}
+        """.trimIndent()
+      }
+
       val newBoard = board and bitmask.inv()
-      check((newBoard and bitmask) == 0UL) {
-        "Failed to remove ${piece.colorName} ${piece.type} from $boardName."
+      check(newBoard != board) {
+        """
+          Failed to remove ${piece.colorName} ${piece.type} at position $bitmask from $boardName: $board
+          Bitboard State: ${Json.encodeToString<Bitboard>(this)}
+          Processing ${retrievedCapturedPiecesBits.size} pieces...
+          ${retrievedCapturedPiecesBits.forEachIndexed { index, piece ->
+          println("piece $index: $piece")
+        }}
+        """.trimIndent()
       }
       if (isDebugEnabled) {
         println(
@@ -4286,6 +4321,10 @@ fun Bitboard.assertPieceCount(
     currentPlayer: Player,
     nextPlayer: Player,
 ) {
+
+  currentPlayer.piecesInReserve.sortBy { it.type }
+  nextPlayer.piecesInReserve.sortBy { it.type }
+
   // 1. Next Player's components
   var nextReservePotentials =
       nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
@@ -4390,7 +4429,8 @@ fun Bitboard.assertPieceCount(
     SUMMARY EVALUATION:
     - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
     - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
-     - Bitboard: $this
+    - Bitboard State: ${Json.encodeToString<Bitboard>(this)}
+    - Player: ${Json.encodeToString<Player>(if (currentPlayer.name == PlayerName.WHITE) currentPlayer else nextPlayer)}
     ======================================================================
     """.trimIndent()
   }
@@ -4499,7 +4539,9 @@ fun Bitboard.assertPieceCount(
       SUMMARY EVALUATION:
       - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
       - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
-      - Bitboard: $this
+      - Bitboard State: ${Json.encodeToString<Bitboard>(this)}
+      - Player: ${Json.encodeToString<Player>(if (currentPlayer.name == PlayerName.WHITE) currentPlayer else nextPlayer)}
+
       ======================================================================
       """.trimIndent()
   }

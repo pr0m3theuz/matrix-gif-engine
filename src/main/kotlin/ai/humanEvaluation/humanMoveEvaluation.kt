@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example.ai.humanEvaluation
 
 import java.security.MessageDigest
 import kotlin.collections.forEach
 import kotlin.collections.mapNotNull
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
 import org.example.engine.PossibleMove
@@ -632,7 +635,7 @@ fun alphabetaBitboardAddPieces(
 		println("currentPlayer: ${currentPlayer}")
 		println("opponentPlayer: $opponentPlayer")
 		println("depth: ${depth}")
-		println("Bitboard: $bitboard")
+		println("Bitboard: ${Json.encodeToString(bitboard)}")
 	}
   /**
    * TODO evaluate lines based on:
@@ -647,6 +650,7 @@ fun alphabetaBitboardAddPieces(
   //  state.assertPieceCount()
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
+  val initBitboard = bitboard.deepCopy()
   //  val bitboard = convertBoardToBitboard(state.board)
 
   // TODO Need to score piece removals
@@ -662,6 +666,50 @@ fun alphabetaBitboardAddPieces(
       )
 
 		println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
+
+  bitboard.diff(initBitboard)
+
+    check(bitboard == initBitboard) {
+        val diffBoard = bitboard.diff(initBitboard)
+
+        buildString {
+            appendLine("CRITICAL STATE VALIDATION FAILED: The current bitboard does not perfectly match the initial bitboard.")
+            appendLine("--- STATE DESYNC REPORT ---")
+
+            // Local helper to cleanly format the mismatched bitmasks
+            fun logDiff(boardName: String, diffBits: ULong) {
+                if (diffBits != 0UL) {
+                    val count = diffBits.countOneBits()
+                    appendLine("  -> [$boardName] Desync: $count bit(s) mismatched. Diff Mask: 0b${diffBits.toString(2).padStart(40, '0')}")
+                  }
+              }
+
+            // White Boards
+            logDiff("White GIPF", diffBoard.whiteGIPF)
+            logDiff("White TAMSK", diffBoard.whiteTAMSK)
+            logDiff("White YINSH", diffBoard.whiteYINSH)
+            logDiff("White ZERTZ", diffBoard.whiteZERTZ)
+            logDiff("White Potentials", diffBoard.whitePotentials)
+            diffBoard.whiteDVONNLayer.forEachIndexed { i, layer -> logDiff("White DVONN Layer $i", layer) }
+            diffBoard.whitePUNCTLayer.forEachIndexed { i, layer -> logDiff("White PUNCT Layer $i", layer) }
+
+            // Black Boards
+            logDiff("Black GIPF", diffBoard.blackGIPF)
+            logDiff("Black TAMSK", diffBoard.blackTAMSK)
+            logDiff("Black YINSH", diffBoard.blackYINSH)
+            logDiff("Black ZERTZ", diffBoard.blackZERTZ)
+            logDiff("Black Potentials", diffBoard.blackPotentials)
+            diffBoard.blackDVONNLayer.forEachIndexed { i, layer -> logDiff("Black DVONN Layer $i", layer) }
+            diffBoard.blackPUNCTLayer.forEachIndexed { i, layer -> logDiff("Black PUNCT Layer $i", layer) }
+
+            appendLine("---------------------------")
+            appendLine("Hint: A '1' in the Diff Mask indicates a piece that exists on one board but is missing from the other.")
+          }
+      }
+
+    bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+    println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
 
   var newlyStackedPieces: List<Piece> = emptyList()
 
@@ -683,10 +731,12 @@ fun alphabetaBitboardAddPieces(
     // TODO Actually retrieveAndCapturePieces using move.retrievedCapturedPiecesBit list
     bitboard.removeRetrieveAndCapturePiecesFromBitboard(move.retrievedCapturedPiecesBit)
 
+    bitboard.diff(initBitboard)
+
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   }
 
-  val possibleBitMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos).shuffled()
+  val possibleBitMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
 
 	// TODO change to depth <= 0
   if (possibleBitMoves.isEmpty() || depth <= 0) {
@@ -696,6 +746,11 @@ fun alphabetaBitboardAddPieces(
 
     // TODO undo retrieval and capture
     // d. UNDO the piece removals to evaluate the next choice
+
+    currentPlayer.uncombinePieces(newlyStackedPieces)
+
+    bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
     bestPiecesToRetrieveCapture1.move
         ?.retrievedCapturedPiecesBit
         ?.mapNotNull {
@@ -718,6 +773,8 @@ fun alphabetaBitboardAddPieces(
       bitboard.undoRetrieveAndCapturePieces(it)
     }
 
+    bitboard.diff(initBitboard)
+
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
     // TODO create scoreBitBoardState
@@ -735,6 +792,8 @@ fun alphabetaBitboardAddPieces(
 			println("Bitboard State:")
 			println(bitboard)
 		}
+
+    val preMoveBitboardState = bitboard.deepCopy()
 
     when (possibleBitMove.moveType) {
       MoveType.AddPiece -> {
@@ -959,7 +1018,7 @@ fun alphabetaBitboardAddPieces(
 	              // TODO Add selected piece back to player reserve
 	              selectedPiece?.let { currentPlayer.piecesInReserve.add(it) }
 
-                bitboard.diff(bitboardCopy)
+                bitboard.diff(preMoveBitboardState)
 
 	              bitboard.assertPieceCount(
 		              currentPlayer = currentPlayer,
@@ -1029,6 +1088,8 @@ fun alphabetaBitboardAddPieces(
 
 	      println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
 
+        bitboard.diff(bitboardCopy)
+        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 
         var newlyStackedPieces: List<Piece> = emptyList()
@@ -1112,6 +1173,8 @@ fun alphabetaBitboardAddPieces(
 
         // TODO undo use piece potential
         bitboard.undoUsePiecePotential(possibleBitMove)
+
+        bitboard.diff(preMoveBitboardState)
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
         if (move.score.unaryMinus() > alphaBetaScore.alpha) {
@@ -1169,6 +1232,8 @@ fun alphabetaBitboardAddPieces(
     bitboard.removeRetrieveAndCapturePiecesFromBitboard(it)
   }
 
+  bitboard.diff(initBitboard)
+
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
   return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
@@ -1184,13 +1249,15 @@ fun resolveBoardRemovals(
 	val isDebugEnabled = true // Toggle this to true to see detailed trace logs
 	if (isDebugEnabled) {
 		println("--- RESOLVE BOARD REMOVALS CALLED ---")
-    println("Bitboard: $bitboard")
+    println("Bitboard: ${Json.encodeToString(bitboard)}")
 		println("currentPlayer: ${currentPlayer}")
 		println("opponentPlayer: ${opponentPlayer}")
 		println("depth: ${depth}")
 	}
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+  val bitboardCopy = bitboard.deepCopy()
 
   val linesWithFourInARow = bitboard.evaluateLinesForFourInARow(currentPlayer)
 
@@ -1290,6 +1357,8 @@ fun resolveBoardRemovals(
 
 	        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
+          val bitboardCopy = bitboard.deepCopy()
+
           // d. UNDO the piece removals to evaluate the next choice
           currentPlayer.uncombinePieces(newlyStackedPieces)
 
@@ -1311,6 +1380,8 @@ fun resolveBoardRemovals(
 
           bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
           bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
+
+          bitboard.diff(bitboardCopy)
 
           bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1397,6 +1468,8 @@ fun resolveBoardRemovals(
         }
 
         bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
+
+        bitboard.diff(bitboardCopy)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
