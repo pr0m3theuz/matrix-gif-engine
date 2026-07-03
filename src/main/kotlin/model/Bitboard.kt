@@ -334,6 +334,42 @@ data class Bitboard(
       println("--- BITBOARD DIFF COMPLETED ---")
     }
 
+	  check(this.globalOccupancy == oldBitboard.globalOccupancy) {
+		  buildString {
+			  appendLine("CRITICAL STATE VALIDATION FAILED: The current bitboard does not perfectly match the initial bitboard.")
+			  appendLine("--- STATE DESYNC REPORT ---")
+
+			  // Local helper to cleanly format the mismatched bitmasks
+			  fun logDiff(boardName: String, diffBits: ULong) {
+				  if (diffBits != 0UL) {
+					  val count = diffBits.countOneBits()
+					  appendLine("  -> [$boardName] Desync: $count bit(s) mismatched. Diff Mask: 0b${diffBits.toString(2).padStart(40, '0')}")
+				  }
+			  }
+
+			  // White Boards
+			  logDiff("White GIPF", diffBoard.whiteGIPF)
+			  logDiff("White TAMSK", diffBoard.whiteTAMSK)
+			  logDiff("White YINSH", diffBoard.whiteYINSH)
+			  logDiff("White ZERTZ", diffBoard.whiteZERTZ)
+			  logDiff("White Potentials", diffBoard.whitePotentials)
+			  diffBoard.whiteDVONNLayer.forEachIndexed { i, layer -> logDiff("White DVONN Layer $i", layer) }
+			  diffBoard.whitePUNCTLayer.forEachIndexed { i, layer -> logDiff("White PUNCT Layer $i", layer) }
+
+			  // Black Boards
+			  logDiff("Black GIPF", diffBoard.blackGIPF)
+			  logDiff("Black TAMSK", diffBoard.blackTAMSK)
+			  logDiff("Black YINSH", diffBoard.blackYINSH)
+			  logDiff("Black ZERTZ", diffBoard.blackZERTZ)
+			  logDiff("Black Potentials", diffBoard.blackPotentials)
+			  diffBoard.blackDVONNLayer.forEachIndexed { i, layer -> logDiff("Black DVONN Layer $i", layer) }
+			  diffBoard.blackPUNCTLayer.forEachIndexed { i, layer -> logDiff("Black PUNCT Layer $i", layer) }
+
+			  appendLine("---------------------------")
+			  appendLine("Hint: A '1' in the Diff Mask indicates a piece that exists on one board but is missing from the other.")
+		  }
+	  }
+
     return diffBoard
   }
 
@@ -1469,11 +1505,6 @@ fun Bitboard.undoAddPieceToBitboard(
   }
 
   // --- 5. POST-CONDITION CHECKS ---
-  // Retained specific scenario debug hook from original code
-  if (whiteGIPF == 9UL && blackGIPF == 4UL) {
-    println("DEBUG HOOK: Target GIPF state reached after undo (W:9, B:4).")
-  }
-
   if (isDebugEnabled) {
     println("--- UNDO ADD PIECE COMPLETE ---")
     println("Board after removing piece:  0b${globalOccupancy.toString(2)}")
@@ -2316,59 +2347,64 @@ fun Bitboard.useTamskPotential(
   // --- REMOVE POTENTIAL BEFORE SHIFTING ---
   when (player.name) {
     PlayerName.WHITE -> {
-      println(
-          "TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
-
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
       // Remove from Potentials board (using exact sourceIndex rather than broad mask)
       whitePotentials = whitePotentials and sourceIndex.inv()
       check((whitePotentials and sourceIndex) == 0UL) {
         "Failed to remove White Potential piece from source index."
       }
-
-      println(
-          "TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
 
     PlayerName.BLACK -> {
-      println(
-          "TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
-
+	    if (isDebugEnabled) {
+		    println(
+			    "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
       // Remove from Potentials board (using exact sourceIndex rather than broad mask)
       blackPotentials = blackPotentials and sourceIndex.inv()
       check((blackPotentials and sourceIndex) == 0UL) {
         "Failed to remove Black Potential piece from source index."
       }
 
-      println(
-          "TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    " Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
   }
 
@@ -2407,43 +2443,47 @@ fun Bitboard.useTamskPotential(
 
   when (player.name) {
     PlayerName.WHITE -> {
-      println(
-          "TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
-
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
       // Add to TAMSK board
       whiteTAMSK = whiteTAMSK or targetIndex
       check((whiteTAMSK and targetIndex) != 0UL) {
         "Failed to add White TAMSK piece to target index."
       }
-
-      println(
-          "TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
 
     PlayerName.BLACK -> {
-      println(
-          "TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
 
       // Add to TAMSK board
       blackTAMSK = blackTAMSK or targetIndex
@@ -2451,15 +2491,17 @@ fun Bitboard.useTamskPotential(
         "Failed to add Black TAMSK piece to target index."
       }
 
-      println(
-          "TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
   }
 
@@ -2588,43 +2630,48 @@ fun Bitboard.undoTamskPotential(
   if (isDebugEnabled) println("--- RESTORE POTENTIAL AFTER SHIFTING ---")
   when (player.name) {
     PlayerName.WHITE -> {
-      println(
-          "TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
 
       // Restore the potential piece
       whitePotentials = whitePotentials or sourceIndex
       check((whitePotentials and sourceIndex) != 0UL) {
         "Failed to restore White Potential piece to center."
       }
-
-      println(
-          "TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
 
     PlayerName.BLACK -> {
-      println(
-          "TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
 
       // Restore the potential piece
       blackPotentials = blackPotentials or sourceIndex
@@ -2632,15 +2679,17 @@ fun Bitboard.undoTamskPotential(
         "Failed to restore Black Potential piece to center."
       }
 
-      println(
-          "TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-      )
-      println(
-          "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-      )
+	    if (isDebugEnabled) {
+		    println(
+			    "TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
+		    )
+		    println(
+			    "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+		    )
+	    }
     }
   }
 
@@ -3804,9 +3853,11 @@ fun Bitboard.undoRetrieveAndCapturePieces(
     }
   }
 
-  println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
-  println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
-  println("=============================================")
+	if (isDebugEnabled) {
+		println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
+		println("--- UNDO REMOVE/RETRIEVE CAPTURED PIECES COMPLETED ---")
+		println("=============================================")
+	}
 }
 
 fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
@@ -3818,6 +3869,7 @@ fun Bitboard.removeRetrieveAndCapturePiecesFromBitboard(
   if (isDebugEnabled) {
     println("--- REMOVE/RETRIEVE CAPTURED PIECES CALLED ---")
     println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
+	  println(retrievedCapturedPiecesBits)
     println("Processing ${retrievedCapturedPiecesBits.size} pieces...")
     retrievedCapturedPiecesBits.forEachIndexed { index, piece ->
       println("piece $index: $piece")
