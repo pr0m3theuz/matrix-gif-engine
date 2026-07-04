@@ -949,6 +949,7 @@ fun alphabetaBitboardAddPieces(
                                 pushDirection = pushDirection,
                                 columnInfos = listOf(columnInfo),
                                 piece = possibleBitMove.piece,
+                                pieceType = possibleBitMove.pieceType,
                                 moveType = possibleBitMove.moveType,
                             ),
                         score =
@@ -1241,8 +1242,7 @@ fun alphabetaBitboardAddPieces(
 //              "line 437: ply $depth player: ${currentPlayer.name.name} move $index: return best: $alphaBetaScore"
 //          )
 
-          // TODO Do I need undo bestPiecesToRetrieveCapture1 here?
-
+          require(alphaBetaScore.move != null)
           return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
         }
       }
@@ -1287,7 +1287,8 @@ fun alphabetaBitboardAddPieces(
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-  return BestBitMove(null, score = alphaBetaScore.alpha)
+  // TODO figure out
+  return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
 }
 
 fun resolveBoardRemovals(
@@ -1578,5 +1579,6 @@ fun resolveBoardRemovals(
   if (isDebugEnabled) {
     println("Bitboard State (NO REMOVALS): ${Json.encodeToString(bitboard)}")
   }
+  // TODO
   return BestBitMove(null, score = alphaBetaScore.alpha)
 }

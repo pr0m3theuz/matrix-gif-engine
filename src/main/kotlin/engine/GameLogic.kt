@@ -148,14 +148,22 @@ fun playerMove(state: State): State {
 
 			node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
-			require(
-				bestMove.targetBit != null &&
-				bestMove.pushDirection != null &&
-				bestMove.columnInfos.isNotEmpty() &&
-				bestMove.piece != null
-			)
+			// --- MOVE VALIDATION ---
+			requireNotNull(bestMove.targetBit) {
+				"CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
+			}
+			requireNotNull(bestMove.pushDirection) {
+				"CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
+			}
+			require(bestMove.columnInfos.isNotEmpty()) {
+				"CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
+			}
 
-			if(bestMove.sourceBit == null) {
+			if(bestMove.pieceType != PieceType.TAMSK) {
+				requireNotNull(bestMove.piece) {
+					"CRITICAL MOVE ERROR: bestMove.piece cannot be null. A valid move must have a piece."
+				}
+
 				bitboard.addPieceToBitboard(
 					addAtIndex = bestMove.targetBit,
 					pushDirection = bestMove.pushDirection,
@@ -163,6 +171,10 @@ fun playerMove(state: State): State {
 					piece = bestMove.piece
 				)
 			} else {
+				requireNotNull(bestMove.sourceBit) {
+					"CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
+				}
+
 				bitboard.useTamskPotential(
 					player = state.currentPlayer,
 					sourceIndex = bestMove.sourceBit,
