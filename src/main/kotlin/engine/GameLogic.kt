@@ -10,8 +10,28 @@ import org.example.model.*
 import kotlin.collections.HashMap
 
 fun playerTurn(state: State): State {
-	// TODO Replace with bitboard equivalent
-  var newState = enforcePieceRemovalRules(state)
+
+	var newState = state.deepCopy()
+
+	/** TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece removals
+	 * A regular move and an extra move are considered
+	 * one single turn, whether the extra move is made
+	 * after or before the regular move. The position of
+	 * the pieces between the two moves is regarded as an
+	 * “interim” situation. This means that no pieces may
+	 * be removed or captured in between the regular
+	 * move and the extra move. The same goes for
+	 * situations where you succeed in pushing a second
+	 * or third TAMSK-stack onto the central spot during
+	 * one and the same turn.
+	 */
+	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+		// newState = playerMove(newState) // ?: return null
+		// TODO Replace with bitboard equivalent
+		// TODO Replace with bitboard equivalent
+		newState = enforcePieceRemovalRules(state)
+	}
+
 
   // recombine player pieces
   newState.currentPlayer.combinePieces()
@@ -112,8 +132,9 @@ fun playerMove(state: State): State {
 
 	val bitboard = convertBoardToBitboard(state.board)
 
+	// TODO NO MOVE IS BEING SELECTED??????
 	val bestMove = alphabetaBitboardAddPieces(
-		depth = 2,
+		depth = 3,
 		bitboard = bitboard,
 		currentPlayer = state.currentPlayer,
 		opponentPlayer = state.nextPlayer,

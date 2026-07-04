@@ -661,7 +661,7 @@ fun alphabetaBitboardAddPieces(
 	/**
 	 * A regular move and an extra move are considered
 	 * one single turn, whether the extra move is made
-	 * aft er or before the regular move. The position of
+	 * after or before the regular move. The position of
 	 * the pieces between the two moves is regarded as an
 	 * “interim” situation. This means that no pieces may
 	 * be removed or captured in between the regular
@@ -687,7 +687,9 @@ fun alphabetaBitboardAddPieces(
 		bitboard.diff(initBitboard)
 		bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-		println("--- RESOLVE BOARD REMOVALS COMPLETED (PRE-MOVE) ---")
+    if (isDebugEnabled) {
+      println("--- RESOLVE BOARD REMOVALS COMPLETED (PRE-MOVE) ---")
+    }
 
 		bestPiecesToRetrieveCapture1.move?.let { move ->
 			val retrievedPieces =
@@ -793,14 +795,18 @@ fun alphabetaBitboardAddPieces(
                   columnInfo.positions.last() to columnInfo.pushDirections.second,
               )
               .forEach { (addAtIndex, pushDirection) ->
-								println("""
+                if (isDebugEnabled) {
+                  println(
+                    """
 									Move: $index
 									Piece: ${possibleBitMove.piece}
 									Piece Type: ${possibleBitMove.pieceType}
 									Push direction: $pushDirection
 									Add At Index: $addAtIndex
 									Pre Move Bitboard State: ${Json.encodeToString(bitboard)}
-								""".trimIndent())
+								""".trimIndent()
+                  )
+                }
 
 	              bitboard.diff(preMoveBitboardState)
 
@@ -834,14 +840,18 @@ fun alphabetaBitboardAddPieces(
 
 	              val postMoveBitboardState = bitboard.deepCopy()
 
-	              println("""
+                if (isDebugEnabled) {
+                  println(
+                    """
 									Move: $index
 									Piece: ${possibleBitMove.piece}
 									Piece Type: ${possibleBitMove.pieceType}
 									Push direction: $pushDirection
 									Add At Index: $addAtIndex
 									Post Move Bitboard State: ${Json.encodeToString(bitboard)}
-								""".trimIndent())
+								""".trimIndent()
+                  )
+                }
 
 	              bitboard.assertPieceCount(
                     currentPlayer = currentPlayer,
@@ -897,8 +907,9 @@ fun alphabetaBitboardAddPieces(
 
 	              bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-	              println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
-
+                if (isDebugEnabled) {
+                  println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
+                }
                 var newlyStackedPieces: List<Piece> = emptyList()
 
                 if (
@@ -1122,7 +1133,9 @@ fun alphabetaBitboardAddPieces(
                 alphaBetaScore = alphaBetaScore,
             )
 
-	      println("--- RESOLVE BOARD REMOVALS COMPLETED (POST USE POTENTIAL) ---")
+        if (isDebugEnabled) {
+          println("--- RESOLVE BOARD REMOVALS COMPLETED (POST USE POTENTIAL) ---")
+        }
 
         bitboard.diff(postUsePotentialBitboardState)
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
@@ -1369,8 +1382,9 @@ fun resolveBoardRemovals(
 
 	        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-
-	        println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
+          if (isDebugEnabled) {
+            println("--- RESOLVE BOARD REMOVALS COMPLETED ---")
+          }
 
           val allRetrievedCapturedPieces =
               bestPiecesToRemove.move?.retrievedCapturedPiecesBit?.plus(retrievedCapturedPieces.plus(piecesWithPotentialPowerset))
@@ -1453,7 +1467,9 @@ fun resolveBoardRemovals(
 //                "line 378: ply $depth player: ${currentPlayer.name.name} move $index: return best: $alphaBetaScore"
 //            )
 
-						println("Bitboard State: ${Json.encodeToString(bitboard)}")
+            if (isDebugEnabled) {
+              println("Bitboard State: ${Json.encodeToString(bitboard)}")
+            }
 
             return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
           }
@@ -1547,7 +1563,9 @@ fun resolveBoardRemovals(
 //          println(
 //              "line 378: ply $depth player: ${currentPlayer.name.name} move $index: return best: $alphaBetaScore"
 //          )
-	        println("Bitboard State: ${Json.encodeToString(bitboard)}")
+          if (isDebugEnabled) {
+            println("Bitboard State: ${Json.encodeToString(bitboard)}")
+          }
           return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
         }
       }
@@ -1557,6 +1575,8 @@ fun resolveBoardRemovals(
 	bitboard.diff(initBitboard)
 
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
-	println("Bitboard State (NO REMOVALS): ${Json.encodeToString(bitboard)}")
+  if (isDebugEnabled) {
+    println("Bitboard State (NO REMOVALS): ${Json.encodeToString(bitboard)}")
+  }
   return BestBitMove(null, score = alphaBetaScore.alpha)
 }

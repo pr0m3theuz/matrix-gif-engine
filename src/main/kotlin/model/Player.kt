@@ -52,9 +52,10 @@ data class Player(
     this.piecesInReserve.remove(selectedPiece)
 
     val pieceCountDifference = initialSize - piecesInReserve.size
-    println(
-        "the delta was $pieceCountDifference (Initial: $initialSize, Current: ${piecesInReserve.size})"
-    )
+
+//    println(
+//        "the delta was $pieceCountDifference (Initial: $initialSize, Current: ${piecesInReserve.size})"
+//    )
 
     check(pieceCountDifference == 1) {
       "Reserve decrement failure! Expected exactly 1 piece to be removed from the reserve, " +
