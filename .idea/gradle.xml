@@ -6,10 +6,10 @@
       <GradleProjectSettings>
         <option name="testRunner" value="CHOOSE_PER_TEST" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="gradleJvm" value="corretto-24" />
+        <option name="gradleJvm" value="jbr-21 (4)" />
         <option name="modules">
           <set>
-            <option value="/var/home/peachyfox/Downloads/comp_4031_dissertation" />
+            <option value="$PROJECT_DIR$" />
           </set>
         </option>
       </GradleProjectSettings>
