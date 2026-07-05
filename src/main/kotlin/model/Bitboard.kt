@@ -1051,8 +1051,6 @@ fun Bitboard.convertBitboardToBoard(board: Board): Board {
               PieceType.TAMSK,
               PieceType.ZERTZ,
               PieceType.YINSH,
-              null -> mutableListOf()
-
               PieceType.DVONN -> {
                 whiteDVONNLayer
                     .mapIndexedNotNull { index, layer ->
@@ -1099,8 +1097,6 @@ fun Bitboard.convertBitboardToBoard(board: Board): Board {
               PieceType.TAMSK,
               PieceType.ZERTZ,
               PieceType.YINSH,
-              null -> mutableListOf()
-
               PieceType.DVONN -> {
                 blackDVONNLayer
                     .mapIndexedNotNull { index, layer ->
@@ -1431,17 +1427,17 @@ fun Bitboard.undoAddPieceToBitboard(
     "STATE ERROR: Piece cannot be removed from unoccupied index in globalOccupancy."
   }
 
-  // Retained specific scenario debug hook from original code
-  if (
-      whiteGIPF != 10UL &&
-          vacantBitFound == 2UL &&
-          piece.type == PieceType.GIPF &&
-          piece.colorName == PlayerName.WHITE.name &&
-          removeAtIndex == 8UL &&
-          wasIndexOccupied
-  ) {
-    println("DEBUG HOOK: Specific bit move scenario encountered before undo.")
-  }
+//  // Retained specific scenario debug hook from original code
+//  if (
+//      whiteGIPF != 10UL &&
+//          vacantBitFound == 2UL &&
+//          piece.type == PieceType.GIPF &&
+//          piece.colorName == PlayerName.WHITE.name &&
+//          removeAtIndex == 8UL &&
+//          wasIndexOccupied
+//  ) {
+//    println("DEBUG HOOK: Specific bit move scenario encountered before undo.")
+//  }
 
   // --- 2. LOCAL HELPER FOR SAFE BIT REMOVAL ---
   // This ensures the piece actually exists before removal, and is gone after.
