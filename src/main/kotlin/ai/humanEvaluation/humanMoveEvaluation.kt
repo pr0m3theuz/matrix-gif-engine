@@ -31,7 +31,6 @@ import org.example.model.getAvailablePushDirections
 import org.example.model.getTamskMoves
 import org.example.model.getsSelectedPiecesWithPotentialPowerset
 import org.example.model.identifyAvailableMoves
-import org.example.model.identifyPlayerPiecesWithPotential
 import org.example.model.removeRetrieveAndCapturePiecesFromBitboard
 import org.example.model.createRetrieveAndCapturePiecesList
 import org.example.model.undoAddPieceToBitboard
@@ -611,6 +610,7 @@ fun alphabetaAddPieces(
       }
 
       MoveType.RetrieveCapturePieces -> {}
+
     }
   }
 
@@ -779,6 +779,7 @@ fun alphabetaBitboardAddPieces(
     val preMoveBitboardState = bitboard.deepCopy()
 
     when (possibleBitMove.moveType) {
+	    // region MoveType.AddPiece
       MoveType.AddPiece -> {
         // for each selectable dot, add piece, push piece, assess resulting state, score it
         require(possibleBitMove.piece != null || possibleBitMove.pieceType == PieceType.TAMSK) {
@@ -1087,7 +1088,8 @@ fun alphabetaBitboardAddPieces(
 //              }
 //        }
       }
-
+			// endregion
+	    // region MoveType.UsePotential
       MoveType.UsePotential -> {
         bitboard.usePiecePotential(possibleBitMove = possibleBitMove)
 
@@ -1254,8 +1256,11 @@ fun alphabetaBitboardAddPieces(
 //          return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
         }
       }
-
+			// endregion
+	    // region MoveType.RetrieveCapturePieces
       MoveType.RetrieveCapturePieces -> {}
+
+	    // endregion
     }
   }
 
@@ -1264,6 +1269,7 @@ fun alphabetaBitboardAddPieces(
 
   // TODO undo retrieval and capture
   // TODO Actually retrieveAndCapturePieces using move.retrievedCapturedPiecesBit list
+	// region Retrieve & Capture Pieces clean up
 	if (bestPiecesToRetrieveCapture1 != null) {
 		currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
 
@@ -1294,7 +1300,7 @@ fun alphabetaBitboardAddPieces(
   bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
-
+	//endregion
   // TODO figure out
 	// --- POST-SEARCH VALIDATION ---
 /*		check(possibleBitMoves.contains(alphaBetaScore.move)) {
@@ -1354,11 +1360,16 @@ fun resolveBoardRemovals(
     // 2. Loop through each choice in the powerset:
     // a. Apply the piece removals to the board
 
-	  removalLoop@ for ((index, line) in linesWithFourInARow.withIndex()) {
+	  removalLoop@ for (line in linesWithFourInARow) {
+		  // region Retrieve/Capture Pieces with Player Potential Powerset
+		  /**
+		   *	TODO causes stack overflow error, but an empty list is necessary as a player can leave the stack in play
+		   *	TODO Minimax/MCTS — what it would be like to remove at least one of these pieces if all pieces have potentials
+		   *	 use line score heuristic and pieces in reserve
+		   *	TODO return of a list containing different combinations of bit positions
+		   */
       val playerPiecesWithPotentialPowerset =
-          bitboard.createPlayerPiecesWithPotentialPowerset(
-              bitboard.identifyPlayerPiecesWithPotential(listOf(line), currentPlayer)
-          )
+              bitboard.createPlayerPiecesWithPotentialPowerset(listOf(line), currentPlayer).filter { it.isNotEmpty() }
 
       if (playerPiecesWithPotentialPowerset.isNotEmpty()) {
         playerPiecesWithPotentialPowerset.forEachIndexed { index, playerPiecesWithPotentialToRemove
@@ -1371,7 +1382,7 @@ fun resolveBoardRemovals(
 
 	        val retrievedCapturedPieces =
               bitboard.createRetrieveAndCapturePiecesList(
-                  columnInfos = linesWithFourInARow,
+                  columnInfos = listOf(line),
                   selectedPiecesWithPotentialPowerset = emptyList(),
                   player = currentPlayer,
               )
@@ -1511,10 +1522,13 @@ fun resolveBoardRemovals(
 //            return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
           }
         }
-      } else {
+      }
+      //endregion
+      // region Retrieve/Capture Pieces
+      else {
         val retrievedCapturedPieces =
             bitboard.createRetrieveAndCapturePiecesList(
-                columnInfos = linesWithFourInARow,
+                columnInfos = listOf(line),
                 selectedPiecesWithPotentialPowerset = emptyList(),
                 player = currentPlayer,
             )
@@ -1607,6 +1621,7 @@ fun resolveBoardRemovals(
 //          return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
         }
       }
+		  //endregion
     }
   }
 

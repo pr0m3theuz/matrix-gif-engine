@@ -9,82 +9,6 @@ import org.example.ai.humanEvaluation.alphabetaBitboardAddPieces
 import org.example.model.*
 import kotlin.collections.HashMap
 
-fun playerTurn(state: State): State {
-
-	var newState = state.deepCopy()
-
-	/** TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece removals
-	 * A regular move and an extra move are considered
-	 * one single turn, whether the extra move is made
-	 * after or before the regular move. The position of
-	 * the pieces between the two moves is regarded as an
-	 * “interim” situation. This means that no pieces may
-	 * be removed or captured in between the regular
-	 * move and the extra move. The same goes for
-	 * situations where you succeed in pushing a second
-	 * or third TAMSK-stack onto the central spot during
-	 * one and the same turn.
-	 */
-	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-		// newState = playerMove(newState) // ?: return null
-		// TODO Replace with bitboard equivalent
-		// TODO Replace with bitboard equivalent
-		newState = enforcePieceRemovalRules(state)
-	}
-
-
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
-
-  state.assertPieceCount()
-
-  // Handle Tamsk Potential
-  if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState) // ?: return null
-  }
-
-  newState.assertPieceCount()
-
-  // TODO if gipf, gipf
-  //  if tamsk, tamsk
-  //  add piece or use potential
-  newState = playerMove(newState) // ?: return null
-
-  newState.assertPieceCount()
-
-  newState.board.printHexGrid()
-
-  // Handle Tamsk Potential
-  if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState) // ?: return null
-  }
-
-  newState.assertPieceCount()
-
-  val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
-
-  check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-    val dots = occupiedDots.map {
-      "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-    }
-
-    "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-        "but found pieces remaining on: $dots"
-  }
-
-	// TODO Replace with bitboard equivalent
-	newState = enforcePieceRemovalRules(newState)
-
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
-
-  newState.assertPieceCount()
-
-  newState.board.printHexGrid()
-
-  return newState
-}
-
 /**
  * TODO create a two functions:
  * 1. Add new pieces to the board
@@ -121,6 +45,99 @@ enum class MoveType {
   AddPiece,
   UsePotential,
 	RetrieveCapturePieces,
+}
+
+enum class TurnPhase {
+	PreTurnEvaluation,   // Engine checks and executes 4-in-a-row clears BEFORE player input
+	PreExtraMoveEvaluation,
+	PlayerInputWindow,   // Engine accepts and executes ActionCommands until budget is 0
+	PostExtraMoveEvaluation,
+	PostTurnEvaluation,  // Engine checks and executes 4-in-a-row clears AFTER player input
+	TurnCleanup          // Increments turn counter, switch current player
+}
+
+enum class TurnLifecycle {
+	Initialization,       // Engine handles upkeep, updates active player index
+	PreExecutionCheck,    // Engine evaluates board for 4-in-a-row BEFORE input
+	InputWindow,          // Engine accepts Player Actions (Free, Normal, Potential)
+	PostExecutionCheck,   // Engine evaluates board for 4-in-a-row AFTER input
+	Termination           // Engine serializes state changes, prepares for next turn switch
+}
+
+fun playerTurn(state: State): State {
+
+	var newState = state.deepCopy()
+
+	/** TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece removals
+	 * A regular move and an extra move are considered
+	 * one single turn, whether the extra move is made
+	 * after or before the regular move. The position of
+	 * the pieces between the two moves is regarded as an
+	 * “interim” situation. This means that no pieces may
+	 * be removed or captured in between the regular
+	 * move and the extra move. The same goes for
+	 * situations where you succeed in pushing a second
+	 * or third TAMSK-stack onto the central spot during
+	 * one and the same turn.
+	 */
+	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+		// newState = playerMove(newState) // ?: return null
+		// TODO Replace with bitboard equivalent
+		// TODO Replace with bitboard equivalent
+		newState = enforcePieceRemovalRules(state)
+	}
+
+
+	// recombine player pieces
+	newState.currentPlayer.combinePieces()
+
+	state.assertPieceCount()
+
+	// Handle Tamsk Potential
+	if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+		newState = playerMove(newState) // ?: return null
+	}
+
+	newState.assertPieceCount()
+
+	// TODO if gipf, gipf
+	//  if tamsk, tamsk
+	//  add piece or use potential
+	newState = playerMove(newState) // ?: return null
+
+	newState.assertPieceCount()
+
+	newState.board.printHexGrid()
+
+	// Handle Tamsk Potential
+	if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+		newState = playerMove(newState) // ?: return null
+	}
+
+	newState.assertPieceCount()
+
+	val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
+
+	check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
+		val dots = occupiedDots.map {
+			"${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
+		}
+
+		"Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
+				"but found pieces remaining on: $dots"
+	}
+
+	// TODO Replace with bitboard equivalent
+	newState = enforcePieceRemovalRules(newState)
+
+	// recombine player pieces
+	newState.currentPlayer.combinePieces()
+
+	newState.assertPieceCount()
+
+	newState.board.printHexGrid()
+
+	return newState
 }
 
 fun playerMove(state: State): State {
@@ -249,7 +266,7 @@ fun playerMove(state: State): State {
 
 			return newState
 		}
-		MoveType.RetrieveCapturePieces -> { }
+		MoveType.RetrieveCapturePieces -> {}
 		null -> {
 			return state
 		}
@@ -489,20 +506,19 @@ fun isTamskPieceAtCenter(
 }
 
 fun determineWinner(currentPlayer: Player, nextPlayer: Player): Player? {
-	// TODO refactor
-
+	// TODO refactor & test
   return if (
       currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
           currentPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
-          }
+          } || nextPlayer.piecesInReserve.all { !it.potential || it.type != PieceType.GIPF }
   ) {
     currentPlayer
   } else if (
       nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
           nextPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
-          }
+          } || currentPlayer.piecesInReserve.all { !it.potential || it.type != PieceType.GIPF }
   ) {
     nextPlayer
   } else {

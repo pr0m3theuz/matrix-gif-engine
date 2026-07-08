@@ -4,7 +4,6 @@ package model
 
 import kotlin.test.assertEquals
 import kotlin.text.toString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.ai.humanEvaluation.BestBitMove
 import org.example.engine.MoveType
@@ -28,7 +27,6 @@ import org.example.model.createPlayerPiecesWithPotentialPowerset
 import org.example.model.createRetrieveAndCapturePiecesList
 import org.example.model.evaluateLinesForFourInARow
 import org.example.model.getsSelectedPiecesWithPotentialPowerset
-import org.example.model.identifyPlayerPiecesWithPotential
 import org.example.model.populateNeighbors
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -782,12 +780,11 @@ class BitboardTest {
     println(linesWithFourInARow)
 
     val playerPiecesWithPotentialPowerset =
-        testBitboard.createPlayerPiecesWithPotentialPowerset(
-            testBitboard.identifyPlayerPiecesWithPotential(
+            testBitboard.createPlayerPiecesWithPotentialPowerset(
                 listOf(linesWithFourInARow.first()),
                 currentPlayer,
-            )
-        )
+            ).filter { it.isNotEmpty() }
+
 
     println(playerPiecesWithPotentialPowerset)
 

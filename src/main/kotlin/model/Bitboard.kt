@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
+import org.example.engine.TurnPhase
 
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
@@ -3229,15 +3230,15 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   return columns
 }
 
-fun Bitboard.identifyPlayerPiecesWithPotential(
+fun Bitboard.createPlayerPiecesWithPotentialPowerset(
     columnInfos: List<ColumnInfo>,
     player: Player,
-): List<ULong> {
+): List<List<ULong>> {
   require(columnInfos.isNotEmpty()) { "There must be at least one column" }
 
   // TODO handle intersecting lines, but do i?
 
-  val playerPiecesWithPotential = columnInfos.map { column ->
+  val playerPiecesWithPotential = columnInfos.flatMap { column ->
     column.positions.filter { bitmask ->
       val result =
           when (player.name) {
@@ -3256,23 +3257,17 @@ fun Bitboard.identifyPlayerPiecesWithPotential(
     }
   }
 
-  return playerPiecesWithPotential.flatten()
-}
-
-fun Bitboard.createPlayerPiecesWithPotentialPowerset(potentials: List<ULong>): List<List<ULong>> {
-  // TODO causes stack overflow error, but an empty list is necessary as a player can leave the
-  // stack in play
-  // TODO Minimax/MCTS — what it would be like to remove at least one of these pieces if all pieces
-  //   have potentials
-  //   use line score heuristic and pieces in reserve
-  // todo return of a list containing different combinations of bit positions
-  return potentials
-      .fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
-        // For every item, take the current sublists (accumulator)
-        // and add a new set of sublists where the item is appended
-        accumulator + accumulator.map { it + item }
-      }
-      .filter { it.isNotEmpty() }
+	/**
+	*	TODO causes stack overflow error, but an empty list is necessary as a player can leave the stack in play
+	*	TODO Minimax/MCTS — what it would be like to remove at least one of these pieces if all pieces have potentials
+	*	 use line score heuristic and pieces in reserve
+	*	TODO return of a list containing different combinations of bit positions
+	*/
+  return playerPiecesWithPotential.fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
+	  // For every item, take the current sublists (accumulator)
+	  // and add a new set of sublists where the item is appended
+	  accumulator + accumulator.map { it + item }
+  }
 }
 
 fun Bitboard.createRetrieveAndCapturePiecesList(
@@ -3292,7 +3287,7 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
 
   val playerPiecesNotNeutralizedWithoutPotential =
       columnInfos
-          .map { column ->
+          .flatMap { column ->
             column.positions.filter { bitmask ->
               val result =
                   when (player.name) {
@@ -3313,7 +3308,6 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
               result
             }
           }
-          .flatten()
 
   /**
    * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset
@@ -3321,7 +3315,7 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
    */
   val opponentPiecesAndNotNeutralized =
       columnInfos
-          .map { column ->
+          .flatMap { column ->
             column.positions.filter { bitmask ->
               val result =
                   when (player.name) {
@@ -3343,18 +3337,16 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
               result
             }
           }
-          .flatten()
 
   // stacked DVONN and PUNCT Pieces
   val neutralizedBitmasks =
       columnInfos
-          .map { column ->
+          .flatMap { column ->
             column.positions.filter { bitmask ->
               // TODO THis
               (whiteNeutralized and bitmask) == bitmask || (blackNeutralized and bitmask) == bitmask
             }
           }
-          .flatten()
 
   // --- 1. PRE-CONDITION CHECKS ---
   if (neutralizedBitmasks.isNotEmpty()) {
@@ -3518,7 +3510,6 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
     }
   }
 
-  // TODO handle DVONN and PUNCT carefully. remove bit from top down to 0 layer
 
   // TODO set bits to zero. create function to clear bit.
   val pieces =
@@ -4353,25 +4344,9 @@ private fun Bitboard.createPiece(bitmask: ULong): Piece? {
   }
 }
 
-// Helper function to keep the i == 0 block clean
-private fun createBasePiece(
-    player: PlayerName,
-    pieceType: PieceType,
-    hasPotential: Boolean,
-): Piece {
-  return Piece(
-      abbreviation = "${player.name.first()}${pieceType.name.first()}",
-      potential = hasPotential,
-      colorName = player.name,
-      type = pieceType,
-      isNeutralized = false,
-      stackedPieces = mutableListOf(),
-  )
-}
-
 fun Bitboard.identifyAvailableMoves(
-    currentPlayer: Player,
-    columnInfos: List<ColumnInfo>,
+	currentPlayer: Player,
+	columnInfos: List<ColumnInfo> = org.example.model.columnInfos,
 ): List<PossibleBitMove> {
   // TODO PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
   val tamskMoves = getTamskMoves(currentPlayer)
@@ -4466,6 +4441,345 @@ fun Bitboard.identifyAvailableMoves(
     println("Player ${currentPlayer.name} has no available moves left!")
     return emptyList()
     //		emptyList<PossibleMove>()
+  }
+}
+
+fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
+	val linesWithFourInARow = evaluateLinesForFourInARow(player)
+
+  if (linesWithFourInARow.isNotEmpty()) {
+  // TODO Ensure Rules are followed for stack piece retrieval
+    val playerPiecesWithPotential = createPlayerPiecesWithPotentialPowerset(linesWithFourInARow, player)
+
+    val playerPiecesNotNeutralizedWithoutPotential =
+      columnInfos
+        .flatMap { column ->
+          column.positions.filter { bitmask ->
+            val result =
+              when (player.name) {
+                PlayerName.WHITE -> {
+                  // TODO FIX - includes neutralized pieces
+                  // pieces without potential and not neutralized
+                  (whitePieces and bitmask) == bitmask &&
+                      (whitePotentials.inv() and bitmask) == bitmask &&
+                      (blackNeutralized.inv() and bitmask) == bitmask
+                }
+
+                PlayerName.BLACK -> {
+                  (blackPieces and bitmask) == bitmask &&
+                      (blackPotentials.inv() and bitmask) == bitmask &&
+                      (whiteNeutralized.inv() and bitmask) == bitmask
+                }
+              }
+            result
+          }
+        }
+
+    /**
+     * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset for this
+     */
+    val opponentPiecesAndNotNeutralized =
+      columnInfos
+        .flatMap { column ->
+          column.positions.filter { bitmask ->
+            val result =
+              when (player.name) {
+                PlayerName.WHITE -> {
+                  // opponent pieces and not neutralized
+                  //	            (blackPotentials.inv() and bitmask) == bitmask &&
+                  (blackPieces and bitmask) == bitmask &&
+                      (blackNeutralized.inv() and bitmask) == bitmask &&
+                      (whiteNeutralized.inv() and bitmask) == bitmask
+                }
+
+                PlayerName.BLACK -> {
+                  //	            (whitePotentials.inv() and bitmask) == bitmask &&
+                  (whitePieces and bitmask) == bitmask &&
+                      (whiteNeutralized.inv() and bitmask) == bitmask &&
+                      (blackNeutralized.inv() and bitmask) == bitmask
+                }
+              }
+            result
+          }
+        }
+
+    // stacked DVONN and PUNCT Pieces
+    val neutralizedBitmasks =
+      columnInfos
+        .flatMap { column ->
+          column.positions.filter { bitmask ->
+            (whiteNeutralized and bitmask) == bitmask || (blackNeutralized and bitmask) == bitmask
+          }
+        }
+
+    return playerPiecesWithPotential.map { potentialPieces ->
+      PossibleBitMove(
+        retrievedCapturedPiecesBit = (potentialPieces + playerPiecesNotNeutralizedWithoutPotential + opponentPiecesAndNotNeutralized).map { bitmask ->
+          RetrievedCapturedPieceBit(
+            bitmask = bitmask,
+            isNeutralized = false,
+          )
+        } + neutralizedBitmasks.map { bitmask ->
+          RetrievedCapturedPieceBit(
+            bitmask = bitmask,
+            isNeutralized = true,
+          )
+        },
+        moveType = MoveType.RetrieveCapturePieces
+      )
+    }
+  } else { return emptyList() }
+}
+
+fun Bitboard.removeSelectedPiecesToRemove(player: Player, piecesToRemove: List<RetrievedCapturedPieceBit>): List<RetrievedCapturedPieceBit> {
+  require(piecesToRemove.isNotEmpty()) { "There must be at least one column" }
+
+  // --- 0. CONFIGURABLE DEBUGGING ---
+  val isDebugEnabled = false
+  if (isDebugEnabled) {
+    println("--- CREATE RETRIEVE & CAPTURED PIECES CALLED ---")
+  }
+
+  val (ordinaryBitmasks, neutralizedBitmasks) = piecesToRemove.partition { !it.isNeutralized }
+
+  // --- LOCAL HELPER: BASE LAYER REMOVAL ---
+  fun safeRemoveAndCheck(board: ULong, boardName: String, bitmask: ULong, piece: Piece): ULong {
+    if (isDebugEnabled) {
+      println(
+        "$boardName Board before removing $boardName piece:\n" +
+            "removeAtIndex:           0b${bitmask.toString(2).padStart(40, '0')}\n" +
+            "$boardName bitboard:     0b${board.toString(2).padStart(40, '0')}"
+      )
+    }
+    val newBoard = board and bitmask.inv()
+    check((newBoard and bitmask) == 0UL) {
+      "Failed to remove ${piece.colorName} ${piece.type} from $boardName."
+    }
+    if (isDebugEnabled) {
+      println(
+        "$boardName Board after removing $boardName piece\n" +
+            "removeAtIndex:            0b${bitmask.toString(2).padStart(40, '0')}\n" +
+            "new $boardName bitboard:  0b${newBoard.toString(2).padStart(40, '0')}"
+      )
+    }
+    if (isDebugEnabled) println("  -> Successfully removed from $boardName.")
+    return newBoard
+  }
+
+  val neutralizedPieces = mutableListOf<RetrievedCapturedPieceBit>()
+  neutralizedBitmasks.forEach {
+    val bitmask = it.bitmask
+    stackLoop@ for (i in 5 downTo 1) {
+
+      // 1. Check exactly which piece exists at this layer for this bitmask
+      val hasWhiteDVONN = (whiteDVONNLayer[i] and bitmask) == bitmask
+      val hasBlackDVONN = (blackDVONNLayer[i] and bitmask) == bitmask
+      val hasWhitePUNCT = (whitePUNCTLayer[i] and bitmask) == bitmask
+      val hasBlackPUNCT = (blackPUNCTLayer[i] and bitmask) == bitmask
+
+      // If this specific coordinate/layer is empty, check the next layer down
+      if (!hasWhiteDVONN && !hasBlackDVONN && !hasWhitePUNCT && !hasBlackPUNCT) {
+        continue
+      }
+
+      // 2. Identify color and type
+      val isEven = (i % 2 == 0)
+
+      when {
+        hasWhiteDVONN || hasBlackDVONN -> {
+          // Determine base color based on which board it came from
+          val baseColor = if (hasWhiteDVONN) PlayerName.WHITE else PlayerName.BLACK
+          // Flip color if layer is odd
+          val finalColor =
+            if (isEven) baseColor
+            else if (baseColor == PlayerName.WHITE) PlayerName.BLACK else PlayerName.WHITE
+
+          val piece =
+            Piece(
+              abbreviation = "${finalColor.name.first()}D",
+              potential = false,
+              colorName = finalColor.name,
+              type = PieceType.DVONN,
+              isNeutralized = false,
+              stackedPieces = mutableListOf(),
+            )
+
+          neutralizedPieces.add(
+            RetrievedCapturedPieceBit(
+              retrievedPiece = if (finalColor == player.name) piece else null,
+              capturedPiece = if (finalColor != player.name) piece else null,
+              bitmask = bitmask,
+              isNeutralized = true,
+            )
+          )
+
+          blackDVONNLayer[i] =
+            safeRemoveAndCheck(blackDVONNLayer[i], "Black DVONN [$i]", bitmask, piece)
+          whiteDVONNLayer[i] =
+            safeRemoveAndCheck(whiteDVONNLayer[i], "White DVONN [$i]", bitmask, piece)
+          break@stackLoop
+        }
+
+        hasWhitePUNCT || hasBlackPUNCT -> {
+          val baseColor = if (hasWhitePUNCT) PlayerName.WHITE else PlayerName.BLACK
+          val finalColor =
+            if (isEven) baseColor
+            else if (baseColor == PlayerName.WHITE) PlayerName.BLACK else PlayerName.WHITE
+
+          val piece =
+            Piece(
+              abbreviation = "${finalColor.name.first()}P",
+              potential = false,
+              colorName = finalColor.name,
+              type = PieceType.PUNCT,
+              isNeutralized = false,
+              stackedPieces = mutableListOf(),
+            )
+
+          neutralizedPieces.add(
+            RetrievedCapturedPieceBit(
+              retrievedPiece = if (finalColor == player.name) piece else null,
+              capturedPiece = if (finalColor != player.name) piece else null,
+              bitmask = bitmask,
+              isNeutralized = true,
+            )
+          )
+
+          blackPUNCTLayer[i] =
+            safeRemoveAndCheck(blackPUNCTLayer[i], "Black PUNCT [$i]", bitmask, piece)
+          whitePUNCTLayer[i] =
+            safeRemoveAndCheck(whitePUNCTLayer[i], "White PUNCT [$i]", bitmask, piece)
+
+          break@stackLoop
+        }
+      }
+    }
+  }
+
+  val pieces =
+    ordinaryBitmasks.map {
+      val bitmask = it.bitmask
+        // construct piece and place it on the matching node
+        val piece = createPiece(bitmask)
+
+        if (piece != null) {
+          when (piece.type) {
+            PieceType.GIPF -> {
+              whiteGIPF = safeRemoveAndCheck(whiteGIPF, "White GIPF", bitmask, piece)
+              blackGIPF = safeRemoveAndCheck(blackGIPF, "Black GIPF", bitmask, piece)
+            }
+
+            PieceType.TAMSK -> {
+              whiteTAMSK = safeRemoveAndCheck(whiteTAMSK, "White TAMSK", bitmask, piece)
+              blackTAMSK = safeRemoveAndCheck(blackTAMSK, "Black TAMSK", bitmask, piece)
+            }
+
+            PieceType.ZERTZ -> {
+              whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", bitmask, piece)
+              blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", bitmask, piece)
+            }
+
+            PieceType.DVONN -> {
+              if (piece.stackedPieces.isNotEmpty()) {
+                throw IllegalStateException("")
+              } else {
+                whiteDVONNLayer[0] =
+                  safeRemoveAndCheck(whiteDVONNLayer[0], "White DVONN [0]", bitmask, piece)
+                blackDVONNLayer[0] =
+                  safeRemoveAndCheck(blackDVONNLayer[0], "Black DVONN [0]", bitmask, piece)
+              }
+            }
+
+            PieceType.YINSH -> {
+              whiteYINSH = safeRemoveAndCheck(whiteYINSH, "White YINSH", bitmask, piece)
+              blackYINSH = safeRemoveAndCheck(blackYINSH, "Black YINSH", bitmask, piece)
+            }
+
+            PieceType.PUNCT -> {
+              if (piece.stackedPieces.isNotEmpty()) {
+                throw IllegalStateException("")
+              } else {
+                whitePUNCTLayer[0] =
+                  safeRemoveAndCheck(whitePUNCTLayer[0], "White PUNCT [0]", bitmask, piece)
+                blackPUNCTLayer[0] =
+                  safeRemoveAndCheck(blackPUNCTLayer[0], "Black PUNCT [0]", bitmask, piece)
+              }
+            }
+          }
+
+          if (piece.potential) {
+            whitePotentials =
+              safeRemoveAndCheck(whitePotentials, "White Potentials", bitmask, piece)
+            blackPotentials =
+              safeRemoveAndCheck(blackPotentials, "Black Potentials", bitmask, piece)
+          }
+        }
+        RetrievedCapturedPieceBit(
+          retrievedPiece = if (piece?.colorName == player.name.name) piece else null,
+          capturedPiece = if (piece?.colorName != player.name.name) piece else null,
+          bitmask = bitmask,
+          isNeutralized = false,
+        )
+      }
+      .plus(neutralizedPieces)
+      .filter { it.retrievedPiece != null || it.capturedPiece != null }
+
+  // TODO Check captured pieces aren't categorized as retrieved pieces and vice versa
+  val targetColor = player.name.name
+
+  check(pieces.mapNotNull { it.retrievedPiece }.all { it.colorName == targetColor }) {
+    val invalidRetrieved =
+      pieces
+        .mapNotNull { it.retrievedPiece }
+        .filter { it.colorName != targetColor }
+        .map { "${it.type}(${it.colorName})" }
+    "Scoring Violation: Player '$targetColor' attempted to retrieve opponent pieces: $invalidRetrieved"
+  }
+
+  check(pieces.mapNotNull { it.capturedPiece }.all { it.colorName != targetColor }) {
+    val invalidCaptured =
+      pieces
+        .mapNotNull { it.capturedPiece }
+        .filter { it.colorName == targetColor }
+        .map { it.type }
+    "Scoring Violation: Player '$targetColor' accidentally captured their own pieces: $invalidCaptured"
+  }
+
+  if (isDebugEnabled) {
+    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
+    println("Pieces retrieved & captured (count: ${pieces.size}):")
+    pieces.forEachIndexed { index, piece ->
+      println("Piece $index: $piece")
+    }
+    println("--- CREATE RETRIEVE & CAPTURED PIECES COMPLETED ---")
+    println("====================================================")
+  }
+
+  return pieces
+}
+
+fun Bitboard.generateMoves(currentPlayer: Player, turnPhase: TurnPhase): List<PossibleBitMove> {
+	val movesAddingPiecesUsingPotentials = identifyAvailableMoves(currentPlayer)
+
+	val movesRetrievingCapturingPieces = identifyPiecesToRemove(currentPlayer)
+
+  return when (turnPhase) {
+	  TurnPhase.PreTurnEvaluation -> {
+      movesRetrievingCapturingPieces.ifEmpty { return movesAddingPiecesUsingPotentials }
+    }
+	  TurnPhase.PreExtraMoveEvaluation -> {
+      getTamskMoves(currentPlayer).ifEmpty { movesAddingPiecesUsingPotentials }
+    }
+	  TurnPhase.PlayerInputWindow -> {
+      movesAddingPiecesUsingPotentials
+    }
+	  TurnPhase.PostExtraMoveEvaluation -> {
+      getTamskMoves(currentPlayer)
+    }
+	  TurnPhase.PostTurnEvaluation -> {
+      movesRetrievingCapturingPieces
+    }
+	  TurnPhase.TurnCleanup -> { emptyList() }
   }
 }
 
