@@ -4452,7 +4452,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
     val playerPiecesWithPotential = createPlayerPiecesWithPotentialPowerset(linesWithFourInARow, player)
 
     val playerPiecesNotNeutralizedWithoutPotential =
-      columnInfos
+      linesWithFourInARow
         .flatMap { column ->
           column.positions.filter { bitmask ->
             val result =
@@ -4479,7 +4479,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
      * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset for this
      */
     val opponentPiecesAndNotNeutralized =
-      columnInfos
+      linesWithFourInARow
         .flatMap { column ->
           column.positions.filter { bitmask ->
             val result =
@@ -4505,14 +4505,14 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
 
     // stacked DVONN and PUNCT Pieces
     val neutralizedBitmasks =
-      columnInfos
+      linesWithFourInARow
         .flatMap { column ->
           column.positions.filter { bitmask ->
             (whiteNeutralized and bitmask) == bitmask || (blackNeutralized and bitmask) == bitmask
           }
         }
 
-    return playerPiecesWithPotential.map { potentialPieces ->
+    val removePiecesPowerset = playerPiecesWithPotential.map { potentialPieces ->
       PossibleBitMove(
         retrievedCapturedPiecesBit = (potentialPieces + playerPiecesNotNeutralizedWithoutPotential + opponentPiecesAndNotNeutralized).map { bitmask ->
           RetrievedCapturedPieceBit(
@@ -4528,7 +4528,13 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
         moveType = MoveType.RetrieveCapturePieces
       )
     }
-  } else { return emptyList() }
+
+    check(removePiecesPowerset.size == playerPiecesWithPotential.size)
+
+    return removePiecesPowerset
+  }
+
+  return emptyList()
 }
 
 fun Bitboard.removeSelectedPiecesToRemove(player: Player, piecesToRemove: List<RetrievedCapturedPieceBit>): List<RetrievedCapturedPieceBit> {
@@ -4764,6 +4770,7 @@ fun Bitboard.generateMoves(currentPlayer: Player, turnPhase: TurnPhase): List<Po
 	val movesRetrievingCapturingPieces = identifyPiecesToRemove(currentPlayer)
 
   return when (turnPhase) {
+    TurnPhase.GIPFPhase -> { movesAddingPiecesUsingPotentials }
 	  TurnPhase.PreTurnEvaluation -> {
       movesRetrievingCapturingPieces.ifEmpty { return movesAddingPiecesUsingPotentials }
     }

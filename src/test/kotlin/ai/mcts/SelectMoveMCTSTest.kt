@@ -18,7 +18,8 @@ class SelectMoveMCTSTest {
 	  selectMoveMCTS(
 		  bitboard = bitboard,
 		  currentPlayer = state.currentPlayer,
-		  nextPlayer = state.nextPlayer
+		  nextPlayer = state.nextPlayer,
+			rounds = 0..9999
 	  )
 	}
 

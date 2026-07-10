@@ -227,7 +227,7 @@ fun scoreState(state: State): Int {
   val possibleMoves = identifyAvailableMoves(state)
 
   if (possibleMoves.isEmpty()) {
-    val winner = determineWinner(state.currentPlayer, state.nextPlayer)
+    val winner = determineWinner(state.currentPlayer, state.nextPlayer, state.nextPlayer)
     winner?.let {
       return if (it.name == state.currentPlayer.name) {
         10000000
@@ -349,7 +349,7 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
   val possibleMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
 
   if (possibleMoves.isEmpty()) {
-    val winner = determineWinner(currentPlayer, opponentPlayer)
+    val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer)
     winner?.let {
       return if (it.name == currentPlayer.name) {
         1

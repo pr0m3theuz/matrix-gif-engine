@@ -6,6 +6,7 @@ import org.example.engine.evaluateCapturedPieces
 import org.example.engine.evaluatePiecesInReserve
 import org.example.engine.getEligiblePotentialMoves
 import org.example.engine.playerTurn
+import org.example.model.Player
 import org.example.model.State
 import org.example.model.assertPieceCount
 import org.example.model.initializeState
@@ -18,6 +19,8 @@ fun main() {
   var gameState: State = initializeState()
 
   var turn = 0
+
+  var playerWhoMadeTheLastMove: Player? = null
 
   // TODO implement function to evaluate if the current player's pieces has any valid moves left
   while (!evaluateCapturedPieces(gameState) || !evaluatePiecesInReserve(gameState)) {
@@ -36,6 +39,8 @@ fun main() {
     gameState = playerTurn(gameState)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
+
+    playerWhoMadeTheLastMove = gameState.currentPlayer
     // state new turn
     gameState = gameState.rotatePlayers()
 
@@ -45,7 +50,7 @@ fun main() {
   }
 
   gameState.printStateSummary()
-  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer)?.name} won")
+  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer, playerWhoMadeTheLastMove)?.name} won")
 	println("State: ${Json.encodeToString(gameState)}")
 
 }

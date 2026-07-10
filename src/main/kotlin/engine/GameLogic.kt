@@ -2,12 +2,11 @@ package org.example.engine
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.example.ai.humanEvaluation.AlphaBetaScore
 import org.example.ai.humanEvaluation.AlphaBetaScoreBit
-import org.example.ai.humanEvaluation.alphabetaAddPieces
 import org.example.ai.humanEvaluation.alphabetaBitboardAddPieces
+import org.example.ai.mcts.selectMoveMCTS
+import org.example.ai.mcts.simulatePieceRetrievalCapture
 import org.example.model.*
-import kotlin.collections.HashMap
 
 /**
  * TODO create a two functions:
@@ -30,114 +29,126 @@ data class PossibleMove(
 
 @Serializable
 data class PossibleBitMove(
-	val piece: Piece? = null,
-	val columnInfos: List<ColumnInfo> = emptyList(),
-	val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
-	val sourceBit: ULong? = null,
-	val targetBit: ULong? = null,
-	val pieceType: PieceType? = null,
-	val pieceColor: PlayerName? = null,
-	val pushDirection: PushDirection? = null,
-	val moveType: MoveType,
+    val piece: Piece? = null,
+    val columnInfos: List<ColumnInfo> = emptyList(),
+    val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
+    val sourceBit: ULong? = null,
+    val targetBit: ULong? = null,
+    val pieceType: PieceType? = null,
+    val pieceColor: PlayerName? = null,
+    val pushDirection: PushDirection? = null,
+    val moveType: MoveType,
 )
 
 enum class MoveType {
   AddPiece,
   UsePotential,
-	RetrieveCapturePieces,
+  RetrieveCapturePieces,
 }
 
 enum class TurnPhase {
-	PreTurnEvaluation,   // Engine checks and executes 4-in-a-row clears BEFORE player input
-	PreExtraMoveEvaluation,
-	PlayerInputWindow,   // Engine accepts and executes ActionCommands until budget is 0
-	PostExtraMoveEvaluation,
-	PostTurnEvaluation,  // Engine checks and executes 4-in-a-row clears AFTER player input
-	TurnCleanup          // Increments turn counter, switch current player
+  GIPFPhase,
+  PreTurnEvaluation, // Engine checks and executes 4-in-a-row clears BEFORE player input
+  PreExtraMoveEvaluation,
+  PlayerInputWindow, // Engine accepts and executes ActionCommands until budget is 0
+  PostExtraMoveEvaluation,
+  PostTurnEvaluation, // Engine checks and executes 4-in-a-row clears AFTER player input
+  TurnCleanup, // Increments turn counter, switch current player
 }
 
 enum class TurnLifecycle {
-	Initialization,       // Engine handles upkeep, updates active player index
-	PreExecutionCheck,    // Engine evaluates board for 4-in-a-row BEFORE input
-	InputWindow,          // Engine accepts Player Actions (Free, Normal, Potential)
-	PostExecutionCheck,   // Engine evaluates board for 4-in-a-row AFTER input
-	Termination           // Engine serializes state changes, prepares for next turn switch
+  Initialization, // Engine handles upkeep, updates active player index
+  PreExecutionCheck, // Engine evaluates board for 4-in-a-row BEFORE input
+  InputWindow, // Engine accepts Player Actions (Free, Normal, Potential)
+  PostExecutionCheck, // Engine evaluates board for 4-in-a-row AFTER input
+  Termination, // Engine serializes state changes, prepares for next turn switch
 }
 
 fun playerTurn(state: State): State {
 
-	var newState = state.deepCopy()
+  var newState = state.deepCopy()
 
-	/** TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece removals
-	 * A regular move and an extra move are considered
-	 * one single turn, whether the extra move is made
-	 * after or before the regular move. The position of
-	 * the pieces between the two moves is regarded as an
-	 * “interim” situation. This means that no pieces may
-	 * be removed or captured in between the regular
-	 * move and the extra move. The same goes for
-	 * situations where you succeed in pushing a second
-	 * or third TAMSK-stack onto the central spot during
-	 * one and the same turn.
-	 */
-	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-		// newState = playerMove(newState) // ?: return null
-		// TODO Replace with bitboard equivalent
-		// TODO Replace with bitboard equivalent
-		newState = enforcePieceRemovalRules(state)
-	}
+  /**
+   * TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece
+   * removals A regular move and an extra move are considered one single turn, whether the extra
+   * move is made after or before the regular move. The position of the pieces between the two moves
+   * is regarded as an “interim” situation. This means that no pieces may be removed or captured in
+   * between the regular move and the extra move. The same goes for situations where you succeed in
+   * pushing a second or third TAMSK-stack onto the central spot during one and the same turn.
+   */
+  //	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+  // TODO Replace with bitboard equivalent
+  //	newState = enforcePieceRemovalRules(newState)
+  var bitboard = convertBoardToBitboard(newState.board)
+  simulatePieceRetrievalCapture(bitboard, newState.currentPlayer, newState.nextPlayer)
+  //	}
 
+  newState =
+      newState.copy(
+          currentPlayer = newState.currentPlayer,
+          nextPlayer = newState.nextPlayer,
+          board = bitboard.convertBitboardToBoard(newState.board),
+      )
 
-	// recombine player pieces
-	newState.currentPlayer.combinePieces()
+  // recombine player pieces
+  newState.currentPlayer.combinePieces()
 
-	state.assertPieceCount()
+  state.assertPieceCount()
 
-	// Handle Tamsk Potential
-	if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-		newState = playerMove(newState) // ?: return null
-	}
+  // Handle Tamsk Potential
+  if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+    newState = playerMove(newState) // ?: return null
+  }
 
-	newState.assertPieceCount()
+  newState.assertPieceCount()
 
-	// TODO if gipf, gipf
-	//  if tamsk, tamsk
-	//  add piece or use potential
-	newState = playerMove(newState) // ?: return null
+  // TODO if gipf, gipf
+  //  if tamsk, tamsk
+  //  add piece or use potential
+  newState = playerMove(newState) // ?: return null
 
-	newState.assertPieceCount()
+  newState.assertPieceCount()
 
-	newState.board.printHexGrid()
+  newState.board.printHexGrid()
 
-	// Handle Tamsk Potential
-	if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-		newState = playerMove(newState) // ?: return null
-	}
+  // Handle Tamsk Potential
+  if (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
+    newState = playerMove(newState) // ?: return null
+  }
 
-	newState.assertPieceCount()
+  newState.assertPieceCount()
 
-	val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
+  val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
 
-	check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-		val dots = occupiedDots.map {
-			"${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-		}
+  check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
+    val dots = occupiedDots.map {
+      "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
+    }
 
-		"Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-				"but found pieces remaining on: $dots"
-	}
+    "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
+        "but found pieces remaining on: $dots"
+  }
 
-	// TODO Replace with bitboard equivalent
-	newState = enforcePieceRemovalRules(newState)
+  // TODO Replace with bitboard equivalent
+  //  newState = enforcePieceRemovalRules(newState)
+  bitboard = convertBoardToBitboard(newState.board)
+  simulatePieceRetrievalCapture(bitboard, newState.currentPlayer, newState.nextPlayer)
 
-	// recombine player pieces
-	newState.currentPlayer.combinePieces()
+  newState =
+      newState.copy(
+          currentPlayer = newState.currentPlayer,
+          nextPlayer = newState.nextPlayer,
+          board = bitboard.convertBitboardToBoard(newState.board),
+      )
 
-	newState.assertPieceCount()
+  // recombine player pieces
+  newState.currentPlayer.combinePieces()
 
-	newState.board.printHexGrid()
+  newState.assertPieceCount()
 
-	return newState
+  newState.board.printHexGrid()
+
+  return newState
 }
 
 fun playerMove(state: State): State {
@@ -145,134 +156,141 @@ fun playerMove(state: State): State {
   val savedBoardState = state.board.deepCopy()
   val savedLines = state.lines.deepCopy()
 
-//	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
+  //	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
 
-	val bitboard = convertBoardToBitboard(state.board)
+  val bitboard = convertBoardToBitboard(state.board)
 
-	// TODO NO MOVE IS BEING SELECTED??????
-	val bestMove = alphabetaBitboardAddPieces(
-		depth = 3,
-		bitboard = bitboard,
-		currentPlayer = state.currentPlayer,
-		opponentPlayer = state.nextPlayer,
-		alphaBetaScore = AlphaBetaScoreBit()
-	).move
+ /* var bestMove =
+      alphabetaBitboardAddPieces(
+              depth = 3,
+              bitboard = bitboard,
+              currentPlayer = state.currentPlayer,
+              opponentPlayer = state.nextPlayer,
+              alphaBetaScore = AlphaBetaScoreBit(),
+          )
+          .move*/
 
-	when (bestMove?.moveType) {
-		MoveType.AddPiece -> {
+  val bestMove =
+      selectMoveMCTS(
+          bitboard = bitboard,
+          currentPlayer = state.currentPlayer,
+          nextPlayer = state.nextPlayer,
+      )
 
-			val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
+  when (bestMove?.moveType) {
+    MoveType.AddPiece -> {
 
-			node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
+      val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
 
-			// --- MOVE VALIDATION ---
-			requireNotNull(bestMove.targetBit) {
-				"CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
-			}
-			requireNotNull(bestMove.pushDirection) {
-				"CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
-			}
-			require(bestMove.columnInfos.isNotEmpty()) {
-				"CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
-			}
+      node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
-			if(bestMove.pieceType != PieceType.TAMSK) {
-				requireNotNull(bestMove.piece) {
-					"CRITICAL MOVE ERROR: bestMove.piece cannot be null. A valid move must have a piece."
-				}
+      // --- MOVE VALIDATION ---
+      requireNotNull(bestMove.targetBit) {
+        "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
+      }
+      requireNotNull(bestMove.pushDirection) {
+        "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
+      }
+      require(bestMove.columnInfos.isNotEmpty()) {
+        "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
+      }
 
-				bitboard.addPieceToBitboard(
-					addAtIndex = bestMove.targetBit,
-					pushDirection = bestMove.pushDirection,
-					col = bestMove.columnInfos.first(),
-					piece = bestMove.piece
-				)
-			} else {
-				requireNotNull(bestMove.sourceBit) {
-					"CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
-				}
+      if (bestMove.pieceType != PieceType.TAMSK) {
+        requireNotNull(bestMove.piece) {
+          "CRITICAL MOVE ERROR: bestMove.piece cannot be null. A valid move must have a piece."
+        }
 
-				bitboard.useTamskPotential(
-					player = state.currentPlayer,
-					sourceIndex = bestMove.sourceBit,
-					targetIndex = bestMove.targetBit,
-					col = bestMove.columnInfos.first(),
-					pushDirection = bestMove.pushDirection,
-				)
-			}
+        bitboard.addPieceToBitboard(
+            addAtIndex = bestMove.targetBit,
+            pushDirection = bestMove.pushDirection,
+            col = bestMove.columnInfos.first(),
+            piece = bestMove.piece,
+        )
+      } else {
+        requireNotNull(bestMove.sourceBit) {
+          "CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
+        }
 
-			bitboard.assertPieceCount(currentPlayer = state.currentPlayer, nextPlayer = state.nextPlayer)
+        bitboard.useTamskPotential(
+            player = state.currentPlayer,
+            sourceIndex = bestMove.sourceBit,
+            targetIndex = bestMove.targetBit,
+            col = bestMove.columnInfos.first(),
+            pushDirection = bestMove.pushDirection,
+        )
+      }
 
-			// Move piece in the selected spot(node) based on selected push direction
-			val newBoard =
-				bitboard.convertBitboardToBoard(savedBoardState)
+      bitboard.assertPieceCount(currentPlayer = state.currentPlayer, nextPlayer = state.nextPlayer)
 
-			val newState =
-				state
-					.deepCopy()
-					.copy(
-						board = newBoard,
-						lines = constructLines(newBoard.nodes),
-					)
+      // Move piece in the selected spot(node) based on selected push direction
+      val newBoard = bitboard.convertBitboardToBoard(savedBoardState)
 
-			val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
+      val newState =
+          state
+              .deepCopy()
+              .copy(
+                  board = newBoard,
+                  lines = constructLines(newBoard.nodes),
+              )
 
-			if (newState.board.nodes.any { it.isDot && it.piece != null }) {
-				check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-					val dots = occupiedDots.map {
-						"${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-					}
+      val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
 
-					"Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-							"but found pieces remaining on: $dots"
-				}
-			}
+      if (newState.board.nodes.any { it.isDot && it.piece != null }) {
+        check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
+          val dots = occupiedDots.map {
+            "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
+          }
 
-			newState.assertPieceCount()
+          "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
+              "but found pieces remaining on: $dots"
+        }
+      }
 
-			return newState
-		}
-		MoveType.UsePotential -> {
-			require(bestMove.sourceBit != null && bestMove.targetBit != null) {}
+      newState.assertPieceCount()
 
-			bitboard.usePiecePotential(possibleBitMove = bestMove)
+      return newState
+    }
+    MoveType.UsePotential -> {
+      require(bestMove.sourceBit != null && bestMove.targetBit != null) {}
 
-			// Move piece in the selected spot(node) based on selected push direction
-			val newBoard =
-				bitboard.convertBitboardToBoard(savedBoardState)
+      bitboard.usePiecePotential(possibleBitMove = bestMove)
 
-			val newState =
-				state
-					.deepCopy()
-					.copy(
-						board = newBoard,
-						lines = constructLines(newBoard.nodes),
-					)
+      // Move piece in the selected spot(node) based on selected push direction
+      val newBoard = bitboard.convertBitboardToBoard(savedBoardState)
 
-			val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
+      val newState =
+          state
+              .deepCopy()
+              .copy(
+                  board = newBoard,
+                  lines = constructLines(newBoard.nodes),
+              )
 
-			if (newState.board.nodes.any { it.isDot && it.piece != null }) {
-				check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-					val dots = occupiedDots.map {
-						"${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-					}
+      val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
 
-					"Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-							"but found pieces remaining on: $dots"
-				}
-			}
+      if (newState.board.nodes.any { it.isDot && it.piece != null }) {
+        check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
+          val dots = occupiedDots.map {
+            "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
+          }
 
-			newState.assertPieceCount()
+          "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
+              "but found pieces remaining on: $dots"
+        }
+      }
 
-			return newState
-		}
-		MoveType.RetrieveCapturePieces -> {}
-		null -> {
-			return state
-		}
-	}
+      newState.assertPieceCount()
 
-	return state
+      return newState
+    }
+    MoveType.RetrieveCapturePieces -> {}
+
+    null -> {
+      return state
+    }
+  }
+
+  return state
 }
 
 fun selectDot(
@@ -358,25 +376,18 @@ fun enforcePieceRemovalRules(state: State): State {
             .distinctBy { it.node?.coordinate }
       } else {
         /**
-		        6/ It will occur that more than one row-of-4 of the same
-		        color are lined up at the same time. If these rows do
-		        not intersect each other, then they are removed (at
-		        least partially) following the standard procedure.
-		        If they do intersect, the player playing that color
-		        may choose which row they will deal with first. If
-		        they remove the piece on the intersecting spot, the
-		        second row is broken up and the remaining pieces of
-		        that row stay on the board. If it is a stack and it is left
-		        on the intersecting spot, then the second row is still
-		        intact, which means that it must also be dealt with.
-		        (See illustration 5: Black may choose between fi rst
-		        dealing with the row of 4 pieces or the row of 5
-		        pieces. If the piece on the intersecting spot is a
-		        stack and Black removes it from the board, then
-		        the other row in not complete anymore; if Black
-		        leaves the stack on the board, they must also deal
-		        with that other row.)
-        */
+         * 6/ It will occur that more than one row-of-4 of the same color are lined up at the same
+         * time. If these rows do not intersect each other, then they are removed (at least
+         * partially) following the standard procedure. If they do intersect, the player playing
+         * that color may choose which row they will deal with first. If they remove the piece on
+         * the intersecting spot, the second row is broken up and the remaining pieces of that row
+         * stay on the board. If it is a stack and it is left on the intersecting spot, then the
+         * second row is still intact, which means that it must also be dealt with. (See
+         * illustration 5: Black may choose between fi rst dealing with the row of 4 pieces or the
+         * row of 5 pieces. If the piece on the intersecting spot is a stack and Black removes it
+         * from the board, then the other row in not complete anymore; if Black leaves the stack on
+         * the board, they must also deal with that other row.)
+         */
         val intersectingCoordinates: Set<Coordinate> =
             linesWithFourPiecesInARow
                 .flatMap { it.second }
@@ -505,23 +516,23 @@ fun isTamskPieceAtCenter(
   return piece.type == PieceType.TAMSK && piece.colorName == player.name.name && piece.potential
 }
 
-fun determineWinner(currentPlayer: Player, nextPlayer: Player): Player? {
-	// TODO refactor & test
+fun determineWinner(currentPlayer: Player, nextPlayer: Player, playerWhoMadeTheLastMove: Player?): Player? {
+  // TODO refactor & test
   return if (
       currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
           currentPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
-          } || nextPlayer.piecesInReserve.all { !it.potential || it.type != PieceType.GIPF }
+          }
   ) {
     currentPlayer
   } else if (
       nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
           nextPlayer.piecesInReserve.any { piece ->
             piece.potential || piece.type == PieceType.GIPF
-          } || currentPlayer.piecesInReserve.all { !it.potential || it.type != PieceType.GIPF }
+          }
   ) {
     nextPlayer
   } else {
-    null
+    playerWhoMadeTheLastMove
   }
 }

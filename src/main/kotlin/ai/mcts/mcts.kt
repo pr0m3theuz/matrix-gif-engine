@@ -2,26 +2,16 @@ package org.example.ai.mcts
 
 import kotlin.math.ln
 import kotlin.math.sqrt
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
 import org.example.engine.TurnPhase
 import org.example.engine.determineWinner
-import org.example.model.Bitboard
-import org.example.model.PieceType
-import org.example.model.Player
-import org.example.model.PlayerName
-import org.example.model.addPieceToBitboard
-import org.example.model.assertPieceCount
-import org.example.model.columnInfos
-import org.example.model.generateMoves
-import org.example.model.getTamskMoves
-import org.example.model.identifyAvailableMoves
-import org.example.model.identifyPiecesToRemove
-import org.example.model.removeSelectedPiecesToRemove
-import org.example.model.usePiecePotential
-import org.example.model.useTamskPotential
+import org.example.engine.evaluatePiecesInReserve
+import org.example.model.*
 
+@Serializable
 data class MCTSWinCount(
     var blackPlayerWinCount: Int = 0,
     var whitePlayerWinCount: Int = 0,
@@ -39,12 +29,14 @@ fun calculateUCTScore(
 
 // TODO how to figure out when a turn ends
 
+@Serializable
 data class MCTSNode(
     val bitboard: Bitboard,
     val currentPlayer: Player,
     val nextPlayer: Player,
     val parentNode: MCTSNode? = null,
     val move: PossibleBitMove? = null,
+    val turnCount: Int = 0,
     val turnPhase: TurnPhase,
     val childrenNodes: MutableList<MCTSNode> = mutableListOf(),
     val winCounts: MutableMap<PlayerName, Int> =
@@ -52,7 +44,23 @@ data class MCTSNode(
     var rolloutCounts: Int = 0,
     val unvisitedMoves: MutableList<PossibleBitMove>,
 ) {
+  override fun toString(): String {
+    // Break the cycle: Do NOT include parentNode or childrenNodes here
+    return "MCTSNode{" +
+        "move=" +
+        move +
+        ", rolloutCounts=" +
+        rolloutCounts +
+        ", winCounts=" +
+        winCounts +
+        ", unvisitedMoves=" +
+        unvisitedMoves.size +
+        '}'
+  }
+
   fun addRandomChildNode(): MCTSNode {
+    val previousUnvisitedMoveSize = unvisitedMoves.size
+    val previousChildrenNodesSize = childrenNodes.size
     // Child Node Properties
     val childCurrentPlayer = currentPlayer.deepCopy()
     val childNextPlayer = nextPlayer.deepCopy()
@@ -116,7 +124,10 @@ data class MCTSNode(
 
         childCurrentPlayer.combinePieces()
 
-        childBitboard.assertPieceCount(currentPlayer = childCurrentPlayer, nextPlayer = childNextPlayer)
+        childBitboard.assertPieceCount(
+            currentPlayer = childCurrentPlayer,
+            nextPlayer = childNextPlayer,
+        )
       }
     }
 
@@ -125,6 +136,17 @@ data class MCTSNode(
 
     val childTurnPhase =
         when (turnPhase) {
+          TurnPhase.GIPFPhase -> {
+            if (
+                unvisitedMoves.all { it.piece?.type == PieceType.GIPF } &&
+                    0 <= turnCount &&
+                    turnCount <= 6
+            ) {
+              TurnPhase.GIPFPhase
+            } else {
+              TurnPhase.PlayerInputWindow
+            }
+          }
           TurnPhase.PreTurnEvaluation -> {
             if (piecesToRemove.isEmpty() && tamskMoves.isEmpty()) {
               TurnPhase.PlayerInputWindow
@@ -161,48 +183,92 @@ data class MCTSNode(
           TurnPhase.TurnCleanup -> TurnPhase.PreTurnEvaluation
         }
 
+    val childTurnCount =
+        when (turnPhase) {
+          TurnPhase.TurnCleanup,
+          TurnPhase.GIPFPhase -> {
+            this.turnCount + 1
+          }
+          else -> {
+            if (this.turnCount == 0) 1 else this.turnCount
+          }
+        }
+
     // TODO If TurnPhase.TurnCleanup rotate players
     // TODO Ascertain if turn phase works as expected. Create a test for different scenarios.
-    val childNode = when (childTurnPhase) {
-      TurnPhase.TurnCleanup -> {
-        MCTSNode(
-          bitboard = childBitboard,
-          currentPlayer = childNextPlayer,
-          nextPlayer = childCurrentPlayer,
-          parentNode = this,
-          move = selectedMove,
-          turnPhase = TurnPhase.PreTurnEvaluation,
-          unvisitedMoves =
-            childBitboard
-              .generateMoves(
-                childNextPlayer,
-                TurnPhase.PreTurnEvaluation,
-              )
-              .toMutableList(),
-        )
-      }
-      else -> {
-        MCTSNode(
-          bitboard = childBitboard,
-          currentPlayer = childCurrentPlayer,
-          nextPlayer = childNextPlayer,
-          parentNode = this,
-          move = selectedMove,
-          turnPhase = childTurnPhase,
-          unvisitedMoves =
-            childBitboard
-              .generateMoves(
-                childCurrentPlayer,
-                childTurnPhase,
-              )
-              .toMutableList(),
-        )
-      }
-    }
-
+    val childNode =
+        when (childTurnPhase) {
+          TurnPhase.GIPFPhase -> {
+            MCTSNode(
+                bitboard = childBitboard,
+                currentPlayer = childNextPlayer,
+                nextPlayer = childCurrentPlayer,
+                parentNode = this,
+                move = selectedMove,
+                turnCount = childTurnCount,
+                turnPhase = TurnPhase.GIPFPhase,
+                unvisitedMoves =
+                    childBitboard
+                        .generateMoves(
+                            childNextPlayer,
+                            TurnPhase.GIPFPhase,
+                        )
+                        .toMutableList(),
+            )
+          }
+          TurnPhase.TurnCleanup -> {
+            MCTSNode(
+                bitboard = childBitboard,
+                currentPlayer = childNextPlayer,
+                nextPlayer = childCurrentPlayer,
+                parentNode = this,
+                move = selectedMove,
+                turnCount = childTurnCount,
+                turnPhase = TurnPhase.PreTurnEvaluation,
+                unvisitedMoves =
+                    childBitboard
+                        .generateMoves(
+                            childNextPlayer,
+                            TurnPhase.PreTurnEvaluation,
+                        )
+                        .toMutableList(),
+            )
+          }
+          else -> {
+            MCTSNode(
+                bitboard = childBitboard,
+                currentPlayer = childCurrentPlayer,
+                nextPlayer = childNextPlayer,
+                parentNode = this,
+                move = selectedMove,
+                turnCount = childTurnCount,
+                turnPhase = childTurnPhase,
+                unvisitedMoves =
+                    childBitboard
+                        .generateMoves(
+                            childCurrentPlayer,
+                            childTurnPhase,
+                        )
+                        .toMutableList(),
+            )
+          }
+        }
 
     this.childrenNodes.add(childNode)
     this.unvisitedMoves.remove(selectedMove)
+
+    val unvisitedMovesDifference = previousUnvisitedMoveSize - unvisitedMoves.size
+    val childrenNodesDifference = childrenNodes.size - previousChildrenNodesSize
+
+    check(unvisitedMovesDifference == 1) {
+      "UnvisitedMoves decrement failure! Expected exactly 1 move to be removed from unvisitedMoves, " +
+          "but the delta was $unvisitedMovesDifference (Initial: $previousUnvisitedMoveSize, Current: ${unvisitedMoves.size})."
+    }
+
+    check(childrenNodesDifference == 1) {
+      "Reserve decrement failure! Expected exactly 1 piece to be removed from the reserve, " +
+          "but the delta was $childrenNodesDifference (Initial: $previousChildrenNodesSize, Current: ${childrenNodes.size})."
+    }
 
     return childNode
   }
@@ -210,11 +276,6 @@ data class MCTSNode(
   fun recordWin(winner: Player) {
     this.winCounts[winner.name] = this.winCounts[winner.name]!! + 1
     this.rolloutCounts += 1
-  }
-
-  fun isTerminal(): Boolean {
-    determineWinner(currentPlayer, nextPlayer) ?: return false
-    return true
   }
 
   fun winPercentage(player: Player): Float {
@@ -256,25 +317,31 @@ fun selectMoveMCTS(
           bitboard = bitboard,
           currentPlayer = currentPlayer,
           nextPlayer = nextPlayer,
-          turnPhase = TurnPhase.PreTurnEvaluation,
-          unvisitedMoves = bitboard.generateMoves(currentPlayer, TurnPhase.PreTurnEvaluation).toMutableList(),
+          turnPhase = TurnPhase.GIPFPhase,
+          unvisitedMoves =
+              bitboard.generateMoves(currentPlayer, TurnPhase.GIPFPhase).toMutableList(),
       )
 
   repeat(rounds.count()) {
     var currentNode: MCTSNode? = rootMCTSNode
-    while (rootMCTSNode.childrenNodes.isNotEmpty() && !rootMCTSNode.isTerminal()) {
-      currentNode = rootMCTSNode.selectChildNodeToExplore()
+    while (
+        currentNode?.unvisitedMoves?.isEmpty() == true &&
+            !evaluateCapturedPieces(currentNode?.currentPlayer!!) &&
+            !evaluatePiecesInReserve(currentNode?.currentPlayer!!)
+    ) {
+      currentNode = currentNode?.selectChildNodeToExplore()
     }
 
     checkNotNull(currentNode)
 
-    if (rootMCTSNode.childrenNodes.isNotEmpty()) currentNode = currentNode.addRandomChildNode()
+    if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode()
 
     val winner =
         simulateRandomGame(
             currentNode.bitboard.deepCopy(),
             currentNode.currentPlayer.deepCopy(),
             currentNode.nextPlayer.deepCopy(),
+            turnPhase = currentNode.turnPhase,
         )
 
     while (currentNode != null && winner != null) {
@@ -296,38 +363,51 @@ fun selectMoveMCTS(
   return bestMove
 }
 
+private fun evaluateCapturedPieces(player: Player): Boolean {
+  return player.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3
+}
+
+private fun evaluatePiecesInReserve(player: Player): Boolean {
+  return player.piecesInReserve.none { piece ->
+    piece.potential || piece.type == PieceType.GIPF
+  }
+}
+
 fun simulateRandomGame(
     bitboard: Bitboard,
     currentPlayer: Player,
     nextPlayer: Player,
+    turnPhase: TurnPhase,
 ): Player? {
-  fun evaluateCapturedPieces(player: Player): Boolean {
-    return player.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3
-  }
 
-  fun evaluatePiecesInReserve(player: Player): Boolean {
-    return player.piecesInReserve.none { piece ->
-      piece.potential || piece.type == PieceType.GIPF
-    }
-  }
+  var playerWhoMadeTheLastMove: Player? = null
 
-  var currentPlayer = currentPlayer
+  var activePlayer = currentPlayer
   var opponentPlayer = nextPlayer
 
-  while (!evaluateCapturedPieces(currentPlayer) || !evaluatePiecesInReserve(currentPlayer)) {
+  while (
+      !evaluateCapturedPieces(activePlayer) ||
+          !evaluatePiecesInReserve(activePlayer) ||
+          bitboard.identifyAvailableMoves(activePlayer).isNotEmpty()
+  ) {
+    if (bitboard.identifyAvailableMoves(activePlayer).isEmpty()) break
+
     simulatePlayerTurn(
         bitboard = bitboard,
-        currentPlayer = currentPlayer,
+        currentPlayer = activePlayer,
         opponentPlayer = opponentPlayer,
     )
 
+    playerWhoMadeTheLastMove = activePlayer
     // end of turn, rotate players
     val tempPlayer = opponentPlayer
-    opponentPlayer = currentPlayer
-    currentPlayer = tempPlayer
+    opponentPlayer = activePlayer
+    activePlayer = tempPlayer
   }
 
-  return determineWinner(currentPlayer, nextPlayer)
+  val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove)
+  println("Player: ${winner?.name} won")
+  return winner
 }
 
 fun simulatePlayerTurn(
@@ -443,10 +523,17 @@ fun simulatePieceRetrievalCapture(
     currentPlayer: Player,
     opponentPlayer: Player,
 ) {
-  val linesWithFourInARow = bitboard.identifyPiecesToRemove(currentPlayer)
+  val removePiecesPowerset =
+      bitboard.identifyPiecesToRemove(currentPlayer).filter {
+        it.retrievedCapturedPiecesBit.isNotEmpty()
+      }
 
-  if (linesWithFourInARow.isNotEmpty()) {
-    val selectedPieceToRemove = linesWithFourInARow.random()
+  if (removePiecesPowerset.isNotEmpty()) {
+    val selectedPieceToRemove = removePiecesPowerset.random()
+
+    check(selectedPieceToRemove.retrievedCapturedPiecesBit.isNotEmpty()) {
+      "There must be at least one column"
+    }
 
     val retrievedCapturedPieces =
         bitboard.removeSelectedPiecesToRemove(
@@ -465,8 +552,6 @@ fun simulatePieceRetrievalCapture(
     currentPlayer.addCapturedPieces(capturedPieces)
 
     currentPlayer.combinePieces()
-
-    bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
