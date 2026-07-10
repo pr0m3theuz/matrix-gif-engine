@@ -4438,7 +4438,7 @@ fun Bitboard.identifyAvailableMoves(
   } else if (allAvailableMoves.isNotEmpty() || eligibleMovesUsingPotential.isNotEmpty()) {
     return allAvailableMoves + eligibleMovesUsingPotential
   } else {
-    println("Player ${currentPlayer.name} has no available moves left!")
+    // println("Player ${currentPlayer.name} has no available moves left!")
     return emptyList()
     //		emptyList<PossibleMove>()
   }

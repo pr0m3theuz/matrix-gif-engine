@@ -3,6 +3,7 @@ package org.example.ai.mcts
 import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
@@ -10,6 +11,7 @@ import org.example.engine.TurnPhase
 import org.example.engine.determineWinner
 import org.example.engine.evaluatePiecesInReserve
 import org.example.model.*
+import java.io.File
 
 @Serializable
 data class MCTSWinCount(
@@ -306,6 +308,7 @@ data class MCTSNode(
   }
 }
 
+// TODO Add turnPhase as an argument
 fun selectMoveMCTS(
     bitboard: Bitboard,
     currentPlayer: Player,
@@ -322,14 +325,19 @@ fun selectMoveMCTS(
               bitboard.generateMoves(currentPlayer, TurnPhase.GIPFPhase).toMutableList(),
       )
 
+    if (rootMCTSNode.unvisitedMoves.isEmpty()) {return null}
+
   repeat(rounds.count()) {
     var currentNode: MCTSNode? = rootMCTSNode
+
+    checkNotNull(currentNode)
+
     while (
         currentNode?.unvisitedMoves?.isEmpty() == true &&
-            !evaluateCapturedPieces(currentNode?.currentPlayer!!) &&
-            !evaluatePiecesInReserve(currentNode?.currentPlayer!!)
+            !evaluateCapturedPieces(currentNode.currentPlayer) &&
+            !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
-      currentNode = currentNode?.selectChildNodeToExplore()
+      currentNode = currentNode.selectChildNodeToExplore()
     }
 
     checkNotNull(currentNode)
@@ -406,7 +414,7 @@ fun simulateRandomGame(
   }
 
   val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove)
-  println("Player: ${winner?.name} won")
+//  println("Player: ${winner?.name} won")
   return winner
 }
 

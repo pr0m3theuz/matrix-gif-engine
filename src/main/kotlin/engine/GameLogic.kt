@@ -134,15 +134,17 @@ fun playerTurn(state: State): State {
   bitboard = convertBoardToBitboard(newState.board)
   simulatePieceRetrievalCapture(bitboard, newState.currentPlayer, newState.nextPlayer)
 
+    // recombine player pieces
+    newState.currentPlayer.combinePieces()
+
+    bitboard.assertPieceCount(currentPlayer = newState.currentPlayer, nextPlayer = newState.nextPlayer)
+
   newState =
       newState.copy(
           currentPlayer = newState.currentPlayer,
           nextPlayer = newState.nextPlayer,
           board = bitboard.convertBitboardToBoard(newState.board),
       )
-
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
 
   newState.assertPieceCount()
 
@@ -175,6 +177,7 @@ fun playerMove(state: State): State {
           bitboard = bitboard,
           currentPlayer = state.currentPlayer,
           nextPlayer = state.nextPlayer,
+          rounds = 0..9999
       )
 
   when (bestMove?.moveType) {
