@@ -137,9 +137,6 @@ fun playerTurn(state: State): State {
   //          board = bitboard.convertBitboardToBoard(newState.board),
   //      )
 
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
-
   newState.assertPieceCount()
 
   newState.board.printHexGrid("END OF TURN")
@@ -172,6 +169,7 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
           currentPlayer = state.currentPlayer,
           nextPlayer = state.nextPlayer,
           turnPhase = turnPhase,
+          rounds = 0..9999
       )
 
   if (bestMove != null) {

@@ -261,8 +261,13 @@ fun selectMoveMCTS(
           unvisitedMoves = availableMoves,
       )
 
+    if (rootMCTSNode.unvisitedMoves.isEmpty()) {return null}
+
   repeat(rounds.count()) {
     var currentNode: MCTSNode? = rootMCTSNode
+
+    checkNotNull(currentNode)
+
     while (
         currentNode?.unvisitedMoves?.isEmpty() == true &&
             !evaluateCapturedPieces(currentNode.currentPlayer) &&
@@ -344,8 +349,8 @@ fun simulateRandomGame(
     activePlayer = tempPlayer
   }
 
-  val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove, bitboard = bitboard)
-  //  println("Player: ${winner?.name} won")
+  val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove)
+  println("Player: ${winner?.name} won")
   return winner
 }
 
