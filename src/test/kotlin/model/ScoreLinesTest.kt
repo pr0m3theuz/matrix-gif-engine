@@ -13,7 +13,7 @@ class ScoreLinesTest {
 
 	  val loadedState = Json.decodeFromString<State>(File(filename).bufferedReader().readText())
 
-	  loadedState.board.printHexGrid()
+	  loadedState.board.printHexGrid("TEST")
 
 	  org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.verticalLines)
 

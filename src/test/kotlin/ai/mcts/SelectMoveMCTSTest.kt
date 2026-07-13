@@ -1,6 +1,7 @@
 package ai.mcts
 
 import org.example.ai.mcts.selectMoveMCTS
+import org.example.engine.TurnPhase
 import org.example.model.State
 import org.example.model.convertBoardToBitboard
 import org.example.model.initializeState
@@ -19,6 +20,7 @@ class SelectMoveMCTSTest {
 		  bitboard = bitboard,
 		  currentPlayer = state.currentPlayer,
 		  nextPlayer = state.nextPlayer,
+		  turnPhase = TurnPhase.PlayerInputWindow,
 			rounds = 0..9999
 	  )
 	}

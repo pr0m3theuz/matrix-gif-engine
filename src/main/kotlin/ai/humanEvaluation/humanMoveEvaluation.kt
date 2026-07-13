@@ -227,7 +227,7 @@ fun scoreState(state: State): Int {
   val possibleMoves = identifyAvailableMoves(state)
 
   if (possibleMoves.isEmpty()) {
-    val winner = determineWinner(state.currentPlayer, state.nextPlayer, state.nextPlayer)
+    val winner = determineWinner(state.currentPlayer, state.nextPlayer, state.nextPlayer, state = state)
     winner?.let {
       return if (it.name == state.currentPlayer.name) {
         10000000
@@ -349,7 +349,7 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
   val possibleMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
 
   if (possibleMoves.isEmpty()) {
-    val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer)
+    val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)
     winner?.let {
       return if (it.name == currentPlayer.name) {
         1
@@ -1091,7 +1091,7 @@ fun alphabetaBitboardAddPieces(
 			// endregion
 	    // region MoveType.UsePotential
       MoveType.UsePotential -> {
-        bitboard.usePiecePotential(possibleBitMove = possibleBitMove)
+        bitboard.usePiecePotential(possibleBitMove = possibleBitMove, currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	      val postUsePotentialBitboardState = bitboard.deepCopy()
 

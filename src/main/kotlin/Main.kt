@@ -23,7 +23,7 @@ fun main() {
   var playerWhoMadeTheLastMove: Player? = null
 
   // TODO implement function to evaluate if the current player's pieces has any valid moves left
-  while (!evaluateCapturedPieces(gameState) || !evaluatePiecesInReserve(gameState)) {
+  while (!evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState)) {
     turn = turn.plus(1)
     println("Turn: $turn")
     gameState.printStateSummary()
@@ -49,9 +49,9 @@ fun main() {
     }
   }
 
-  gameState.printStateSummary()
-  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer, playerWhoMadeTheLastMove)?.name} won")
+  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer, playerWhoMadeTheLastMove, state = gameState)?.name} won")
 	println("State: ${Json.encodeToString(gameState)}")
+  gameState.printStateSummary()
 
 }
 

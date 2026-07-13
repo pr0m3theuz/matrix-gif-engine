@@ -45,11 +45,11 @@ fun State.printStateSummary() {
   // 1. Players Section
   sb.appendLine("Active Players:")
   sb.appendLine("  • CURRENT: ${currentPlayer.name}")
-  sb.appendLine("    - Reserve:  ${currentPlayer.piecesInReserve.size} pieces")
+  sb.appendLine("    - Reserve:  ${currentPlayer.piecesInReserve.count {it.potential || it.type == PieceType.GIPF}} pieces")
   sb.appendLine("    - Captured: ${currentPlayer.capturedPieces.size} pieces")
 
   sb.appendLine("  • NEXT:    ${nextPlayer.name}")
-  sb.appendLine("    - Reserve:  ${nextPlayer.piecesInReserve.size} pieces")
+  sb.appendLine("    - Reserve:  ${nextPlayer.piecesInReserve.count {it.potential || it.type == PieceType.GIPF}} pieces")
   sb.appendLine("    - Captured: ${nextPlayer.capturedPieces.size} pieces")
 
   sb.appendLine("--------------------------------------------------")
@@ -80,7 +80,7 @@ fun State.printStateSummary() {
   print(sb.toString())
 }
 
-fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66) {
+fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66, bitboard: Bitboard? = null) {
 
 	val nextPlayer = this.nextPlayer
 	val currentPlayer = this.currentPlayer
@@ -114,6 +114,42 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 	var boardStacks =
 		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.BLACK.name } ?: 0 }
 
+	var gipfPieces = nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF } +
+			nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF } +
+			currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF } +
+			currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF } +
+			board.nodes.count { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.GIPF  }
+
+	var zertzPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.ZERTZ) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	var tamskPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.TAMSK) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	var yinshPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.YINSH) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	var dvonnPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.DVONN) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	var punctPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.PUNCT) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
 	val totalBlackPieces =
 		nextReservePotentials +
 				nextReserveBasics +
@@ -128,14 +164,53 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 				boardStacks
 
 	check(totalBlackPieces == EXPECTED_TOTAL) {
+		val nextReserveRaw =
+			nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential }
+		val nextCapturedRaw =
+			nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+		val currentReserveRaw =
+			currentPlayer.piecesInReserve.count {
+				it.colorName == PlayerName.BLACK.name && it.potential
+			}
+		val currentCapturedRaw =
+			currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+
 		"""
-    Critical State Corruption: Total Black pieces ($totalBlackPieces) does not match expected maximum ($EXPECTED_TOTAL).
-    Breakdown:
-    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
-    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
-    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
-    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
-    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
+    CRITICAL STATE CORRUPTION: Total Black piece weight ($totalBlackPieces) != Expected ($EXPECTED_TOTAL)
+    
+    1. NEXT PLAYER
+       ├── Reserve (Black pieces held)
+       │   ├── Potentials: $nextReserveRaw (weighted: $nextReservePotentials)
+       │   └── Basics:     $nextReserveBasics
+       └── Captured (By Next Player)
+           ├── Potentials: $nextCapturedRaw (weighted: $nextCapturedPotentials)
+           └── Basics:     $nextCapturedBasics
+           
+    2. CURRENT PLAYER
+       ├── Reserve (Black pieces held)
+       │   ├── Potentials: $currentReserveRaw (weighted: $currentReservePotentials)
+       │   └── Basics:     $currentReserveBasics
+       └── Captured (By Current Player)
+           ├── Potentials: $currentCapturedRaw (weighted: $currentCapturedPotentials)
+           └── Basics:     $currentCapturedBasics
+           
+    3. ACTIVE BOARD
+       ├── Potentials (Weighted): $boardPotentials
+       ├── Flat Basics (Single pieces on board)
+       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.GIPF }}
+       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.ZERTZ }}
+       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.TAMSK }}
+       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.YINSH }}
+       └── Stacks (Layered/hidden pieces)
+           ├── DVONN (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.DVONN }}
+           ├── PUNCT (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.PUNCT }}
+           
+    SUMMARY EVALUATION:
+    - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
+    - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
+    ${bitboard?.let { "- Bitboard State: " + Json.encodeToString<Bitboard>(it)}}
+    - Player: ${Json.encodeToString<Player>(if (currentPlayer.name == PlayerName.WHITE) currentPlayer else nextPlayer)}
+    ======================================================================
     """
 			.trimIndent()
 	}
@@ -168,6 +243,42 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 	boardStacks =
 		board.nodes.sumOf { it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.WHITE.name } ?: 0 }
 
+	gipfPieces = nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF } +
+			nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF } +
+			currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF } +
+			currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF } +
+			board.nodes.count { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.GIPF  }
+
+	zertzPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.ZERTZ) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	tamskPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.TAMSK) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	yinshPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.YINSH) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	dvonnPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.DVONN) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
+	punctPieces = nextPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) { if (it.potential) 2 else 1 } else 0 } +
+			nextPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.piecesInReserve.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			currentPlayer.capturedPieces.sumOf { if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) { if (it.potential == true) 2 else 1 } else 0 } +
+			board.nodes.sumOf { if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.PUNCT) { if (it.piece?.potential == true) 2 else 1 } else 0 }
+
 	val totalWhitePieces =
 		nextReservePotentials +
 				nextReserveBasics +
@@ -182,14 +293,53 @@ fun State.assertPieceCount(EXPECTED_TOTAL: Int = 66/2, MAXIMUM_PIECES: Int = 66)
 				boardStacks
 
 	check(totalWhitePieces == EXPECTED_TOTAL) {
+		val nextReserveRaw =
+			nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential }
+		val nextCapturedRaw =
+			nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+		val currentReserveRaw =
+			currentPlayer.piecesInReserve.count {
+				it.colorName == PlayerName.WHITE.name && it.potential
+			}
+		val currentCapturedRaw =
+			currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+
 		"""
-    Critical State Corruption: Total White pieces ($totalWhitePieces) does not match expected maximum ($EXPECTED_TOTAL).
-    Breakdown:
-    - Next Player Reserve: Potentials=${nextReservePotentials / 2} (weighted=$nextReservePotentials), Basics=$nextReserveBasics
-    - Next Player Captured: Potentials=${nextCapturedPotentials / 2} (weighted=$nextCapturedPotentials), Basics=$nextCapturedBasics
-    - Current Player Reserve: Potentials=${currentReservePotentials / 2} (weighted=$currentReservePotentials), Basics=$currentReserveBasics
-    - Current Player Captured: Potentials=${currentCapturedPotentials / 2} (weighted=$currentCapturedPotentials), Basics=$currentCapturedBasics
-    - Active Board: Potentials=${boardPotentials / 2} (weighted=$boardPotentials), Basics=$boardBasics, Hidden in Stacks=$boardStacks
+ CRITICAL STATE CORRUPTION: Total White piece weight (${totalWhitePieces}) != Expected ($EXPECTED_TOTAL)
+    
+    1. NEXT PLAYER
+       ├── Reserve (White pieces held)
+       │   ├── Potentials: $nextReserveRaw (weighted: $nextReservePotentials)
+       │   └── Basics:     $nextReserveBasics
+       └── Captured (By Next Player)
+           ├── Potentials: $nextCapturedRaw (weighted: $nextCapturedPotentials)
+           └── Basics:     $nextCapturedBasics
+           
+    2. CURRENT PLAYER
+       ├── Reserve (White pieces held)
+       │   ├── Potentials: $currentReserveRaw (weighted: $currentReservePotentials)
+       │   └── Basics:     $currentReserveBasics
+       └── Captured (By Current Player)
+           ├── Potentials: $currentCapturedRaw (weighted: $currentCapturedPotentials)
+           └── Basics:     $currentCapturedBasics
+           
+    3. ACTIVE BOARD
+       ├── Potentials (Weighted): $boardPotentials
+       ├── Flat Basics (Single pieces on board)
+       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.GIPF }}
+       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.ZERTZ }}
+       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.TAMSK }}
+       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.YINSH }}
+       └── Stacks (Layered/hidden pieces)
+           ├── DVONN (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.DVONN }}
+           ├── PUNCT (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.PUNCT }}
+           
+    SUMMARY EVALUATION:
+    - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
+    - Board Total Weight:  ${boardPotentials + boardBasics + boardStacks}
+    ${bitboard?.let { "- Bitboard State: " + Json.encodeToString<Bitboard>(it) }}
+    - Player: ${Json.encodeToString<Player>(if (currentPlayer.name == PlayerName.WHITE) currentPlayer else nextPlayer)}
+    ======================================================================
     """
 			.trimIndent()
 	}

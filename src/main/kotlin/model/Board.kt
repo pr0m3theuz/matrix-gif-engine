@@ -146,7 +146,7 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
   )
 }
 
-fun Board.printHexGrid() {
+fun Board.printHexGrid(prefix: String) {
 
   val columns = 'A'..'J'
 
@@ -164,7 +164,7 @@ fun Board.printHexGrid() {
           'J' to 1..4,
       )
 
-  println("=================== GIPF BOARD ===================")
+  println("=================== $prefix GIPF BOARD ===================")
   println(" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|")
   for (rowLetter in columns) {
     val rowStringBuilder = StringBuilder()

@@ -826,7 +826,7 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     }
 
     println("[SHIFT] Grid configuration post-shift step:")
-    newBoard.printHexGrid()
+    newBoard.printHexGrid("POST-SHIFT")
 
     return newBoard
   } else {
@@ -1409,8 +1409,213 @@ fun identifyAvailableMoves(state: State): List<PossibleMove> {
   } else if (allAvailableMoves.isNotEmpty()) {
     return allAvailableMoves
   } else {
+    return emptyList<PossibleMove>()
+//    throw IllegalStateException("Player ${state.currentPlayer.name} has no available moves left!")
+  }
+}
+
+fun identifyNextPlayerAvailableMoves(state: State): List<PossibleMove> {
+  // Does player have GIPF pieces in reserve?
+  val gipfPiecesInReserve: List<Piece> =
+    state.nextPlayer.piecesInReserve
+      .filter { piece -> piece.type == PieceType.GIPF }
+      .distinctBy { piece -> piece.type }
+
+  val playableStackedPiecesInReserve: List<Piece> =
+    state.nextPlayer.piecesInReserve
+      .filter { piece ->
+        piece.type != PieceType.GIPF && piece.potential
+      }
+      .distinctBy { piece -> piece.type }
+
+  // TODO work on finding eligiblePotentialTargetNodes
+  val eligibleMovesUsingPotential: Map<Node, Set<Node?>> = getEligiblePotentialMoves(state)
+
+  // TODO Current Player has no moves left
+  if (
+    playableStackedPiecesInReserve.isEmpty() &&
+    gipfPiecesInReserve.isEmpty() &&
+    eligibleMovesUsingPotential.isEmpty()
+  ) {
+    return emptyList()
+  }
+
+  val dots = state.board.nodes.filter { it.isDot }
+
+  // TODO rename variable to be more descriptive
+  val populatedNodes: MutableSet<NodeConnections> = mutableSetOf()
+
+  val linesWithSpace: Lines = state.lines.getLinesWithSpaces()
+
+  val allLines =
+    linesWithSpace.verticalLines +
+        linesWithSpace.upwardRightLines +
+        linesWithSpace.downwardRightLines
+
+  check(allLines.all { nodes -> nodes.any { node -> node.piece == null } }) {
+    val jammedLines =
+      allLines
+        .filter { nodes -> nodes.none { node -> node.piece == null } }
+        .map { nodes ->
+          nodes.joinToString(", ", prefix = "[", postfix = "]") {
+            "${it.coordinate.column}${it.coordinate.row}"
+          }
+        }
+
+    "Invalid state transition: A piece shift was attempted on a blocked axis. " +
+        "The following target lines have no empty spaces remaining: $jammedLines"
+  }
+
+  // populate populatedNodes
+  // TODO can this be simplified
+  dots.forEach { dot ->
+    val nodeConnections = NodeConnections(node = dot)
+
+    when {
+      (dot.neighbors?.above != null || dot.neighbors?.below != null) -> {
+        linesWithSpace.verticalLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (ends.contains(dot.neighbors!!.above) || ends.contains(dot.neighbors!!.below)) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+
+      dot.neighbors?.upperRight != null || dot.neighbors?.lowerLeft != null -> {
+        linesWithSpace.upwardRightLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (
+            ends.contains(dot.neighbors!!.upperRight) || ends.contains(dot.neighbors!!.lowerLeft)
+          ) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+
+      dot.neighbors?.lowerRight != null || dot.neighbors?.upperLeft != null -> {
+        linesWithSpace.downwardRightLines.forEach { line ->
+          val ends: List<Coordinate> = listOf(line.first().coordinate, line.last().coordinate)
+          val origins: List<Node> = listOf(line.first(), line.last())
+
+          if (
+            ends.contains(dot.neighbors!!.lowerRight) || ends.contains(dot.neighbors!!.upperLeft)
+          ) {
+            ends.forEach { coordinate ->
+              val result = dot.neighbors!!.getNeighbours().contains(coordinate)
+              if (result) {
+                // selectableDots.plus(dot)
+                // TODO Add node to list of nodes to push piece on
+                val node = origins.first { node -> node.coordinate == coordinate }
+
+                nodeConnections.neighbours.add(node)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    populatedNodes.add(nodeConnections)
+  }
+
+  val selectableDots: Set<NodeConnections> =
+    populatedNodes.filter { it.neighbours.isNotEmpty() }.toSet()
+
+  if (selectableDots.size < populatedNodes.size) {
+    println(
+      "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
+    )
+  }
+
+  val numberOfPiecesBefore = state.nextPlayer.getNumberOfPiecesInReserve()
+
+  // Build a list of all available moves
+  var allAvailableMoves: MutableList<PossibleMove> = mutableListOf()
+
+  playableStackedPiecesInReserve.forEach { piece ->
+    allAvailableMoves.add(
+      PossibleMove(piece = piece, selectableDots = selectableDots, moveType = MoveType.AddPiece)
+    )
+  }
+
+  eligibleMovesUsingPotential
+    .filter { (key, value) -> value.filterNotNull().isNotEmpty() }
+    .forEach { (node, eligiblePotentialTargetNodes): Map.Entry<Node, Set<Node?>> ->
+      allAvailableMoves.add(
+        PossibleMove(
+          eligiblePotentialPieceNode = node,
+          eligiblePotentialTargetNodes = eligiblePotentialTargetNodes.filterNotNull().toSet(),
+          moveType = MoveType.UsePotential,
+        )
+      )
+    }
+
+  allAvailableMoves =
+    allAvailableMoves
+      .filter { possibleMove -> possibleMove.selectableDots.isNotEmpty() }
+      .toMutableList()
+
+  if (gipfPiecesInReserve.isNotEmpty()) {
+    return gipfPiecesInReserve.map { piece ->
+      PossibleMove(piece = piece, selectableDots = selectableDots, moveType = MoveType.AddPiece)
+    }
+  } else if (isTamskPieceAtCenter(state.board, state.nextPlayer)) {
+    // TODO use potential
+    // TODO put piece on a selectable dot shift piece
+
+    val piece: Piece? =
+      state.board.nodes
+        .first {
+          it.coordinate.column == state.board.centerNodeCoordinate.column &&
+              it.coordinate.row == state.board.centerNodeCoordinate.row
+        }
+        .piece
+
+    val selectedNode = selectDot(selectableDots)
+
+    check(piece?.potential == false) {
+      //      val pieceCoords = selectedNode.node.coordinate.let { "${it.column}${it.row}" }
+      val currentPotential = piece?.potential
+
+      //      "Invalid piece state at $pieceCoords: Expected piece potential to be spent (false), "
+      // +
+      "but found potential status is: $currentPotential (Piece Type: ${piece?.type?.name}, Color: ${piece?.colorName})"
+    }
+
+    return listOf<PossibleMove>(
+      PossibleMove(
+        piece = piece.usePiecePotential(),
+        selectableDots = selectableDots,
+        moveType = MoveType.AddPiece,
+      )
+    )
+  } else if (allAvailableMoves.isNotEmpty()) {
+    return allAvailableMoves
+  } else {
     //		emptyList<PossibleMove>()
-    throw IllegalStateException("Player ${state.currentPlayer.name} has no available moves left!")
+    throw IllegalStateException("Player ${state.nextPlayer.name} has no available moves left!")
   }
 }
 
