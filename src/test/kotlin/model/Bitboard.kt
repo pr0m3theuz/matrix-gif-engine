@@ -2349,4 +2349,9 @@ class BitboardTest {
 
     modifiableBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   }
+
+    @Test
+    fun `remove Selected Pieces To Remove`() {
+
+    }
 }

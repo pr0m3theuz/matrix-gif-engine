@@ -3659,7 +3659,14 @@ fun Bitboard.createPlayerPiecesWithPotentialPowerset(
   return playerPiecesWithPotential.fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
     // For every item, take the current sublists (accumulator)
     // and add a new set of sublists where the item is appended
-    accumulator + accumulator.map { it + item }
+      accumulator + accumulator.map {
+          // only add unique/distinct items
+          if (!it.contains(item)) {
+              it + item
+          } else {
+              it
+          }
+      }
   }
 }
 
@@ -3687,15 +3694,15 @@ fun Bitboard.createRetrieveAndCapturePiecesList(
               // pieces without potential and not neutralized
               (whitePieces and bitmask) == bitmask &&
                   (whitePotentials.inv() and bitmask) == bitmask &&
-                  (whiteNeutralized.inv() and bitmask) == bitmask
-              // (blackNeutralized.inv() and bitmask) == bitmask // why use blackNeutralized
+                  (whiteNeutralized.inv() and bitmask) == bitmask &&
+               (blackNeutralized.inv() and bitmask) == bitmask // for white pieces stacked on neutralized black pieces
             }
 
             PlayerName.BLACK -> {
               (blackPieces and bitmask) == bitmask &&
                   (blackPotentials.inv() and bitmask) == bitmask &&
-                  (blackNeutralized.inv() and bitmask) == bitmask
-              // (whiteNeutralized.inv() and bitmask) == bitmask // why use whiteNeutralized
+                  (blackNeutralized.inv() and bitmask) == bitmask &&
+               (whiteNeutralized.inv() and bitmask) == bitmask // for black pieces stacked on neutralized black pieces
             }
           }
       result
@@ -4849,18 +4856,20 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
                 // pieces without potential and not neutralized
                 (whitePieces and bitmask) == bitmask &&
                     (whitePotentials.inv() and bitmask) == bitmask &&
-                    (blackNeutralized.inv() and bitmask) == bitmask
+                        (whiteNeutralized.inv() and bitmask) == bitmask &&
+                   (blackNeutralized.inv() and bitmask) == bitmask // for white pieces stacked on neutralized black pieces
               }
 
               PlayerName.BLACK -> {
                 (blackPieces and bitmask) == bitmask &&
                     (blackPotentials.inv() and bitmask) == bitmask &&
-                    (whiteNeutralized.inv() and bitmask) == bitmask
+                        (blackNeutralized.inv() and bitmask) == bitmask &&
+                   (whiteNeutralized.inv() and bitmask) == bitmask // for black pieces stacked on neutralized black pieces
               }
             }
         result
       }
-    }
+    }.distinct()
 
     /**
      * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset
@@ -4887,21 +4896,52 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
             }
         result
       }
-    }
+    }.distinct()
 
     // stacked DVONN and PUNCT Pieces
     val neutralizedBitmasks = linesWithFourInARow.flatMap { column ->
       column.positions.filter { bitmask ->
         (whiteNeutralized and bitmask) == bitmask || (blackNeutralized and bitmask) == bitmask
       }
-    }
+    }.distinct()
 
-    val removePiecesPowerset =
+      // --- 1. PRE-CONDITION CHECKS ---
+      if (neutralizedBitmasks.isNotEmpty()) {
+          check(
+              neutralizedBitmasks.any {
+                  !playerPiecesNotNeutralizedWithoutPotential.contains(it)
+              }
+          ) {
+              "playerPiecesNotNeutralizedWithoutPotential should not contain any bits from neutralizedBitmasks"
+          }
+
+          check(
+              neutralizedBitmasks.any {
+                  !opponentPiecesAndNotNeutralized.contains(it)
+              }
+          ) {
+              "opponentPiecesAndNotNeutralized should not contain any bits from neutralizedBitmasks"
+          }
+      }
+
+      if (playerPiecesNotNeutralizedWithoutPotential.isNotEmpty() && playerPiecesWithPotential.isNotEmpty()) {
+          check(
+              playerPiecesNotNeutralizedWithoutPotential.any { bitmask ->
+                  playerPiecesWithPotential.any { pieces ->
+                      !pieces.contains(bitmask)
+                  }
+              }
+          ) {
+              "playerPiecesNotNeutralizedWithoutPotential should not contain any bits from playerPiecesWithPotential"
+          }
+      }
+
+      val removePiecesPowerset =
         playerPiecesWithPotential
             .map { potentialPieces ->
               PossibleBitMove(
                   retrievedCapturedPiecesBit =
-                      (potentialPieces +
+                      ((potentialPieces +
                               playerPiecesNotNeutralizedWithoutPotential +
                               opponentPiecesAndNotNeutralized)
                           .map { bitmask ->
@@ -4915,7 +4955,12 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
                                 bitmask = bitmask,
                                 isNeutralized = true,
                             )
-                          },
+                          }).also { it ->
+                          val bitmaskOccurances = it.groupBy { it.bitmask }
+                          check(bitmaskOccurances.all { it.value.size == 1 }) {
+                              "$bitmaskOccurances"
+                          }
+                      },
                   moveType = MoveType.RetrieveCapturePieces,
               )
             }
@@ -4927,7 +4972,8 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
     //      "Should not have an empty list of pieces to remove."
     //    }
 
-    return removePiecesPowerset
+
+      return removePiecesPowerset
   }
 
   return emptyList()
