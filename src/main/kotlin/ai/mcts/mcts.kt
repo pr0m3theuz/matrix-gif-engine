@@ -350,7 +350,7 @@ fun simulateRandomGame(
   }
 
   val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove)
-  println("Player: ${winner?.name} won")
+//  println("Player: ${winner?.name} won")
   return winner
 }
 

@@ -1716,6 +1716,7 @@ fun Bitboard.usePiecePotential(
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials =
       if (possibleBitMove.pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
+
   val isDebugEnabled = false // Toggle this to true to see detailed trace logs
   if (isDebugEnabled) {
     println("--- USE POTENTIAL CALLED ---")
@@ -5226,15 +5227,19 @@ fun Bitboard.assertPieceCount(
       blackDVONNLayer[0].countOneBits() +
           blackDVONNLayer[2].countOneBits() +
           blackDVONNLayer[4].countOneBits() +
+          blackDVONNLayer[6].countOneBits() +
           blackPUNCTLayer[0].countOneBits() +
           blackPUNCTLayer[2].countOneBits() +
           blackPUNCTLayer[4].countOneBits() +
+          blackPUNCTLayer[6].countOneBits() +
           whiteDVONNLayer[1].countOneBits() +
           whiteDVONNLayer[3].countOneBits() +
           whiteDVONNLayer[5].countOneBits() +
+          whiteDVONNLayer[7].countOneBits() +
           whitePUNCTLayer[1].countOneBits() +
           whitePUNCTLayer[3].countOneBits() +
-          whitePUNCTLayer[5].countOneBits()
+          whitePUNCTLayer[5].countOneBits() +
+          whitePUNCTLayer[7].countOneBits()
 
   var boardPotentials = blackPotentials.countOneBits()
 
@@ -5345,15 +5350,19 @@ fun Bitboard.assertPieceCount(
       whiteDVONNLayer[0].countOneBits() +
           whiteDVONNLayer[2].countOneBits() +
           whiteDVONNLayer[4].countOneBits() +
+          whiteDVONNLayer[6].countOneBits() +
           whitePUNCTLayer[0].countOneBits() +
           whitePUNCTLayer[2].countOneBits() +
           whitePUNCTLayer[4].countOneBits() +
+          whitePUNCTLayer[6].countOneBits() +
           blackDVONNLayer[1].countOneBits() +
           blackDVONNLayer[3].countOneBits() +
           blackDVONNLayer[5].countOneBits() +
+          blackDVONNLayer[7].countOneBits() +
           blackPUNCTLayer[1].countOneBits() +
           blackPUNCTLayer[3].countOneBits() +
-          blackPUNCTLayer[5].countOneBits()
+          blackPUNCTLayer[5].countOneBits() +
+          blackPUNCTLayer[7].countOneBits()
 
   boardPotentials = whitePotentials.countOneBits()
 

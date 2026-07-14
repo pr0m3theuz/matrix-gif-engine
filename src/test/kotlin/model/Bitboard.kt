@@ -8,7 +8,6 @@ import kotlinx.serialization.json.Json
 import org.example.ai.humanEvaluation.BestBitMove
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
-import org.example.engine.TurnPhase
 import org.example.model.Bitboard
 import org.example.model.Board
 import org.example.model.Coordinate
@@ -30,11 +29,11 @@ import org.example.model.convertBoardToBitboard
 import org.example.model.createPlayerPiecesWithPotentialPowerset
 import org.example.model.createRetrieveAndCapturePiecesList
 import org.example.model.evaluateLinesForFourInARow
-import org.example.model.generateMoves
 import org.example.model.getPunctMoves
 import org.example.model.getsSelectedPiecesWithPotentialPowerset
 import org.example.model.populateNeighbors
 import org.example.model.removeSelectedPiecesToRemove
+import org.example.model.usePiecePotential
 import org.example.model.validatePieceRemoval
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -1157,8 +1156,6 @@ class BitboardTest {
     println(Json.encodeToString(testBitboard))
   }
 
-
-
   @Test
   fun `convert Bitboard To Board 3`() {
     // 1. Re-create the 65 Nodes
@@ -1693,14 +1690,14 @@ class BitboardTest {
     val initBoard = Board(nodes = nodesList, centerNodeCoordinate = coord("E5"))
 
     val initBlackBoardPieces =
-      initBoard.nodes.filter { node ->
-        node.piece?.colorName == PlayerName.BLACK.name
-      }
+        initBoard.nodes.filter { node ->
+          node.piece?.colorName == PlayerName.BLACK.name
+        }
 
     val initWhiteBoardPieces =
-      initBoard.nodes.filter { node ->
-        node.piece?.colorName == PlayerName.WHITE.name
-      }
+        initBoard.nodes.filter { node ->
+          node.piece?.colorName == PlayerName.WHITE.name
+        }
 
     val initBitboard = convertBoardToBitboard(initBoard)
 
@@ -1838,18 +1835,18 @@ class BitboardTest {
   @Test
   fun `get PUNCT Moves`() {
     val bitboard =
-      Bitboard(
-        whiteGIPF = 137472507908UL,
-        whiteTAMSK = 0UL,
-        whiteYINSH = 4194336UL,
-        whiteZERTZ = 134217728UL,
-        whitePotentials = 8745140520UL,
-        blackGIPF = 268435584UL,
-        blackTAMSK = 8388608UL,
-        blackYINSH = 0UL,
-        blackZERTZ = 2163712UL,
-        blackPotentials = 10552851UL,
-      )
+        Bitboard(
+            whiteGIPF = 137472507908UL,
+            whiteTAMSK = 0UL,
+            whiteYINSH = 4194336UL,
+            whiteZERTZ = 134217728UL,
+            whitePotentials = 8745140520UL,
+            blackGIPF = 268435584UL,
+            blackTAMSK = 8388608UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 2163712UL,
+            blackPotentials = 10552851UL,
+        )
 
     bitboard.whiteDVONNLayer[0] = 16793608UL
     bitboard.whitePUNCTLayer[0] = 68UL
@@ -1862,62 +1859,62 @@ class BitboardTest {
     bitboard.blackPUNCTLayer[0] = 512UL
 
     val whitePlayer =
-      Player(
-        name = PlayerName.WHITE,
-        abbreviation = "W",
-        piecesInReserve =
-          mutableListOf(
-            Piece(
-              abbreviation = "WT",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.TAMSK,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WT",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.TAMSK,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WT",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.TAMSK,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WZ",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.ZERTZ,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WZ",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.ZERTZ,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WY",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.YINSH,
-              isNeutralized = false,
-            ),
-            Piece(
-              abbreviation = "WP",
-              potential = true,
-              colorName = PlayerName.WHITE.name,
-              type = PieceType.PUNCT,
-              isNeutralized = false,
-            ),
-          ),
-      )
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve =
+                mutableListOf(
+                    Piece(
+                        abbreviation = "WT",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.TAMSK,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WT",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.TAMSK,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WT",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.TAMSK,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WZ",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.ZERTZ,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WZ",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.ZERTZ,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WY",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.YINSH,
+                        isNeutralized = false,
+                    ),
+                    Piece(
+                        abbreviation = "WP",
+                        potential = true,
+                        colorName = PlayerName.WHITE.name,
+                        type = PieceType.PUNCT,
+                        isNeutralized = false,
+                    ),
+                ),
+        )
 
     bitboard.getPunctMoves(whitePlayer, org.example.model.columnInfos)
   }
@@ -1925,114 +1922,123 @@ class BitboardTest {
   @Test
   fun `get PUNCT Moves 2`() {
     // 1. Initialize the updated Bitboard
-    val bitboard = Bitboard(
-      whiteGIPF = 2147483776UL,
-      whiteDVONNLayer = ulongArrayOf(68732059680UL, 32UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(16908288UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 549822922752UL,
-      whiteYINSH = 283467841536UL,
-      whiteZERTZ = 268435536UL,
-      whitePotentials = 833563394048UL,
-      blackGIPF = 38654705664UL,
-      blackDVONNLayer = ulongArrayOf(262656UL, 262144UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(
-        138512695296UL,
-        1073741824UL,
-        1073741824UL,
-        1073741824UL,
-        1073741824UL,
-        0UL
-      ),
-      blackTAMSK = 17179869184UL,
-      blackYINSH = 32768UL,
-      blackZERTZ = 537395202UL,
-      blackPotentials = 18253611522UL,
-    )
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 2147483776UL,
+            whiteDVONNLayer = ulongArrayOf(68732059680UL, 32UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(16908288UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 549822922752UL,
+            whiteYINSH = 283467841536UL,
+            whiteZERTZ = 268435536UL,
+            whitePotentials = 833563394048UL,
+            blackGIPF = 38654705664UL,
+            blackDVONNLayer = ulongArrayOf(262656UL, 262144UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer =
+                ulongArrayOf(
+                    138512695296UL,
+                    1073741824UL,
+                    1073741824UL,
+                    1073741824UL,
+                    1073741824UL,
+                    0UL,
+                ),
+            blackTAMSK = 17179869184UL,
+            blackYINSH = 32768UL,
+            blackZERTZ = 537395202UL,
+            blackPotentials = 18253611522UL,
+        )
 
-// 2. Initialize Current and Opponent Players
-    val currentPlayer = Player(
-      name = PlayerName.BLACK,
-      abbreviation = "B",
-      piecesInReserve = mutableListOf(
-        piece("BZ", potential = false),
-        piece("BY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("WZ", potential = true),
-        piece("WT", potential = true),
-        piece("WG", potential = false),
-        piece("WY", potential = false)
-      )
-    )
+    // 2. Initialize Current and Opponent Players
+    val currentPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve =
+                mutableListOf(
+                    piece("BZ", potential = false),
+                    piece("BY", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("WZ", potential = true),
+                    piece("WT", potential = true),
+                    piece("WG", potential = false),
+                    piece("WY", potential = false),
+                ),
+        )
 
-    val opponentPlayer = Player(
-      name = PlayerName.WHITE,
-      abbreviation = "W",
-      piecesInReserve = mutableListOf(
-        piece("WY", potential = false),
-        piece("WP", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("BT", potential = true),
-        piece("BG", potential = false),
-        piece("BT", potential = true),
-        piece("BY", potential = true),
-        piece("BY", potential = true),
-        piece("BD", potential = false),
-        piece("BZ", potential = false),
-        piece("BD", potential = false)
-      )
-    )
+    val opponentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve =
+                mutableListOf(
+                    piece("WY", potential = false),
+                    piece("WP", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("BT", potential = true),
+                    piece("BG", potential = false),
+                    piece("BT", potential = true),
+                    piece("BY", potential = true),
+                    piece("BY", potential = true),
+                    piece("BD", potential = false),
+                    piece("BZ", potential = false),
+                    piece("BD", potential = false),
+                ),
+        )
 
-// 3. Initialize Possible Moves list
-    val possibleBitMoves = listOf(
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 2UL,
-        targetBit = 4096UL,
-        pieceType = PieceType.ZERTZ,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      ),
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 2UL,
-        targetBit = 1024UL,
-        pieceType = PieceType.ZERTZ,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      ),
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 512UL,
-        targetBit = 8388608UL,
-        pieceType = PieceType.DVONN,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      ),
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 137438953472UL,
-        targetBit = 1073741824UL,
-        pieceType = PieceType.PUNCT,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      )
-    )
+    // 3. Initialize Possible Moves list
+    val possibleBitMoves =
+        listOf(
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 2UL,
+                targetBit = 4096UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 2UL,
+                targetBit = 1024UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 512UL,
+                targetBit = 8388608UL,
+                pieceType = PieceType.DVONN,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 137438953472UL,
+                targetBit = 1073741824UL,
+                pieceType = PieceType.PUNCT,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+        )
 
-// 4. Assign the randomly selected PossibleBitMove
+    // 4. Assign the randomly selected PossibleBitMove
     val randomPossibleBitMove = possibleBitMoves[3]
 
     val punctMoves = bitboard.getPunctMoves(currentPlayer)
@@ -2042,131 +2048,305 @@ class BitboardTest {
 
   @Test
   fun `get PUNCT Moves 3`() {
-// 1. Initialize Active Bitboard
-    val bitboard = Bitboard(
-      whiteGIPF = 10UL,
-      whiteDVONNLayer = ulongArrayOf(134217728UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(268443648UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 131204UL,
-      whiteYINSH = 4194560UL,
-      whiteZERTZ = 1104UL,
-      whitePotentials = 134357460UL,
-      blackGIPF = 2097152UL,
-      blackDVONNLayer = ulongArrayOf(536870912UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(
-        687194767360UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL
-      ),
-      blackTAMSK = 4294967328UL,
-      blackYINSH = 18432UL,
-      blackZERTZ = 17858560UL,
-      blackPotentials = 142287618080UL,
-    )
+    // 1. Initialize Active Bitboard
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 10UL,
+            whiteDVONNLayer = ulongArrayOf(134217728UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(268443648UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 131204UL,
+            whiteYINSH = 4194560UL,
+            whiteZERTZ = 1104UL,
+            whitePotentials = 134357460UL,
+            blackGIPF = 2097152UL,
+            blackDVONNLayer = ulongArrayOf(536870912UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer =
+                ulongArrayOf(
+                    687194767360UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    0UL,
+                    0UL
+                ),
+            blackTAMSK = 4294967328UL,
+            blackYINSH = 18432UL,
+            blackZERTZ = 17858560UL,
+            blackPotentials = 142287618080UL,
+        )
 
-// 2. Initialize Init Bitboard (slightly different blackPotentials field)
-    val initBitboard = Bitboard(
-      whiteGIPF = 10UL,
-      whiteDVONNLayer = ulongArrayOf(134217728UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(268443648UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 131204UL,
-      whiteYINSH = 4194560UL,
-      whiteZERTZ = 1104UL,
-      whitePotentials = 134357460UL,
-      blackGIPF = 2097152UL,
-      blackDVONNLayer = ulongArrayOf(536870912UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(
-        687194767360UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL,
-        137438953472UL
-      ),
-      blackTAMSK = 4294967328UL,
-      blackYINSH = 18432UL,
-      blackZERTZ = 17858560UL,
-      blackPotentials = 692043431968UL, // Notice difference from bitboard
-    )
+    // 2. Initialize Init Bitboard (slightly different blackPotentials field)
+    val initBitboard =
+        Bitboard(
+            whiteGIPF = 10UL,
+            whiteDVONNLayer = ulongArrayOf(134217728UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(268443648UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 131204UL,
+            whiteYINSH = 4194560UL,
+            whiteZERTZ = 1104UL,
+            whitePotentials = 134357460UL,
+            blackGIPF = 2097152UL,
+            blackDVONNLayer = ulongArrayOf(536870912UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer =
+                ulongArrayOf(
+                    687194767360UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    137438953472UL,
+                    0UL,
+                    0UL
+                ),
+            blackTAMSK = 4294967328UL,
+            blackYINSH = 18432UL,
+            blackZERTZ = 17858560UL,
+            blackPotentials = 692043431968UL, // Notice difference from bitboard
+        )
 
-// 3. Initialize Current and Opponent Players
-    val currentPlayer = Player(
-      name = PlayerName.BLACK,
-      abbreviation = "B",
-      piecesInReserve = mutableListOf(
-        piece("BZ", potential = false),
-        piece("BY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("WY", potential = true),
-        piece("WD", potential = true),
-        piece("WG", potential = false)
-      )
-    )
+    // 3. Initialize Current and Opponent Players
+    val currentPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve =
+                mutableListOf(
+                    piece("BZ", potential = false),
+                    piece("BY", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("WY", potential = true),
+                    piece("WD", potential = true),
+                    piece("WG", potential = false),
+                ),
+        )
 
-    val opponentPlayer = Player(
-      name = PlayerName.WHITE,
-      abbreviation = "W",
-      piecesInReserve = mutableListOf(
-        piece("WZ", potential = false),
-        piece("WD", potential = true),
-        piece("WY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("BY", potential = true),
-        piece("BD", potential = true),
-        piece("BG", potential = false),
-        piece("BG", potential = false),
-        piece("BD", potential = true),
-        piece("BT", potential = true) // Inferred TAMSK from 'TAMS'
-      )
-    )
+    val opponentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve =
+                mutableListOf(
+                    piece("WZ", potential = false),
+                    piece("WD", potential = true),
+                    piece("WY", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("BY", potential = true),
+                    piece("BD", potential = true),
+                    piece("BG", potential = false),
+                    piece("BG", potential = false),
+                    piece("BD", potential = true),
+                    piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
+                ),
+        )
 
-// 4. Initialize Possible Moves
-    val possibleBitMoves = listOf(
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 32768UL,
-        targetBit = 8589934592UL,
-        pieceType = PieceType.ZERTZ,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      ),
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 16777216UL,
-        targetBit = 8589934592UL,
-        pieceType = PieceType.ZERTZ,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      ),
-      PossibleBitMove(
-        piece = null,
-        columnInfos = emptyList(),
-        retrievedCapturedPiecesBit = emptyList(),
-        sourceBit = 549755813888UL,
-        targetBit = 137438953472UL,
-        pieceType = PieceType.PUNCT,
-        pieceColor = PlayerName.BLACK,
-        pushDirection = null,
-        moveType = MoveType.UsePotential
-      )
-    )
+    // 4. Initialize Possible Moves
+    val possibleBitMoves =
+        listOf(
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 32768UL,
+                targetBit = 8589934592UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 16777216UL,
+                targetBit = 8589934592UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 549755813888UL,
+                targetBit = 137438953472UL,
+                pieceType = PieceType.PUNCT,
+                pieceColor = PlayerName.BLACK,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+        )
 
-// 5. Assign Selected Random Move
+    // 5. Assign Selected Random Move
     val randomPossibleBitMove = possibleBitMoves[2]
 
     val punctMoves = initBitboard.getPunctMoves(currentPlayer)
 
     assert(punctMoves.isNotEmpty())
+  }
+
+  @Test
+  fun `use potential`() {
+    // 1. Initialize Active Bitboard (with size-8 arrays)
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 131072UL,
+            whiteDVONNLayer = ulongArrayOf(67108928UL, 64UL, 64UL, 64UL, 64UL, 64UL, 64UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(4311744512UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 65664UL,
+            whiteYINSH = 38400UL,
+            whiteZERTZ = 551936851976UL,
+            whitePotentials = 556215108288UL,
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(256UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(268959746UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 1UL,
+            blackYINSH = 26306674692UL,
+            blackZERTZ = 26640UL,
+            blackPotentials = 268967959UL,
+        )
+
+    // 2. Initialize Init Bitboard (slightly different whitePotentials and whiteDVONNLayer)
+    val initBitboard =
+        Bitboard(
+            whiteGIPF = 131072UL,
+            whiteDVONNLayer = ulongArrayOf(67108928UL, 64UL, 64UL, 64UL, 64UL, 64UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(4311744512UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 65664UL,
+            whiteYINSH = 38400UL,
+            whiteZERTZ = 551936851976UL,
+            whitePotentials = 556282217152UL, // Notice difference from bitboard
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(256UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(268959746UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 1UL,
+            blackYINSH = 26306674692UL,
+            blackZERTZ = 26640UL,
+            blackPotentials = 268967959UL,
+        )
+
+    // 3. Initialize Current and Opponent Players
+    val currentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            capturedPieces =
+                mutableListOf(
+                    piece("BG", potential = false),
+                    piece("BG", potential = false),
+                    piece("BG", potential = false),
+                    piece("BT", potential = true),
+                    piece("BY", potential = false),
+                    piece("BT", potential = true),
+                    piece("BD", potential = true),
+                ),
+        )
+
+    val opponentPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(),
+            capturedPieces =
+                mutableListOf(
+                    piece("WT", potential = true),
+                    piece("WG", potential = false),
+                    piece("WP", potential = true),
+                    piece("WG", potential = false),
+                ),
+        )
+
+    // 4. Initialize Possible Moves
+    val possibleBitMoves =
+        listOf(
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 2147483648UL,
+                targetBit = 262144UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 2147483648UL,
+                targetBit = 1048576UL,
+                pieceType = PieceType.ZERTZ,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 67108864UL,
+                targetBit = 64UL,
+                pieceType = PieceType.DVONN,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 4294967296UL,
+                targetBit = 268435456UL,
+                pieceType = PieceType.PUNCT,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 4294967296UL,
+                targetBit = 524288UL,
+                pieceType = PieceType.PUNCT,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+            PossibleBitMove(
+                piece = null,
+                columnInfos = emptyList(),
+                retrievedCapturedPiecesBit = emptyList(),
+                sourceBit = 4294967296UL,
+                targetBit = 2UL,
+                pieceType = PieceType.PUNCT,
+                pieceColor = PlayerName.WHITE,
+                pushDirection = null,
+                moveType = MoveType.UsePotential,
+            ),
+        )
+
+    // 5. Assign Selected Random Move
+    val randomPossibleBitMove = possibleBitMoves[2]
+
+    initBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+
+    val modifiableBitboard = initBitboard.deepCopy()
+
+    modifiableBitboard.usePiecePotential(
+        randomPossibleBitMove,
+        currentPlayer,
+        nextPlayer = opponentPlayer,
+    )
+
+    modifiableBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   }
 }
