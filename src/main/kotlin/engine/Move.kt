@@ -1388,8 +1388,9 @@ fun identifyAvailableMoves(state: State): List<PossibleMove> {
             }
             .piece
 
-    val selectedNode = selectDot(selectableDots)
+    // val selectedNode = selectDot(selectableDots)
 
+    // TODO why does this crash?
     check(piece?.potential == false) {
       //      val pieceCoords = selectedNode.node.coordinate.let { "${it.column}${it.row}" }
       val currentPotential = piece?.potential

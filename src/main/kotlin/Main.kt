@@ -3,12 +3,13 @@ package org.example
 import kotlinx.serialization.json.Json
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
-import org.example.engine.evaluatePiecesInReserve
 import org.example.engine.getEligiblePotentialMoves
 import org.example.engine.playerTurn
 import org.example.model.Player
 import org.example.model.State
 import org.example.model.assertPieceCount
+import org.example.model.convertBoardToBitboard
+import org.example.model.identifyAvailableMoves
 import org.example.model.initializeState
 import org.example.model.printStateSummary
 
@@ -23,15 +24,22 @@ fun main() {
   var playerWhoMadeTheLastMove: Player? = null
 
   // TODO implement function to evaluate if the current player's pieces has any valid moves left
-  while (!evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState)) {
+  while (
+      !evaluateCapturedPieces(gameState) ||
+          convertBoardToBitboard(gameState.board)
+              .identifyAvailableMoves(gameState.currentPlayer)
+              .isNotEmpty()
+  ) {
     turn = turn.plus(1)
     println("Turn: $turn")
     gameState.printStateSummary()
 
     // TODO implement function to evaluate if the current player's pieces has any valid moves left
     if (
-        (evaluateCapturedPieces(gameState) || evaluatePiecesInReserve(gameState)) &&
-            getEligiblePotentialMoves(gameState).isEmpty()
+        (evaluateCapturedPieces(gameState) ||
+            convertBoardToBitboard(gameState.board)
+                .identifyAvailableMoves(gameState.currentPlayer)
+                .isEmpty()) && getEligiblePotentialMoves(gameState).isEmpty()
     ) {
       break
     }
@@ -49,9 +57,16 @@ fun main() {
     }
   }
 
-  println("Player: ${determineWinner(gameState.currentPlayer, gameState.nextPlayer, playerWhoMadeTheLastMove, state = gameState)?.name} won")
-	println("State: ${Json.encodeToString(gameState)}")
+  val winner =
+      determineWinner(
+          gameState.currentPlayer,
+          gameState.nextPlayer,
+          playerWhoMadeTheLastMove,
+          state = gameState,
+          printStatement = true,
+      )
+
+  println("Player: ${winner?.name} won")
+  println("State: ${Json.encodeToString(gameState)}")
   gameState.printStateSummary()
-
 }
-

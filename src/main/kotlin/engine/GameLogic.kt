@@ -71,20 +71,15 @@ fun playerTurn(state: State): State {
    * between the regular move and the extra move. The same goes for situations where you succeed in
    * pushing a second or third TAMSK-stack onto the central spot during one and the same turn.
    */
-  //	if (!isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-  // TODO Replace with bitboard equivalent
-  //	newState = enforcePieceRemovalRules(newState)
-  //  var bitboard = convertBoardToBitboard(newState.board)
-  newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
-  // simulatePieceRetrievalCapture(bitboard, newState.currentPlayer, newState.nextPlayer)
-  //	}
-
-  //  newState =
-  //      newState.copy(
-  //          currentPlayer = newState.currentPlayer,
-  //          nextPlayer = newState.nextPlayer,
-  //          board = bitboard.convertBitboardToBoard(newState.board),
-  //      )
+  // TODO While there are pieces to remove
+  //  TODO Has a bug
+  while (
+      convertBoardToBitboard(newState.board)
+          .evaluateLinesForFourInARow(state.currentPlayer)
+          .isNotEmpty()
+  ) {
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
+  }
 
   // recombine player pieces
   newState.currentPlayer.combinePieces()
@@ -93,49 +88,34 @@ fun playerTurn(state: State): State {
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, TurnPhase.ExtraMove) // ?: return null
+    newState = playerMove(newState, TurnPhase.ExtraMove)
   }
 
   newState.assertPieceCount()
 
-  // TODO if gipf, gipf
-  //  if tamsk, tamsk
-  //  add piece or use potential
-  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow) // ?: return null
+  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow)
 
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove) // ?: return null
+    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove)
   }
 
   newState.assertPieceCount()
 
-  val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
-
-  check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-    val dots = occupiedDots.map {
-      "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-    }
-
-    "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-        "but found pieces remaining on: $dots"
+  // TODO While there are pieces to remove
+  //  TODO Has a bug
+  while (
+      convertBoardToBitboard(newState.board)
+          .evaluateLinesForFourInARow(state.currentPlayer)
+          .isNotEmpty()
+  ) {
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
   }
 
-  // TODO Replace with bitboard equivalent
-  //  newState = enforcePieceRemovalRules(newState)
-  //  bitboard = convertBoardToBitboard(newState.board)
-
-  newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
-  // simulatePieceRetrievalCapture(bitboard, newState.currentPlayer, newState.nextPlayer)
-
-  //  newState =
-  //      newState.copy(
-  //          currentPlayer = newState.currentPlayer,
-  //          nextPlayer = newState.nextPlayer,
-  //          board = bitboard.convertBitboardToBoard(newState.board),
-  //      )
+  // recombine player pieces
+  newState.currentPlayer.combinePieces()
 
   newState.assertPieceCount()
 
@@ -163,13 +143,15 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
       )
       .move*/
 
+  // TODO use agent to selectMove
+  // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
   val bestMove =
       selectMoveMCTS(
           bitboard = bitboard,
           currentPlayer = state.currentPlayer,
           nextPlayer = state.nextPlayer,
           turnPhase = turnPhase,
-          rounds = 0..9999
+          rounds = 0..999,
       )
 
   if (bestMove != null) {
@@ -233,7 +215,11 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
           "CRITICAL MOVE ERROR: Target bit cannot be null. A valid move must have a target. $bestMove"
         }
 
-        bitboard.usePiecePotential(possibleBitMove = bestMove, currentPlayer = state.currentPlayer, nextPlayer = state.nextPlayer)
+        bitboard.usePiecePotential(
+            possibleBitMove = bestMove,
+            currentPlayer = state.currentPlayer,
+            nextPlayer = state.nextPlayer,
+        )
       }
 
       MoveType.RetrieveCapturePieces -> {
@@ -272,22 +258,11 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
                 lines = constructLines(newBoard.nodes),
             )
 
-    val occupiedDots = newState.board.nodes.filter { it.isDot && it.piece != null }
-
-    if (newState.board.nodes.any { it.isDot && it.piece != null }) {
-      check(!newState.board.nodes.any { it.isDot && it.piece != null }) {
-        val dots = occupiedDots.map {
-          "${it.coordinate.column}${it.coordinate.row} (${it.piece?.colorName} ${it.piece?.type?.name})"
-        }
-
-        "Invalid state transition: Outer perimeter dots must be empty at the end of a turn, " +
-            "but found pieces remaining on: $dots"
-      }
-    }
-
     newState.assertPieceCount(bitboard = bitboard)
 
     return newState
+  } else {
+    IllegalStateException("CRITICAL MOVE ERROR: No move made.")
   }
 
   return state
@@ -491,7 +466,6 @@ fun chooseToRemovePiecesWithPotential(line: Set<Node>, player: Player): Boolean 
 fun evaluateCapturedPieces(state: State): Boolean {
   return state.currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
       state.nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3
-
 }
 
 fun evaluatePiecesInReserve(state: State): Boolean {
@@ -522,6 +496,7 @@ fun determineWinner(
     playerWhoMadeTheLastMove: Player?,
     bitboard: Bitboard? = null,
     state: State? = null,
+    printStatement: Boolean = false,
 ): Player? {
   // TODO refactor & test
 
@@ -547,13 +522,24 @@ fun determineWinner(
 
   val stateHasAvailableMoves = state?.let { it ->
     when {
-      identifyAvailableMoves(it).isNotEmpty() && identifyNextPlayerAvailableMoves(it).isNotEmpty() -> null
+      identifyAvailableMoves(it).isNotEmpty() &&
+          identifyNextPlayerAvailableMoves(it).isNotEmpty() -> null
       identifyAvailableMoves(it).isNotEmpty() -> currentPlayer
       identifyNextPlayerAvailableMoves(it).isNotEmpty() -> nextPlayer
       else -> null
     }
   }
 
-// TODO should number of pieces captured be a win condition
-  return capturedGIPFPieces ?: bitboardHasAvailableMoves ?: stateHasAvailableMoves ?: playerWhoMadeTheLastMove
+  if (printStatement) {
+    capturedGIPFPieces?.let { println("Captured GIPF Pieces: $it") }
+    bitboardHasAvailableMoves?.let { println("Has Available Moves (Bitboard): $it") }
+    stateHasAvailableMoves?.let { println("Has Available Moves (State): $it") }
+    playerWhoMadeTheLastMove?.let { println("Player Made The Last Move: $it") }
+  }
+
+  // TODO should number of pieces captured be a win condition
+  return capturedGIPFPieces
+      ?: bitboardHasAvailableMoves
+      ?: stateHasAvailableMoves
+      ?: playerWhoMadeTheLastMove
 }

@@ -248,7 +248,7 @@ fun selectMoveMCTS(
     rounds: IntRange = 0..9999,
     turnPhase: TurnPhase,
 ): PossibleBitMove? {
-  val availableMoves = bitboard.generateMoves(currentPlayer, turnPhase).toMutableList()
+  val availableMoves = bitboard.generateMoves(currentPlayer, turnPhase)
 
   if (availableMoves.isEmpty()) return null
 
@@ -258,15 +258,13 @@ fun selectMoveMCTS(
           currentPlayer = currentPlayer,
           nextPlayer = nextPlayer,
           turnPhase = turnPhase,
-          unvisitedMoves = availableMoves,
+          unvisitedMoves = availableMoves.toMutableList(),
       )
 
     if (rootMCTSNode.unvisitedMoves.isEmpty()) {return null}
 
   repeat(rounds.count()) {
     var currentNode: MCTSNode? = rootMCTSNode
-
-    checkNotNull(currentNode)
 
     while (
         currentNode?.unvisitedMoves?.isEmpty() == true &&
@@ -304,7 +302,8 @@ fun selectMoveMCTS(
     }
   }
 
-  return bestMove
+  // TODO What to do when no best move is found?
+  return bestMove ?: availableMoves.random()
 }
 
 private fun evaluateCapturedPieces(player: Player): Boolean {
