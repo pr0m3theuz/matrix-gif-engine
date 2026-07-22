@@ -12,6 +12,9 @@ import org.example.model.convertBoardToBitboard
 import org.example.model.identifyAvailableMoves
 import org.example.model.initializeState
 import org.example.model.printStateSummary
+import org.jetbrains.kotlinx.multik.api.toNDArray
+import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
+import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 
 const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
@@ -26,7 +29,7 @@ fun main() {
   // TODO implement function to evaluate if the current player's pieces has any valid moves left
   while (
       !evaluateCapturedPieces(gameState) ||
-          convertBoardToBitboard(gameState.board)
+          gameState.bitboard
               .identifyAvailableMoves(gameState.currentPlayer)
               .isNotEmpty()
   ) {
@@ -37,7 +40,7 @@ fun main() {
     // TODO implement function to evaluate if the current player's pieces has any valid moves left
     if (
         (evaluateCapturedPieces(gameState) ||
-            convertBoardToBitboard(gameState.board)
+            gameState.bitboard
                 .identifyAvailableMoves(gameState.currentPlayer)
                 .isEmpty()) && getEligiblePotentialMoves(gameState).isEmpty()
     ) {
@@ -69,4 +72,11 @@ fun main() {
   println("Player: ${winner?.name} won")
   println("State: ${Json.encodeToString(gameState)}")
   gameState.printStateSummary()
+}
+
+fun ULong.toBitList(width: Int = 40): D1Array<Int> {
+  return this.toLong()
+    .toString(2)
+    .padStart(width, '0')
+    .map { (it - '0').toInt() }.toNDArray()
 }

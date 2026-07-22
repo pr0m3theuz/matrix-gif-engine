@@ -73,16 +73,13 @@ fun playerTurn(state: State): State {
    */
   // TODO While there are pieces to remove
   //  TODO Has a bug
-  while (
-      convertBoardToBitboard(newState.board)
-          .evaluateLinesForFourInARow(state.currentPlayer)
-          .isNotEmpty()
-  ) {
+  while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
     newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
-  }
 
   // recombine player pieces
   newState.currentPlayer.combinePieces()
+  }
+
 
   newState.assertPieceCount()
 
@@ -106,16 +103,12 @@ fun playerTurn(state: State): State {
 
   // TODO While there are pieces to remove
   //  TODO Has a bug
-  while (
-      convertBoardToBitboard(newState.board)
-          .evaluateLinesForFourInARow(state.currentPlayer)
-          .isNotEmpty()
-  ) {
+  while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
     newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
+    // recombine player pieces
+    newState.currentPlayer.combinePieces()
   }
 
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
 
   newState.assertPieceCount()
 
@@ -131,7 +124,7 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
 
   //	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
 
-  val bitboard = convertBoardToBitboard(state.board)
+  val bitboard = state.bitboard.deepCopy()
 
   /* var bestMove =
   alphabetaBitboardAddPieces(
@@ -255,6 +248,7 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
             .deepCopy()
             .copy(
                 board = newBoard,
+                bitboard = bitboard,
                 lines = constructLines(newBoard.nodes),
             )
 
@@ -451,6 +445,7 @@ fun enforcePieceRemovalRules(state: State): State {
           currentPlayer = newState.currentPlayer,
           nextPlayer = newState.nextPlayer,
           board = board,
+          bitboard = convertBoardToBitboard(board),
           lines = constructLines(board.nodes),
       )
 

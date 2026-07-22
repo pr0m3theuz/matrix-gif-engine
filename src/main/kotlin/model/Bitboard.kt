@@ -11,10 +11,36 @@ import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
 import org.example.engine.TurnPhase
+import org.example.toBitList
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.ndarray
+import org.jetbrains.kotlinx.multik.api.toNDArray
+import org.jetbrains.kotlinx.multik.api.zeros
+import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
+import org.jetbrains.kotlinx.multik.ndarray.data.DimN
+import org.jetbrains.kotlinx.multik.ndarray.data.asDNArray
+import org.jetbrains.kotlinx.multik.ndarray.data.rangeTo
+import org.jetbrains.kotlinx.multik.ndarray.data.set
+import org.jetbrains.kotlinx.multik.ndarray.operations.append
+import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import kotlin.math.abs
+import kotlin.math.exp
 
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
 val boardCenterSpotMask = 0b0000000000000000000001000000000000000000.toULong()
+val centralAreaBoardMask = 0b0000000001000011000011100001100000000000.toULong()
+
+val bitDistanceWeights: Map<Int, Double> = 0.rangeTo(39).associateWith { k ->
+  when (abs(k - 18)) {
+    0 -> exp(-0/1.5)
+    1, 6, 7 -> exp(-1/1.5)
+    2, 5, 8, 11, 12, 13 -> exp(-2/1.5)
+    3, 4, 9, 10, 14, 15, 16, 17, 18 -> exp(-3/1.5)
+    19, 20, 21 -> exp(-4/1.5)
+    else -> error("Unknown node $k")
+  }
+}
 
 val verticalLineIndexArray =
     listOf(
@@ -551,7 +577,6 @@ data class Bitboard(
 
   override fun hashCode(): Int {
     var result = whitePieces.hashCode()
-    result = 31 * result + blackPieces.hashCode()
     result = 31 * result + whiteGIPF.hashCode()
     result = 31 * result + whiteDVONNLayer.contentHashCode()
     result = 31 * result + whitePUNCTLayer.contentHashCode()
@@ -560,6 +585,7 @@ data class Bitboard(
     result = 31 * result + whiteZERTZ.hashCode()
     result = 31 * result + whitePotentials.hashCode()
     result = 31 * result + whiteNeutralized.hashCode()
+    result = 31 * result + blackPieces.hashCode()
     result = 31 * result + blackGIPF.hashCode()
     result = 31 * result + blackDVONNLayer.contentHashCode()
     result = 31 * result + blackPUNCTLayer.contentHashCode()
@@ -3415,73 +3441,73 @@ fun Bitboard.getDvonnMoves(
         }
       }
 
-	for (col in columnInfos) {
-		val occupiedColumnSpots = col.columnMask and globalOccupancy
-		val columnActiveDvonnPieces = col.columnMask and activeDvonnPieces
-		val columnTargetDvonnPieces = col.columnMask and targetDvonnPieces
+  for (col in columnInfos) {
+    val occupiedColumnSpots = col.columnMask and globalOccupancy
+    val columnActiveDvonnPieces = col.columnMask and activeDvonnPieces
+    val columnTargetDvonnPieces = col.columnMask and targetDvonnPieces
 
-		if(columnActiveDvonnPieces == 0UL || columnTargetDvonnPieces == 0UL) continue
+    if (columnActiveDvonnPieces == 0UL || columnTargetDvonnPieces == 0UL) continue
 
-		val highBit = maxOf(columnActiveDvonnPieces, columnTargetDvonnPieces)
-		val lowBit = minOf(columnActiveDvonnPieces, columnTargetDvonnPieces)
+    val highBit = maxOf(columnActiveDvonnPieces, columnTargetDvonnPieces)
+    val lowBit = minOf(columnActiveDvonnPieces, columnTargetDvonnPieces)
 
-		// 2. Generate a mask of bits strictly between the high and low bits
-		val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
+    // 2. Generate a mask of bits strictly between the high and low bits
+    val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
 
-		// 3. Find intersecting occupied spots
-		var occupiedIndices = 0UL
-		var blockingPieces = occupiedColumnSpots and pathMask
-		while (blockingPieces != 0UL) {
-			// numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
-			val bitIndex = blockingPieces.countTrailingZeroBits()
-			occupiedIndices = occupiedIndices or (1UL shl bitIndex)
+    // 3. Find intersecting occupied spots
+    var occupiedIndices = 0UL
+    var blockingPieces = occupiedColumnSpots and pathMask
+    while (blockingPieces != 0UL) {
+      // numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
+      val bitIndex = blockingPieces.countTrailingZeroBits()
+      occupiedIndices = occupiedIndices or (1UL shl bitIndex)
 
-			// Clear the lowest set bit so we can find the next one (e.g., 24)
-			blockingPieces = blockingPieces and (blockingPieces - 1UL)
-		}
+      // Clear the lowest set bit so we can find the next one (e.g., 24)
+      blockingPieces = blockingPieces and (blockingPieces - 1UL)
+    }
 
-		if (
-			(columnActiveDvonnPieces > 0UL) &&
-			(columnTargetDvonnPieces > 0UL) &&
-      occupiedIndices == 0UL // should be the same as OR right?
-		) {
-			col.positions
-				.filter {
-					it and columnActiveDvonnPieces != 0UL // get position of yinch pieces
-				}
-				.forEach {
-					val dvonnIndex = col.positions.indexOf(it)
+    if (
+        (columnActiveDvonnPieces > 0UL) &&
+            (columnTargetDvonnPieces > 0UL) &&
+            occupiedIndices == 0UL // should be the same as OR right?
+    ) {
+      col.positions
+          .filter {
+            it and columnActiveDvonnPieces != 0UL // get position of yinch pieces
+          }
+          .forEach {
+            val dvonnIndex = col.positions.indexOf(it)
 
-					for (index in dvonnIndex.plus(1) until col.positions.size) {
-						if ((col.positions[index] and targetDvonnPieces) > 0UL) {
-							validMoves.add(
-								PossibleBitMove(
-									sourceBit = col.positions[dvonnIndex],
-									targetBit = col.positions[index],
-									pieceType = PieceType.DVONN,
-									pieceColor = player.name,
-									moveType = MoveType.UsePotential,
-								)
-							)
-						}
-					}
+            for (index in dvonnIndex.plus(1) until col.positions.size) {
+              if ((col.positions[index] and targetDvonnPieces) > 0UL) {
+                validMoves.add(
+                    PossibleBitMove(
+                        sourceBit = col.positions[dvonnIndex],
+                        targetBit = col.positions[index],
+                        pieceType = PieceType.DVONN,
+                        pieceColor = player.name,
+                        moveType = MoveType.UsePotential,
+                    )
+                )
+              }
+            }
 
-					for (index in dvonnIndex.minus(1) downTo 0) {
-						if ((col.positions[index] and targetDvonnPieces) > 0UL) {
-							validMoves.add(
-								PossibleBitMove(
-									sourceBit = col.positions[dvonnIndex],
-									targetBit = col.positions[index],
-									pieceType = PieceType.DVONN,
-									pieceColor = player.name,
-									moveType = MoveType.UsePotential,
-								)
-							)
-						}
-					}
-				}
-		}
-	}
+            for (index in dvonnIndex.minus(1) downTo 0) {
+              if ((col.positions[index] and targetDvonnPieces) > 0UL) {
+                validMoves.add(
+                    PossibleBitMove(
+                        sourceBit = col.positions[dvonnIndex],
+                        targetBit = col.positions[index],
+                        pieceType = PieceType.DVONN,
+                        pieceColor = player.name,
+                        moveType = MoveType.UsePotential,
+                    )
+                )
+              }
+            }
+          }
+    }
+  }
 
   return validMoves
 }
@@ -3572,72 +3598,73 @@ fun Bitboard.getPunctMoves(
         }
       }
 
-	for (col in columnInfos) {
-		val occupiedColumnSpots = col.columnMask and globalOccupancy
-		val columnActivePunctPieces = col.columnMask and activePunctPieces
-		val columnTargetPunctPieces = col.columnMask and targetPunctPieces
+  for (col in columnInfos) {
+    val occupiedColumnSpots = col.columnMask and globalOccupancy
+    val columnActivePunctPieces = col.columnMask and activePunctPieces
+    val columnTargetPunctPieces = col.columnMask and targetPunctPieces
 
-    if(columnActivePunctPieces == 0UL || columnTargetPunctPieces == 0UL) continue
+    if (columnActivePunctPieces == 0UL || columnTargetPunctPieces == 0UL) continue
 
-		val highBit = maxOf(columnActivePunctPieces, columnTargetPunctPieces)
-		val lowBit = minOf(columnActivePunctPieces, columnTargetPunctPieces)
+    val highBit = maxOf(columnActivePunctPieces, columnTargetPunctPieces)
+    val lowBit = minOf(columnActivePunctPieces, columnTargetPunctPieces)
 
-		// 2. Generate a mask of bits strictly between the high and low bits
-		val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
+    // 2. Generate a mask of bits strictly between the high and low bits
+    val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
 
-		// 3. Find intersecting occupied spots
+    // 3. Find intersecting occupied spots
     var occupiedIndices = 0UL
-		var blockingPieces = occupiedColumnSpots and pathMask
-		while (blockingPieces != 0UL) {
-			// numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
-			val bitIndex = blockingPieces.countTrailingZeroBits()
+    var blockingPieces = occupiedColumnSpots and pathMask
+    while (blockingPieces != 0UL) {
+      // numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
+      val bitIndex = blockingPieces.countTrailingZeroBits()
       occupiedIndices = occupiedIndices or (1UL shl bitIndex)
 
-			// Clear the lowest set bit so we can find the next one (e.g., 24)
-			blockingPieces = blockingPieces and (blockingPieces - 1UL)
-		}
+      // Clear the lowest set bit so we can find the next one (e.g., 24)
+      blockingPieces = blockingPieces and (blockingPieces - 1UL)
+    }
 
-		if (
-			(columnActivePunctPieces > 0UL) && (columnTargetPunctPieces > 0UL) &&
-      occupiedIndices == 0UL // should be the same as OR right?
-		) {
-			col.positions
-				.filter {
-					it and columnActivePunctPieces != 0UL // get position of punct pieces
-				}
-				.forEach {
-					val punctIndex = col.positions.indexOf(it)
+    if (
+        (columnActivePunctPieces > 0UL) &&
+            (columnTargetPunctPieces > 0UL) &&
+            occupiedIndices == 0UL // should be the same as OR right?
+    ) {
+      col.positions
+          .filter {
+            it and columnActivePunctPieces != 0UL // get position of punct pieces
+          }
+          .forEach {
+            val punctIndex = col.positions.indexOf(it)
 
-					for (index in punctIndex.plus(1) until col.positions.size) {
-						if ((col.positions[index] and targetPunctPieces) > 0UL) {
-							validMoves.add(
-								PossibleBitMove(
-									sourceBit = col.positions[punctIndex],
-									targetBit = col.positions[index],
-									pieceType = PieceType.PUNCT,
-									pieceColor = player.name,
-									moveType = MoveType.UsePotential,
-								)
-							)
-						}
-					}
+            for (index in punctIndex.plus(1) until col.positions.size) {
+              if ((col.positions[index] and targetPunctPieces) > 0UL) {
+                validMoves.add(
+                    PossibleBitMove(
+                        sourceBit = col.positions[punctIndex],
+                        targetBit = col.positions[index],
+                        pieceType = PieceType.PUNCT,
+                        pieceColor = player.name,
+                        moveType = MoveType.UsePotential,
+                    )
+                )
+              }
+            }
 
-					for (index in punctIndex.minus(1) downTo 0) {
-						if ((col.positions[index] and targetPunctPieces) > 0UL) {
-							validMoves.add(
-								PossibleBitMove(
-									sourceBit = col.positions[punctIndex],
-									targetBit = col.positions[index],
-									pieceType = PieceType.PUNCT,
-									pieceColor = player.name,
-									moveType = MoveType.UsePotential,
-								)
-							)
-						}
-					}
-				}
-		}
-	}
+            for (index in punctIndex.minus(1) downTo 0) {
+              if ((col.positions[index] and targetPunctPieces) > 0UL) {
+                validMoves.add(
+                    PossibleBitMove(
+                        sourceBit = col.positions[punctIndex],
+                        targetBit = col.positions[index],
+                        pieceType = PieceType.PUNCT,
+                        pieceColor = player.name,
+                        moveType = MoveType.UsePotential,
+                    )
+                )
+              }
+            }
+          }
+    }
+  }
 
   return validMoves
 }

@@ -39,6 +39,10 @@ import org.example.model.populateNeighbors
 import org.example.model.removeSelectedPiecesToRemove
 import org.example.model.usePiecePotential
 import org.example.model.validatePieceRemoval
+import org.example.toBitList
+import org.jetbrains.kotlinx.multik.api.mk
+import org.jetbrains.kotlinx.multik.api.zeros
+import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -636,6 +640,7 @@ class BitboardTest {
             currentPlayer = currentPlayer,
             nextPlayer = nextPlayer,
             board = convertedBitboardBoard,
+            bitboard = bitboard,
             lines = constructLines(nodes = convertedBitboardBoard.nodes),
         )
 
@@ -1833,6 +1838,7 @@ class BitboardTest {
             currentPlayer = currentPlayer,
             nextPlayer = nextPlayer,
             board = convertedBitboardBoard,
+          bitboard = modifiableBitboard,
             lines = constructLines(nodes = convertedBitboardBoard.nodes),
         )
 
@@ -2618,11 +2624,14 @@ class BitboardTest {
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
     var turn = 604
 
+    val bitboard = convertBoardToBitboard(board)
+
     // 3. Initialize Game State
     val gameState = State(
       currentPlayer = currentPlayer,
       nextPlayer = nextPlayer,
       board = board,
+      bitboard = bitboard,
       lines = constructLines(board.nodes)
     )
 
@@ -2637,7 +2646,7 @@ class BitboardTest {
 
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(gameState)
 
-    val bitboard = convertBoardToBitboard(board)
+
 
     val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
 	    currentPlayer = currentPlayer,
@@ -2769,11 +2778,14 @@ class BitboardTest {
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
     var turn = 604
 
+    val bitboard = convertBoardToBitboard(board)
+
     // 3. Initialize Game State
     val gameState = State(
       currentPlayer = currentPlayer,
       nextPlayer = nextPlayer,
       board = board,
+      bitboard = bitboard,
       lines = constructLines(board.nodes)
     )
 
@@ -2788,7 +2800,6 @@ class BitboardTest {
 
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(gameState)
 
-    val bitboard = convertBoardToBitboard(board)
 
     val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
       currentPlayer = currentPlayer,
@@ -2932,14 +2943,6 @@ class BitboardTest {
       )
     )
 
-// 3. Initialize State
-    val state = State(
-      currentPlayer = currentPlayer,
-      nextPlayer = nextPlayer,
-      board = board,
-      lines = constructLines(board.nodes)
-    )
-
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
 
 // 5. Initialize Bitboard
@@ -2965,6 +2968,15 @@ class BitboardTest {
 //      blackNeutralized = 0UL
     )
 
+    // 3. Initialize State
+    val state = State(
+      currentPlayer = currentPlayer,
+      nextPlayer = nextPlayer,
+      board = board,
+      bitboard = bitboard,
+      lines = constructLines(board.nodes)
+    )
+
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(state)
 
     val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
@@ -2982,5 +2994,30 @@ class BitboardTest {
         turnPhase = TurnPhase.PlayerInputWindow,
         rounds = 0..999
       )
+  }
+
+  @Test
+  fun `encodeBitboard`() {
+    val whiteGIPF = 8454145UL
+
+    val array = whiteGIPF.toString(2).padStart(40, '0').encodeToByteArray().map {
+      it.mod(48.toByte())
+    }
+
+
+    val ver = whiteGIPF.toBitList()
+
+    println(whiteGIPF.toString(2).padStart(40, '0'))
+    println(ver)
+    println(array)
+
+    val ndArray =
+      mk.zeros<Int>(47, 40)
+
+    ndArray.set(0, whiteGIPF.toBitList())
+
+    println("ndArray:")
+    println(ndArray)
+
   }
 }
