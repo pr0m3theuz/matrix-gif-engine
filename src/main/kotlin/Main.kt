@@ -47,7 +47,7 @@ fun main() {
       break
     }
 
-    gameState = playerTurn(gameState)
+    gameState = playerTurn(gameState, turn)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
@@ -74,9 +74,9 @@ fun main() {
   gameState.printStateSummary()
 }
 
-fun ULong.toBitList(width: Int = 40): D1Array<Int> {
+fun ULong.toBitList(width: Int = 41): D1Array<Int> {
   return this.toLong()
     .toString(2)
     .padStart(width, '0')
-    .map { (it - '0').toInt() }.toNDArray()
+    .map { (it - '0') }.toNDArray()
 }

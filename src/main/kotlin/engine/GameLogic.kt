@@ -57,7 +57,7 @@ enum class TurnLifecycle {
   Termination, // Engine serializes state changes, prepares for next turn switch
 }
 
-fun playerTurn(state: State): State {
+fun playerTurn(state: State, turn: Int): State {
 
   var newState = state.deepCopy()
 
@@ -74,29 +74,28 @@ fun playerTurn(state: State): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn)
 
-  // recombine player pieces
-  newState.currentPlayer.combinePieces()
+    // recombine player pieces
+    newState.currentPlayer.combinePieces()
   }
-
 
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, TurnPhase.ExtraMove)
+    newState = playerMove(newState, TurnPhase.ExtraMove, turn)
   }
 
   newState.assertPieceCount()
 
-  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow)
+  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn)
 
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove)
+    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn)
   }
 
   newState.assertPieceCount()
@@ -104,11 +103,10 @@ fun playerTurn(state: State): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn)
     // recombine player pieces
     newState.currentPlayer.combinePieces()
   }
-
 
   newState.assertPieceCount()
 
@@ -117,7 +115,7 @@ fun playerTurn(state: State): State {
   return newState
 }
 
-fun playerMove(state: State, turnPhase: TurnPhase): State {
+fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
 
   val savedBoardState = state.board.deepCopy()
   val savedLines = state.lines.deepCopy()
@@ -151,6 +149,8 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
     println("Player Move: ${Json.encodeToString(bestMove)}")
     when (bestMove.moveType) {
       MoveType.AddPiece -> {
+
+        state.turnMoves.getOrDefault(turn, mutableListOf()).add(bestMove)
 
         require(
             bestMove.piece?.colorName == state.currentPlayer.name.name ||
@@ -208,6 +208,8 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
           "CRITICAL MOVE ERROR: Target bit cannot be null. A valid move must have a target. $bestMove"
         }
 
+        state.turnMoves.getOrDefault(turn, mutableListOf()).add(bestMove)
+
         bitboard.usePiecePotential(
             possibleBitMove = bestMove,
             currentPlayer = state.currentPlayer,
@@ -221,6 +223,10 @@ fun playerMove(state: State, turnPhase: TurnPhase): State {
                 player = state.currentPlayer,
                 piecesToRemove = bestMove.retrievedCapturedPiecesBit,
             )
+
+        state.turnMoves
+            .getOrDefault(turn, mutableListOf())
+            .add(bestMove.copy(retrievedCapturedPiecesBit = retrievedCapturedPieces))
 
         val retrievedPieces = retrievedCapturedPieces.mapNotNull {
           it.retrievedPiece

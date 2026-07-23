@@ -6,6 +6,7 @@ import java.security.MessageDigest
 import kotlin.collections.forEach
 import kotlin.collections.mapNotNull
 import kotlin.math.exp
+import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
@@ -41,7 +42,6 @@ import org.example.model.undoTamskPotential
 import org.example.model.undoUsePiecePotential
 import org.example.model.usePiecePotential
 import org.example.model.useTamskPotential
-import kotlin.random.Random
 
 @Serializable
 data class BestMove(
@@ -315,6 +315,9 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
   // TODO how to score attacking positions, i.e. 4 in the row
   // TODO how to skip positions that don't improve the current player's position
 
+  // based on https://github.com/schuay/gf1/blob/master/ai_minimax.c
+  // and Analysis and Implementation of the game Gipf (GIPFTED)
+
   /**
    * The evaluation function does not know which states are which, but it can return a single value
    * that estimates the proportion of states with each outcome. For example, suppose our experience
@@ -446,23 +449,24 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
 
   fun centreControl(player: Player): Double {
     var weight = 0.0
-    when (currentPlayer.name) {
+
+    when (player.name) {
       PlayerName.WHITE -> {
         for (k in 0..39) {
           val whiteBit = (bitboard.whitePieces shr k) and 1UL
-          val blackBit = (bitboard.blackPieces shr k) and 1UL
+          //          val blackBit = (bitboard.blackPieces shr k) and 1UL
 
           bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
-          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+          //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
         }
       }
       PlayerName.BLACK -> {
         for (k in 0..39) {
           val blackBit = (bitboard.blackPieces shr k) and 1UL
-          val whiteBit = (bitboard.whitePieces shr k) and 1UL
+          //          val whiteBit = (bitboard.whitePieces shr k) and 1UL
 
           bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
-          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+          //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
         }
       }
     }
@@ -473,26 +477,25 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
   fun tamskDistanceFromCentre(player: Player): Double {
     var weight = 0.0
 
-    val whiteTamskPotential = bitboard.whiteTAMSK and bitboard.whitePotentials
-    val blackTamskPotential = bitboard.blackTAMSK and bitboard.blackPotentials
-
-    when (currentPlayer.name) {
+    when (player.name) {
       PlayerName.WHITE -> {
+        val whiteTamskPotential = bitboard.whiteTAMSK and bitboard.whitePotentials
         for (k in 0..39) {
           val whiteBit = (whiteTamskPotential shr k) and 1UL
-          val blackBit = (blackTamskPotential shr k) and 1UL
+          //          val blackBit = (blackTamskPotential shr k) and 1UL
 
           bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
-          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+          //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
         }
       }
       PlayerName.BLACK -> {
+        val blackTamskPotential = bitboard.blackTAMSK and bitboard.blackPotentials
         for (k in 0..39) {
           val blackBit = (blackTamskPotential shr k) and 1UL
-          val whiteBit = (whiteTamskPotential shr k) and 1UL
+          //          val whiteBit = (whiteTamskPotential shr k) and 1UL
 
           bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
-          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+          //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
         }
       }
     }
@@ -518,7 +521,8 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           centreControl(opponentPlayer) +
           tamskDistanceFromCentre(opponentPlayer)
 
-  return ((currentValue - opponentValue) * 1000.0) / (currentValue + opponentValue) + Random.nextInt(-10, 10).toDouble()
+  return ((currentValue - opponentValue) * 1000.0) / (currentValue + opponentValue) +
+      Random.nextInt(-10, 10).toDouble()
 }
 
 fun alphabetaAddPieces(

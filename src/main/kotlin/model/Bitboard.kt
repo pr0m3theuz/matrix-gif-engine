@@ -269,6 +269,19 @@ val columnInfos: List<ColumnInfo> =
           )
         }
 
+val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = run {
+  val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = mutableMapOf()
+
+  for (column in columnInfos) {
+    for ((a, b) in column.shiftPairs) {
+      neighbouringBitsBitmasks[a] = neighbouringBitsBitmasks.getOrDefault(a, 0UL) or b
+      neighbouringBitsBitmasks[b] = neighbouringBitsBitmasks.getOrDefault(b, 0UL) or a
+    }
+  }
+
+  return@run neighbouringBitsBitmasks
+}
+
 @OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
 data class Bitboard(
@@ -3684,8 +3697,7 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
         PlayerName.BLACK -> blackPieces
       }
 
-  var stooopid: String? = null
-  val columns = columnInfos.filterIndexed { index, column ->
+  val columns = columnInfos.filter { it.positions.size >= 4 }.filterIndexed { index, column ->
     if (isDebugEnabled) {
       println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
       println("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
@@ -4959,6 +4971,13 @@ fun Bitboard.identifyAvailableMoves(
 
 fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
   val linesWithFourInARow = evaluateLinesForFourInARow(player)
+
+  // TODO If one or more pieces (regardless of color)
+  //  extend a row-of-4 without interruption, these pieces
+  //  are considered to be part of the row and may also
+  //  be removed.
+  //  * see getDVONNmoves() for inverse
+  //  * write tests
 
   if (linesWithFourInARow.isNotEmpty()) {
     // TODO Ensure Rules are followed for stack piece retrieval
