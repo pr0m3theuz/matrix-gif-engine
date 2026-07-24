@@ -6,41 +6,47 @@ import kotlin.collections.forEachIndexed
 import kotlin.collections.map
 import kotlin.collections.windowed
 import kotlin.io.println
+import kotlin.math.abs
+import kotlin.math.exp
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.MoveType
 import org.example.engine.PossibleBitMove
 import org.example.engine.TurnPhase
-import org.example.toBitList
-import org.jetbrains.kotlinx.multik.api.mk
-import org.jetbrains.kotlinx.multik.api.ndarray
-import org.jetbrains.kotlinx.multik.api.toNDArray
-import org.jetbrains.kotlinx.multik.api.zeros
-import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
-import org.jetbrains.kotlinx.multik.ndarray.data.DimN
-import org.jetbrains.kotlinx.multik.ndarray.data.asDNArray
-import org.jetbrains.kotlinx.multik.ndarray.data.rangeTo
-import org.jetbrains.kotlinx.multik.ndarray.data.set
-import org.jetbrains.kotlinx.multik.ndarray.operations.append
-import org.jetbrains.kotlinx.multik.ndarray.operations.plus
-import kotlin.math.abs
-import kotlin.math.exp
 
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
 val boardCenterSpotMask = 0b0000000000000000000001000000000000000000.toULong()
 val centralAreaBoardMask = 0b0000000001000011000011100001100000000000.toULong()
 
-val bitDistanceWeights: Map<Int, Double> = 0.rangeTo(39).associateWith { k ->
-  when (abs(k - 18)) {
-    0 -> exp(-0/1.5)
-    1, 6, 7 -> exp(-1/1.5)
-    2, 5, 8, 11, 12, 13 -> exp(-2/1.5)
-    3, 4, 9, 10, 14, 15, 16, 17, 18 -> exp(-3/1.5)
-    19, 20, 21 -> exp(-4/1.5)
-    else -> error("Unknown node $k")
-  }
-}
+val bitDistanceWeights: Map<Int, Double> =
+    0.rangeTo(39).associateWith { k ->
+      when (abs(k - 18)) {
+        0 -> exp(-0 / 1.5)
+        1,
+        6,
+        7 -> exp(-1 / 1.5)
+        2,
+        5,
+        8,
+        11,
+        12,
+        13 -> exp(-2 / 1.5)
+        3,
+        4,
+        9,
+        10,
+        14,
+        15,
+        16,
+        17,
+        18 -> exp(-3 / 1.5)
+        19,
+        20,
+        21 -> exp(-4 / 1.5)
+        else -> error("Unknown node $k")
+      }
+    }
 
 val verticalLineIndexArray =
     listOf(
@@ -3697,51 +3703,56 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
         PlayerName.BLACK -> blackPieces
       }
 
-  val columns = columnInfos.filter { it.positions.size >= 4 }.filterIndexed { index, column ->
-    if (isDebugEnabled) {
-      println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-      println("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
-    }
+  val columns =
+      columnInfos
+          .filter { it.positions.size >= 4 }
+          .filterIndexed { index, column ->
+            if (isDebugEnabled) {
+              println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+              println(
+                  "Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}"
+              )
+            }
 
-    val result =
-        column.submasks.any { submask ->
-          val fourInARow = (submask and playerPieces) == submask
-          if (isDebugEnabled && fourInARow) {
-            println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
-            println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-            println("Result: $fourInARow")
+            val result =
+                column.submasks.any { submask ->
+                  val fourInARow = (submask and playerPieces) == submask
+                  if (isDebugEnabled && fourInARow) {
+                    println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
+                    println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+                    println("Result: $fourInARow")
+                  }
+                  fourInARow
+                }
+
+            if (isDebugEnabled) {
+              if (result) println("--- FOUND FOUR IN A ROW IN LINE $index ---")
+              else println("--- NO 4 IN A ROW IN LINE $index ---")
+            }
+
+            //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
+            //      if (isDebugEnabled) {
+            //        println("--- NO 4 IN A LINE $index ---")
+            //      }
+            //      false
+            //    } else {
+            //      if (isDebugEnabled) {
+            //        println(
+            //            "--- FOUND FOUR IN A LINE $index ---"
+            //        ) // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
+            //      }
+            //
+            //	    println("column.positions.windowed(4).any: ${
+            //		    column.positions.windowed(4).any { sublist ->
+            //			    val sum = sublist.fold(0UL) { acc, lng ->
+            //				    acc or lng
+            //			    }
+            //			    (sum and playerPieces) == sum
+            //		    }
+            //			}")
+
+            result
           }
-          fourInARow
-        }
-
-    if (isDebugEnabled) {
-      if (result) println("--- FOUND FOUR IN A ROW IN LINE $index ---")
-      else println("--- NO 4 IN A ROW IN LINE $index ---")
-    }
-
-    //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
-    //      if (isDebugEnabled) {
-    //        println("--- NO 4 IN A LINE $index ---")
-    //      }
-    //      false
-    //    } else {
-    //      if (isDebugEnabled) {
-    //        println(
-    //            "--- FOUND FOUR IN A LINE $index ---"
-    //        ) // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
-    //      }
-    //
-    //	    println("column.positions.windowed(4).any: ${
-    //		    column.positions.windowed(4).any { sublist ->
-    //			    val sum = sublist.fold(0UL) { acc, lng ->
-    //				    acc or lng
-    //			    }
-    //			    (sum and playerPieces) == sum
-    //		    }
-    //			}")
-
-    result
-  }
 
   if (isDebugEnabled) {
     println("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---")
@@ -3751,31 +3762,52 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
 }
 
 fun Bitboard.createPlayerPiecesWithPotentialPowerset(
-    columnInfos: List<ColumnInfo>,
     player: Player,
+    columnInfos: List<ColumnInfo> = emptyList(),
+    positions: List<ULong> = emptyList(),
 ): List<List<ULong>> {
-  require(columnInfos.isNotEmpty()) { "There must be at least one column" }
+  require(!(columnInfos.isEmpty() && positions.isEmpty())) { "There must be at least one column" }
 
   // TODO handle intersecting lines, but do i?
 
-  val playerPiecesWithPotential = columnInfos.flatMap { column ->
-    column.positions.filter { bitmask ->
-      val result =
-          when (player.name) {
-            PlayerName.WHITE -> {
-              // pieces with potential and not neutralized
-              (whitePotentials and bitmask) == bitmask &&
-                  (whiteNeutralized.inv() and bitmask) == bitmask
-            }
+  val playerPiecesWithPotential =
+      if (columnInfos.isNotEmpty()) {
+        columnInfos.flatMap { column ->
+          column.positions.filter { bitmask ->
+            val result =
+                when (player.name) {
+                  PlayerName.WHITE -> {
+                    // pieces with potential and not neutralized
+                    (whitePotentials and bitmask) == bitmask &&
+                        (whiteNeutralized.inv() and bitmask) == bitmask
+                  }
 
-            PlayerName.BLACK -> {
-              (blackPotentials and bitmask) == bitmask &&
-                  (blackNeutralized.inv() and bitmask) == bitmask
-            }
+                  PlayerName.BLACK -> {
+                    (blackPotentials and bitmask) == bitmask &&
+                        (blackNeutralized.inv() and bitmask) == bitmask
+                  }
+                }
+            result
           }
-      result
-    }
-  }
+        }
+      } else {
+        positions.filter { bitmask ->
+          val result =
+              when (player.name) {
+                PlayerName.WHITE -> {
+                  // pieces with potential and not neutralized
+                  (whitePotentials and bitmask) == bitmask &&
+                      (whiteNeutralized.inv() and bitmask) == bitmask
+                }
+
+                PlayerName.BLACK -> {
+                  (blackPotentials and bitmask) == bitmask &&
+                      (blackNeutralized.inv() and bitmask) == bitmask
+                }
+              }
+          result
+        }
+      }
 
   /**
    * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
@@ -4979,15 +5011,33 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
   //  * see getDVONNmoves() for inverse
   //  * write tests
 
+  // filter for fully occupied submasks and sum extensions
+  // fullyPopulatedSubmasksPositions
+  val fullyPopulatedPositions =
+      linesWithFourInARow.flatMap {
+          (columnMask, positions, submasks, shiftPairs, lineOrientation, pushDirections) ->
+        val occupiedBits =
+            submasks
+                .filter { submask -> (submask and globalOccupancy) == submask }
+                .fold(0UL) { acc, mask ->
+                  acc or mask
+                }
+
+        val occupiedPositions = positions.filter { it and occupiedBits != 0UL }
+
+//        occupiedBits to occupiedPositions
+        occupiedPositions
+      }
+
+//  val fullyPopulatedPositions = fullyPopulatedSubmasksPositions.values.flatten()
+
   if (linesWithFourInARow.isNotEmpty()) {
     // TODO Ensure Rules are followed for stack piece retrieval
     val playerPiecesWithPotential =
-        createPlayerPiecesWithPotentialPowerset(linesWithFourInARow, player)
+        createPlayerPiecesWithPotentialPowerset(player, positions = fullyPopulatedPositions)
 
     val playerPiecesNotNeutralizedWithoutPotential =
-        linesWithFourInARow
-            .flatMap { column ->
-              column.positions.filter { bitmask ->
+      fullyPopulatedPositions.filter { bitmask ->
                 val result =
                     when (player.name) {
                       PlayerName.WHITE -> {
@@ -5009,18 +5059,14 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
                       }
                     }
                 result
-              }
-            }
-            .distinct()
+              }.distinct()
 
     /**
      * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset
      * for this
      */
     val opponentPiecesAndNotNeutralized =
-        linesWithFourInARow
-            .flatMap { column ->
-              column.positions.filter { bitmask ->
+      fullyPopulatedPositions.filter { bitmask ->
                 val result =
                     when (player.name) {
                       PlayerName.WHITE -> {
@@ -5039,20 +5085,14 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
                       }
                     }
                 result
-              }
-            }
-            .distinct()
+              }.distinct()
 
     // stacked DVONN and PUNCT Pieces
     val neutralizedBitmasks =
-        linesWithFourInARow
-            .flatMap { column ->
-              column.positions.filter { bitmask ->
+      fullyPopulatedPositions.filter { bitmask ->
                 (whiteNeutralized and bitmask) == bitmask ||
                     (blackNeutralized and bitmask) == bitmask
-              }
-            }
-            .distinct()
+              }.distinct()
 
     // --- 1. PRE-CONDITION CHECKS ---
     if (neutralizedBitmasks.isNotEmpty()) {

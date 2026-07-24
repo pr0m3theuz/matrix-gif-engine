@@ -35,6 +35,7 @@ import org.example.model.getDvonnMoves
 import org.example.model.getPunctMoves
 import org.example.model.getsSelectedPiecesWithPotentialPowerset
 import org.example.model.identifyAvailableMoves
+import org.example.model.identifyPiecesToRemove
 import org.example.model.populateNeighbors
 import org.example.model.removeSelectedPiecesToRemove
 import org.example.model.usePiecePotential
@@ -879,8 +880,8 @@ class BitboardTest {
     val playerPiecesWithPotentialPowerset =
         testBitboard
             .createPlayerPiecesWithPotentialPowerset(
-                listOf(linesWithFourInARow.first()),
-                currentPlayer,
+              currentPlayer,
+              listOf(linesWithFourInARow.first()),
             )
             .filter { it.isNotEmpty() }
 
@@ -3019,5 +3020,89 @@ class BitboardTest {
     println("ndArray:")
     println(ndArray)
 
+  }
+
+  @Test
+  fun `removing pieces extending rows`() {
+    /*
+      val bitboard = Bitboard(
+        whiteGIPF = 1610678272UL,
+        whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whitePUNCTLayer = ulongArrayOf(549755846656UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whiteTAMSK = 4297064449UL,
+        whiteYINSH = 72UL,
+        whiteZERTZ = 4718592UL,
+        whitePotentials = 554057629769UL,
+        blackGIPF = 42949681152UL,
+        blackDVONNLayer = ulongArrayOf(128UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackPUNCTLayer = ulongArrayOf(137574219776UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackTAMSK = 16384UL,
+        blackYINSH = 4UL,
+        blackZERTZ = 274877906944UL,
+        blackPotentials = 412452143236UL,
+      )
+    */
+
+    val bitboard = Bitboard(
+      whiteGIPF = 2621440UL,
+      whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+      whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+      whiteTAMSK = 0UL,
+      whiteYINSH = 0UL,
+      whiteZERTZ = 0UL,
+      whitePotentials = 524288UL,
+      blackGIPF = 491520UL,
+      blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+      blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+      blackTAMSK = 0UL,
+      blackYINSH = 0UL,
+      blackZERTZ = 0UL,
+      blackPotentials = 425984UL,
+    )
+
+    // 3. Initialize Current and Opponent Players
+    val currentPlayer =
+      Player(
+        name = PlayerName.BLACK,
+        abbreviation = "B",
+        piecesInReserve =
+          mutableListOf(
+            piece("BZ", potential = false),
+            piece("BY", potential = false),
+          ),
+        capturedPieces =
+          mutableListOf(
+            piece("WY", potential = true),
+            piece("WD", potential = true),
+            piece("WG", potential = false),
+          ),
+      )
+
+    val opponentPlayer =
+      Player(
+        name = PlayerName.WHITE,
+        abbreviation = "W",
+        piecesInReserve =
+          mutableListOf(
+            piece("WZ", potential = false),
+            piece("WD", potential = true),
+            piece("WY", potential = false),
+          ),
+        capturedPieces =
+          mutableListOf(
+            piece("BY", potential = true),
+            piece("BD", potential = true),
+            piece("BG", potential = false),
+            piece("BG", potential = false),
+            piece("BD", potential = true),
+            piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
+          ),
+      )
+
+    val removablePieces = bitboard.identifyPiecesToRemove(currentPlayer)
+
+    assertEquals(5, removablePieces.maxOf { it.retrievedCapturedPiecesBit.size })
+
+    println(removablePieces)
   }
 }

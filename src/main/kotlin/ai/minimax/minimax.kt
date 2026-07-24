@@ -42,6 +42,7 @@ import org.example.model.undoTamskPotential
 import org.example.model.undoUsePiecePotential
 import org.example.model.usePiecePotential
 import org.example.model.useTamskPotential
+import kotlin.math.abs
 
 @Serializable
 data class BestMove(
@@ -521,8 +522,9 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           centreControl(opponentPlayer) +
           tamskDistanceFromCentre(opponentPlayer)
 
-  return ((currentValue - opponentValue) * 1000.0) / (currentValue + opponentValue) +
-      Random.nextInt(-10, 10).toDouble()
+  val noise = Random.nextInt(-10, 10).toDouble()
+  return (((currentValue - opponentValue) + noise) * 1000.0) / (currentValue + opponentValue + abs(noise))
+
 }
 
 fun alphabetaAddPieces(
@@ -1469,7 +1471,7 @@ fun resolveBoardRemovals(
        * return of a list containing different combinations of bit positions
        */
       val playerPiecesWithPotentialPowerset =
-          bitboard.createPlayerPiecesWithPotentialPowerset(listOf(line), currentPlayer).filter {
+          bitboard.createPlayerPiecesWithPotentialPowerset(currentPlayer, listOf(line)).filter {
             it.isNotEmpty()
           }
 

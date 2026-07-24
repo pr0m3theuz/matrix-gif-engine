@@ -133,7 +133,7 @@ data class MCTSNode(
 
     // child Node Moves
     val currentPlayerTamskMoves = childBitboard.getTamskMoves(childCurrentPlayer)
-    val currentPlayerRemoveablePieces = childBitboard.identifyPiecesToRemove(childCurrentPlayer)
+    val currentPlayerRemovablePieces = childBitboard.identifyPiecesToRemove(childCurrentPlayer)
     val currentPlayerAvailableMoves = childBitboard.identifyAvailableMoves(childCurrentPlayer)
 
     val nextPlayerAvailableMoves = childBitboard.identifyAvailableMoves(childNextPlayer)
@@ -153,9 +153,9 @@ data class MCTSNode(
       currentPlayerTamskMoves.isNotEmpty() ->
         ChildState(childCurrentPlayer, childNextPlayer, TurnPhase.ExtraMove, currentPlayerTamskMoves)
 
-      currentPlayerRemoveablePieces.isNotEmpty() && turnHasHadNormalMove
+      currentPlayerRemovablePieces.isNotEmpty() && turnHasHadNormalMove
           ->
-        ChildState(childCurrentPlayer, childNextPlayer, TurnPhase.PieceRemoval, currentPlayerRemoveablePieces)
+        ChildState(childCurrentPlayer, childNextPlayer, TurnPhase.PieceRemoval, currentPlayerRemovablePieces)
 
       !turnHasHadNormalMove -> ChildState(childCurrentPlayer, childNextPlayer, TurnPhase.PlayerInputWindow, currentPlayerAvailableMoves)
 
