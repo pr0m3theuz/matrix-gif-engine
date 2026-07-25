@@ -41,14 +41,17 @@ data class PossibleBitMove(
 ) {
   fun encode(): NDArray<Int, D1> {
     return when (moveType) {
-	    MoveType.AddPiece, MoveType.UsePotential -> {
-        requireNotNull(targetBit) {"Target bit must not be null"}
+      MoveType.AddPiece,
+      MoveType.UsePotential -> {
+        requireNotNull(targetBit) { "Target bit must not be null" }
         targetBit.toBitList()
       }
-	    MoveType.RetrieveCapturePieces -> {
-        retrievedCapturedPiecesBit.fold(0UL) { acc, bit ->
-          acc or bit.bitmask
-        }.toBitList()
+      MoveType.RetrieveCapturePieces -> {
+        retrievedCapturedPiecesBit
+            .fold(0UL) { acc, bit ->
+              acc or bit.bitmask
+            }
+            .toBitList()
       }
     }
   }
@@ -76,11 +79,14 @@ enum class TurnLifecycle {
 
 fun playerTurn(state: State, turn: Int): State {
 
-  var newState = state.deepCopy().copy(
-    collector = state.collector,
-  )
+  var newState =
+      state
+          .deepCopy()
+          .copy(
+              collector = state.collector,
+          )
 
-  newState.board.printHexGrid("START OF TURN")
+//  newState.board.printHexGrid("START OF TURN")
 
   /**
    * TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece
@@ -129,7 +135,7 @@ fun playerTurn(state: State, turn: Int): State {
 
   newState.assertPieceCount()
 
-  newState.board.printHexGrid("END OF TURN")
+//  newState.board.printHexGrid("END OF TURN")
 
   return newState
 }
@@ -165,16 +171,16 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
       )
 
   if (bestMove != null) {
-    println("Player Move: ${Json.encodeToString(bestMove)}")
+    // println("Player Move: ${Json.encodeToString(bestMove)}")
 
     state.currentPlayer.collector.recordDecision(
-      state.encodeState(),
-      bestMove.encode()
+        state.encodeState(),
+        bestMove.encode(),
     )
 
     state.collector.recordDecision(
-      state.encodeState(),
-      bestMove.encode()
+        state.encodeState(),
+        bestMove.encode(),
     )
 
     when (bestMove.moveType) {
@@ -293,7 +299,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
 
     return newState
   } else {
-    IllegalStateException("CRITICAL MOVE ERROR: No move made.")
+    //    check(true) {"CRITICAL MOVE ERROR: No move made."}
   }
 
   return state
