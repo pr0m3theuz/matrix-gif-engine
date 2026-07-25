@@ -1,7 +1,10 @@
 package org.example.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import org.example.engine.ExperienceCollector
+import org.example.engine.PossibleBitMove
 
 enum class PlayerName() {
   WHITE,
@@ -10,11 +13,12 @@ enum class PlayerName() {
 
 @Serializable
 data class Player(
-    val name: PlayerName,
-    val abbreviation: String,
+  val name: PlayerName,
+  val abbreviation: String,
     //    val color: Color,
-    val piecesInReserve: MutableList<Piece> = mutableListOf(),
-    val capturedPieces: MutableList<Piece> = mutableListOf(),
+  val piecesInReserve: MutableList<Piece> = mutableListOf(),
+  val capturedPieces: MutableList<Piece> = mutableListOf(),
+  @Transient val collector: ExperienceCollector = ExperienceCollector(),
 ) {
   fun deepCopy(): Player {
     val string = Json.encodeToString(serializer(), this)

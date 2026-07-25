@@ -1615,8 +1615,8 @@ fun identifyNextPlayerAvailableMoves(state: State): List<PossibleMove> {
   } else if (allAvailableMoves.isNotEmpty()) {
     return allAvailableMoves
   } else {
-    //		emptyList<PossibleMove>()
-    throw IllegalStateException("Player ${state.nextPlayer.name} has no available moves left!")
+    return emptyList()
+//    throw IllegalStateException("Player ${state.nextPlayer.name} has no available moves left!")
   }
 }
 

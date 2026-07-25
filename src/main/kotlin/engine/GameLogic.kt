@@ -4,6 +4,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
+import org.example.toBitList
+import org.jetbrains.kotlinx.multik.ndarray.data.D1
+import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 
 /**
  * TODO create a two functions:
@@ -35,7 +38,21 @@ data class PossibleBitMove(
     val pieceColor: PlayerName? = null,
     val pushDirection: PushDirection? = null,
     val moveType: MoveType,
-)
+) {
+  fun encode(): NDArray<Int, D1> {
+    return when (moveType) {
+	    MoveType.AddPiece, MoveType.UsePotential -> {
+        requireNotNull(targetBit) {"Target bit must not be null"}
+        targetBit.toBitList()
+      }
+	    MoveType.RetrieveCapturePieces -> {
+        retrievedCapturedPiecesBit.fold(0UL) { acc, bit ->
+          acc or bit.bitmask
+        }.toBitList()
+      }
+    }
+  }
+}
 
 enum class MoveType {
   AddPiece,
@@ -59,7 +76,9 @@ enum class TurnLifecycle {
 
 fun playerTurn(state: State, turn: Int): State {
 
-  var newState = state.deepCopy()
+  var newState = state.deepCopy().copy(
+    collector = state.collector,
+  )
 
   newState.board.printHexGrid("START OF TURN")
 
@@ -136,7 +155,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  val bestMove =
+  val bestMove: PossibleBitMove? =
       selectMoveMCTS(
           bitboard = bitboard,
           currentPlayer = state.currentPlayer,
@@ -147,6 +166,17 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
 
   if (bestMove != null) {
     println("Player Move: ${Json.encodeToString(bestMove)}")
+
+    state.currentPlayer.collector.recordDecision(
+      state.encodeState(),
+      bestMove.encode()
+    )
+
+    state.collector.recordDecision(
+      state.encodeState(),
+      bestMove.encode()
+    )
+
     when (bestMove.moveType) {
       MoveType.AddPiece -> {
 
@@ -256,6 +286,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
                 board = newBoard,
                 bitboard = bitboard,
                 lines = constructLines(newBoard.nodes),
+                collector = state.collector,
             )
 
     newState.assertPieceCount(bitboard = bitboard)

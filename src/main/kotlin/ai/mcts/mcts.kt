@@ -330,7 +330,6 @@ fun simulateRandomGame(
 
   while (
       !evaluateCapturedPieces(activePlayer) ||
-          !evaluatePiecesInReserve(activePlayer) ||
           bitboard.identifyAvailableMoves(activePlayer).isNotEmpty()
   ) {
     if (bitboard.identifyAvailableMoves(activePlayer).isEmpty()) break

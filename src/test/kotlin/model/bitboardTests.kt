@@ -3006,14 +3006,15 @@ class BitboardTest {
     }
 
 
-    val ver = whiteGIPF.toBitList()
+    val bitList = whiteGIPF.toBitList()
 
-    println(whiteGIPF.toString(2).padStart(40, '0'))
-    println(ver)
+    println("Shape: ${Json.encodeToString(bitList.shape)}")
+    println(whiteGIPF.toString(2).padStart(41, '0'))
+    println(bitList)
     println(array)
 
     val ndArray =
-      mk.zeros<Int>(47, 40)
+      mk.zeros<Int>(47, 41)
 
     ndArray.set(0, whiteGIPF.toBitList())
 
