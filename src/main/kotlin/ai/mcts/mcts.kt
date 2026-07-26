@@ -265,7 +265,7 @@ data class MCTSNode(
     return winCounts[player.name]!!.div(this.rolloutCounts.toFloat())
   }
 
-  fun selectChildNodeToExplore(): MCTSNode {
+  fun selectChildNodeToExplore(): MCTSNode? {
     val totalRollouts = childrenNodes.sumOf { it.rolloutCounts.toDouble() }
     var bestScore = -1.0
     var bestChildNode: MCTSNode? = null
@@ -285,7 +285,7 @@ data class MCTSNode(
       }
     }
 
-    return bestChildNode!!
+    return bestChildNode
   }
 }
 
@@ -319,8 +319,9 @@ fun selectMoveMCTS(
 
     while (
         currentNode?.unvisitedMoves?.isEmpty() == true &&
-            !evaluateCapturedPieces(currentNode.currentPlayer) &&
-            !evaluatePiecesInReserve(currentNode.currentPlayer)
+            currentNode.childrenNodes.isNotEmpty() &&
+            !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+    // !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
       currentNode = currentNode.selectChildNodeToExplore()
     }
@@ -334,7 +335,7 @@ fun selectMoveMCTS(
             currentNode.bitboard.deepCopy(),
             currentNode.currentPlayer.deepCopy(),
             currentNode.nextPlayer.deepCopy(),
-          rng = rng,
+            rng = rng,
         )
 
     while (currentNode != null && winner != null) {
@@ -477,7 +478,7 @@ fun simulatePlayerMove(
     opponentPlayer: Player,
     rng: Random,
 ) {
-//  val initbitboard = bitboard.deepCopy()
+  //  val initbitboard = bitboard.deepCopy()
   val possibleBitMoves = mutableListOf<PossibleBitMove>()
   bitboard.identifyAvailableMoves(currentPlayer, columnInfos, possibleBitMoves)
 
