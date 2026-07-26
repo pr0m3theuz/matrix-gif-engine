@@ -2,6 +2,7 @@
 
 package model
 
+import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.text.toString
 import kotlinx.serialization.json.Json
@@ -47,58 +48,42 @@ import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-enum class PlayerName {
-  WHITE,
-  BLACK,
-}
-
-enum class PieceType {
-  PUNCT,
-  DVONN,
-  GIPF,
-  YINSH,
-  TAMSK,
-  ZERTZ,
-}
-
-enum class MoveType {
-  RetrieveCapturePieces /* Add others if needed */
-}
-
 data class NodeDef(
-  val coord: String,
-  val pieceAbbr: String?,
-  val isDot: Boolean,
-  val isSpot: Boolean,
-  val isCenter: Boolean = false,
-  val above: String? = null,
-  val below: String? = null,
-  val ur: String? = null,
-  val lr: String? = null,
-  val ul: String? = null,
-  val ll: String? = null,
-  val bitmask: ULong = ULong.MAX_VALUE,
-  val potential: Boolean? = null // Allows custom override in the map
+    val coord: String,
+    val pieceAbbr: String?,
+    val isDot: Boolean,
+    val isSpot: Boolean,
+    val isCenter: Boolean = false,
+    val above: String? = null,
+    val below: String? = null,
+    val ur: String? = null,
+    val lr: String? = null,
+    val ul: String? = null,
+    val ll: String? = null,
+    val bitmask: ULong = ULong.MAX_VALUE,
+    val potential: Boolean? = null, // Allows custom override in the map
 ) {
   fun toNode(): Node {
     return Node(
-      coordinate = coord(coord),
-      piece = pieceAbbr?.let {
-        // Default to true unless overridden
-        piece(it, potential ?: true)
-      },
-      isDot = isDot,
-      isSpot = isSpot,
-      isCenter = isCenter,
-      neighbors = NodeNeighbors(
-        above = above?.let { coord(it) },
-        below = below?.let { coord(it) },
-        upperRight = ur?.let { coord(it) },
-        lowerRight = lr?.let { coord(it) },
-        upperLeft = ul?.let { coord(it) },
-        lowerLeft = ll?.let { coord(it) }
-      ),
-      bitmask = bitmask
+        coordinate = coord(coord),
+        piece =
+            pieceAbbr?.let {
+              // Default to true unless overridden
+              piece(it, potential ?: true)
+            },
+        isDot = isDot,
+        isSpot = isSpot,
+        isCenter = isCenter,
+        neighbors =
+            NodeNeighbors(
+                above = above?.let { coord(it) },
+                below = below?.let { coord(it) },
+                upperRight = ur?.let { coord(it) },
+                lowerRight = lr?.let { coord(it) },
+                upperLeft = ul?.let { coord(it) },
+                lowerLeft = ll?.let { coord(it) },
+            ),
+        bitmask = bitmask,
     )
   }
 }
@@ -127,18 +112,6 @@ class BitboardTest {
   var oldWhitePieces = 0b0111001010110101111111101001011110100001.toULong()
   var whitePieces = 0b0111001010110101111111101001011110100001.toULong()
 
-  val verticalLineIndexArray =
-      listOf(
-          listOf(0, 1, 2, 3),
-          listOf(4, 5, 6, 7, 8),
-          listOf(9, 10, 11, 12, 13, 14),
-          listOf(15, 16, 17, 18, 19, 20, 21),
-          listOf(22, 23, 24, 25, 26, 27),
-          listOf(28, 29, 30, 31, 32),
-          listOf(33, 34, 35, 36),
-          listOf(37, 38, 39),
-      )
-
   val upwardRightLineIndexArray =
       listOf(
           listOf(0, 5, 11, 18, 25, 31, 36),
@@ -148,17 +121,6 @@ class BitboardTest {
           listOf(4, 10, 17, 24, 30, 35, 39),
           listOf(9, 16, 23, 29, 34, 38),
           listOf(15, 22, 28, 33, 37),
-      )
-
-  val downwardRightLineIndexArray =
-      listOf(
-          listOf(0, 4, 9, 15),
-          listOf(1, 5, 10, 16, 22),
-          listOf(2, 6, 11, 17, 23, 28),
-          listOf(3, 7, 12, 18, 24, 29, 33),
-          listOf(8, 13, 19, 25, 30, 34, 37),
-          listOf(14, 20, 26, 31, 35, 38),
-          listOf(21, 27, 32, 36, 39),
       )
 
   data class ColumnInfo(
@@ -880,8 +842,8 @@ class BitboardTest {
     val playerPiecesWithPotentialPowerset =
         testBitboard
             .createPlayerPiecesWithPotentialPowerset(
-              currentPlayer,
-              listOf(linesWithFourInARow.first()),
+                currentPlayer,
+                listOf(linesWithFourInARow.first()),
             )
             .filter { it.isNotEmpty() }
 
@@ -1839,7 +1801,7 @@ class BitboardTest {
             currentPlayer = currentPlayer,
             nextPlayer = nextPlayer,
             board = convertedBitboardBoard,
-          bitboard = modifiableBitboard,
+            bitboard = modifiableBitboard,
             lines = constructLines(nodes = convertedBitboardBoard.nodes),
         )
 
@@ -1930,7 +1892,7 @@ class BitboardTest {
                 ),
         )
 
-    bitboard.getPunctMoves(whitePlayer, org.example.model.columnInfos)
+    bitboard.getPunctMoves(whitePlayer, org.example.model.columnInfos, mutableListOf())
   }
 
   @Test
@@ -2055,7 +2017,8 @@ class BitboardTest {
     // 4. Assign the randomly selected PossibleBitMove
     val randomPossibleBitMove = possibleBitMoves[3]
 
-    val punctMoves = bitboard.getPunctMoves(currentPlayer)
+    val punctMoves = mutableListOf<PossibleBitMove>()
+    bitboard.getPunctMoves(currentPlayer, movesBuffer = punctMoves)
 
     assert(punctMoves.isNotEmpty())
   }
@@ -2083,7 +2046,7 @@ class BitboardTest {
                     137438953472UL,
                     137438953472UL,
                     0UL,
-                    0UL
+                    0UL,
                 ),
             blackTAMSK = 4294967328UL,
             blackYINSH = 18432UL,
@@ -2112,7 +2075,7 @@ class BitboardTest {
                     137438953472UL,
                     137438953472UL,
                     0UL,
-                    0UL
+                    0UL,
                 ),
             blackTAMSK = 4294967328UL,
             blackYINSH = 18432UL,
@@ -2200,7 +2163,8 @@ class BitboardTest {
     // 5. Assign Selected Random Move
     val randomPossibleBitMove = possibleBitMoves[2]
 
-    val punctMoves = initBitboard.getPunctMoves(currentPlayer)
+    val punctMoves = mutableListOf<PossibleBitMove>()
+    initBitboard.getPunctMoves(currentPlayer, movesBuffer = punctMoves)
 
     assert(punctMoves.isNotEmpty())
   }
@@ -2364,263 +2328,704 @@ class BitboardTest {
     modifiableBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   }
 
-  @Test
-  fun `remove Selected Pieces`() {
-
-  }
-
-   @Test
-   fun `get DVONN Moves`(){
-  /**
-   * TODO The DVONN potential has the ability to jump atop any of the opponent's DVONN pieces (individual pieces or stacks)
-   *  as long as the both DVONN pieces are on the same line and there are no other pieces in between them.
-   * */
-  // 1. Initialize Active Bitboard (with size-8 arrays)
-  val bitboard =
-    Bitboard(
-      whiteGIPF = 0UL,
-      whiteDVONNLayer = ulongArrayOf(1UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 0UL,
-      whiteYINSH = 0UL,
-      whiteZERTZ = 0UL,
-      whitePotentials = 1UL,
-      blackGIPF = 0UL,
-      blackDVONNLayer = ulongArrayOf(8UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackTAMSK = 0UL,
-      blackYINSH = 0UL,
-      blackZERTZ = 0UL,
-      blackPotentials = 8UL,
-    )
-
-     // 2. Initialize Init Bitboard (slightly different whitePotentials and whiteDVONNLayer)
-     val initBitboard = Bitboard(
-       whiteGIPF = 0UL,
-       whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-       whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-       whiteTAMSK = 0UL,
-       whiteYINSH = 0UL,
-       whiteZERTZ = 0UL,
-       whitePotentials = 0UL,
-       blackGIPF = 0UL,
-       blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-       blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-       blackTAMSK = 0UL,
-       blackYINSH = 0UL,
-       blackZERTZ = 0UL,
-       blackPotentials = 0UL,
-     )
-
-
-     // 3. Initialize Current and Opponent Players
-     val currentPlayer =
-       Player(
-         name = PlayerName.WHITE,
-         abbreviation = "W",
-         piecesInReserve = mutableListOf(piece("WY", potential = false)),
-       )
-
-     val opponentPlayer =
-       Player(
-         name = PlayerName.BLACK,
-         abbreviation = "B",
-         piecesInReserve = mutableListOf(),
-       )
-
-     val dvonnMoves = bitboard.getDvonnMoves(
-	     player = currentPlayer,
-       columnInfos = org.example.model.columnInfos
-     )
-
-     assertTrue(dvonnMoves.isNotEmpty())
-   }
+  @Test fun `remove Selected Pieces`() {}
 
   @Test
-  fun `get DVONN Moves when Blocked`(){
+  fun `get DVONN Moves`() {
     /**
-     * TODO The DVONN potential has the ability to jump atop any of the opponent's DVONN pieces (individual pieces or stacks)
-     *  as long as the both DVONN pieces are on the same line and there are no other pieces in between them.
-     * */
+     * TODO The DVONN potential has the ability to jump atop any of the opponent's DVONN pieces
+     * (individual pieces or stacks) as long as the both DVONN pieces are on the same line and there
+     * are no other pieces in between them.
+     */
     // 1. Initialize Active Bitboard (with size-8 arrays)
     val bitboard =
-      Bitboard(
-        whiteGIPF = 2UL,
-        whiteDVONNLayer = ulongArrayOf(1UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-        whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-        whiteTAMSK = 0UL,
-        whiteYINSH = 0UL,
-        whiteZERTZ = 0UL,
-        whitePotentials = 1UL,
-        blackGIPF = 0UL,
-        blackDVONNLayer = ulongArrayOf(8UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-        blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-        blackTAMSK = 0UL,
-        blackYINSH = 0UL,
-        blackZERTZ = 0UL,
-        blackPotentials = 8UL,
-      )
+        Bitboard(
+            whiteGIPF = 0UL,
+            whiteDVONNLayer = ulongArrayOf(1UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 0UL,
+            whiteYINSH = 0UL,
+            whiteZERTZ = 0UL,
+            whitePotentials = 1UL,
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(8UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 0UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 0UL,
+            blackPotentials = 8UL,
+        )
 
     // 2. Initialize Init Bitboard (slightly different whitePotentials and whiteDVONNLayer)
-    val initBitboard = Bitboard(
-      whiteGIPF = 0UL,
-      whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 0UL,
-      whiteYINSH = 0UL,
-      whiteZERTZ = 0UL,
-      whitePotentials = 0UL,
-      blackGIPF = 0UL,
-      blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackTAMSK = 0UL,
-      blackYINSH = 0UL,
-      blackZERTZ = 0UL,
-      blackPotentials = 0UL,
-    )
-
+    val initBitboard =
+        Bitboard(
+            whiteGIPF = 0UL,
+            whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 0UL,
+            whiteYINSH = 0UL,
+            whiteZERTZ = 0UL,
+            whitePotentials = 0UL,
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 0UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 0UL,
+            blackPotentials = 0UL,
+        )
 
     // 3. Initialize Current and Opponent Players
     val currentPlayer =
-      Player(
-        name = PlayerName.WHITE,
-        abbreviation = "W",
-        piecesInReserve = mutableListOf(piece("WY", potential = false)),
-      )
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+        )
 
     val opponentPlayer =
-      Player(
-        name = PlayerName.BLACK,
-        abbreviation = "B",
-        piecesInReserve = mutableListOf(),
-      )
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(),
+        )
 
-    val dvonnMoves = bitboard.getDvonnMoves(
-      player = currentPlayer,
-      columnInfos = org.example.model.columnInfos
+    val dvonnMoves = mutableListOf<PossibleBitMove>()
+    bitboard.getDvonnMoves(
+        player = currentPlayer,
+        columnInfos = org.example.model.columnInfos,
+        dvonnMoves,
+    )
+
+    assertTrue(dvonnMoves.isNotEmpty())
+  }
+
+  @Test
+  fun `get DVONN Moves when Blocked`() {
+    /**
+     * TODO The DVONN potential has the ability to jump atop any of the opponent's DVONN pieces
+     * (individual pieces or stacks) as long as the both DVONN pieces are on the same line and there
+     * are no other pieces in between them.
+     */
+    // 1. Initialize Active Bitboard (with size-8 arrays)
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 2UL,
+            whiteDVONNLayer = ulongArrayOf(1UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 0UL,
+            whiteYINSH = 0UL,
+            whiteZERTZ = 0UL,
+            whitePotentials = 1UL,
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(8UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 0UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 0UL,
+            blackPotentials = 8UL,
+        )
+
+    // 2. Initialize Init Bitboard (slightly different whitePotentials and whiteDVONNLayer)
+    val initBitboard =
+        Bitboard(
+            whiteGIPF = 0UL,
+            whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 0UL,
+            whiteYINSH = 0UL,
+            whiteZERTZ = 0UL,
+            whitePotentials = 0UL,
+            blackGIPF = 0UL,
+            blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 0UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 0UL,
+            blackPotentials = 0UL,
+        )
+
+    // 3. Initialize Current and Opponent Players
+    val currentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+        )
+
+    val opponentPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(),
+        )
+
+    val dvonnMoves = mutableListOf<PossibleBitMove>()
+    bitboard.getDvonnMoves(
+        player = currentPlayer,
+        columnInfos = org.example.model.columnInfos,
+        dvonnMoves,
     )
 
     assertTrue(dvonnMoves.isEmpty())
   }
 
   @Test
-  fun `getEligiblePotentialMoves`(){
+  fun `getEligiblePotentialMoves`() {
     // 1. Re-create the 65 Nodes with the exact piece configurations of the dump
-    val nodeDefinitions = listOf(
-      // Column A
-      NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
-      NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
-      NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
-      NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
-      NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
+    val nodeDefinitions =
+        listOf(
+            // Column A
+            NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
+            NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
+            NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
+            NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
+            NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
 
-      // Column B
-      NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
-      NodeDef("B2", "BY", isDot = false, isSpot = true, above = "B3", ur = "C3", lr = "C2", bitmask = 1UL),
-      NodeDef("B3", "WZ", isDot = false, isSpot = true, above = "B4", below = "B2", ur = "C4", lr = "C3", bitmask = 2UL),
-      NodeDef("B4", "BT", isDot = false, isSpot = true, above = "B5", below = "B3", ur = "C5", lr = "C4", bitmask = 4UL),
-      NodeDef("B5", null, isDot = false, isSpot = true, below = "B4", ur = "C6", lr = "C5", bitmask = 8UL),
-      NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
+            // Column B
+            NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
+            NodeDef(
+                "B2",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "B3",
+                ur = "C3",
+                lr = "C2",
+                bitmask = 1UL,
+            ),
+            NodeDef(
+                "B3",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "B4",
+                below = "B2",
+                ur = "C4",
+                lr = "C3",
+                bitmask = 2UL,
+            ),
+            NodeDef(
+                "B4",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "B5",
+                below = "B3",
+                ur = "C5",
+                lr = "C4",
+                bitmask = 4UL,
+            ),
+            NodeDef(
+                "B5",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "B4",
+                ur = "C6",
+                lr = "C5",
+                bitmask = 8UL,
+            ),
+            NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
 
-      // Column C
-      NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
-      NodeDef("C2", "BY", isDot = false, isSpot = true, above = "C3", ur = "D3", lr = "D2", ul = "B2", bitmask = 16UL),
-      NodeDef("C3", "BP", isDot = false, isSpot = true, above = "C4", below = "C2", ur = "D4", lr = "D3", ul = "B3", ll = "B2", bitmask = 32UL),
-      NodeDef("C4", null, isDot = false, isSpot = true, above = "C5", below = "C3", ur = "D5", lr = "D4", ul = "B4", ll = "B3", bitmask = 64UL),
-      NodeDef("C5", null, isDot = false, isSpot = true, above = "C6", below = "C4", ur = "D6", lr = "D5", ul = "B5", ll = "B4", bitmask = 128UL),
-      NodeDef("C6", null, isDot = false, isSpot = true, below = "C5", ur = "D7", lr = "D6", ll = "B5", bitmask = 256UL),
-      NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
+            // Column C
+            NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
+            NodeDef(
+                "C2",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "C3",
+                ur = "D3",
+                lr = "D2",
+                ul = "B2",
+                bitmask = 16UL,
+            ),
+            NodeDef(
+                "C3",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "C4",
+                below = "C2",
+                ur = "D4",
+                lr = "D3",
+                ul = "B3",
+                ll = "B2",
+                bitmask = 32UL,
+            ),
+            NodeDef(
+                "C4",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "C5",
+                below = "C3",
+                ur = "D5",
+                lr = "D4",
+                ul = "B4",
+                ll = "B3",
+                bitmask = 64UL,
+            ),
+            NodeDef(
+                "C5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "C6",
+                below = "C4",
+                ur = "D6",
+                lr = "D5",
+                ul = "B5",
+                ll = "B4",
+                bitmask = 128UL,
+            ),
+            NodeDef(
+                "C6",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "C5",
+                ur = "D7",
+                lr = "D6",
+                ll = "B5",
+                bitmask = 256UL,
+            ),
+            NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
 
-      // Column D
-      NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
-      NodeDef("D2", "WZ", isDot = false, isSpot = true, above = "D3", ur = "E3", lr = "E2", ul = "C2", bitmask = 512UL),
-      NodeDef("D3", "BP", isDot = false, isSpot = true, above = "D4", below = "D2", ur = "E4", lr = "E3", ul = "C3", ll = "C2", bitmask = 1024UL),
-      NodeDef("D4", "WT", isDot = false, isSpot = true, above = "D5", below = "D3", ur = "E5", lr = "E4", ul = "C4", ll = "C3", bitmask = 2048UL),
-      NodeDef("D5", "WT", isDot = false, isSpot = true, above = "D6", below = "D4", ur = "E6", lr = "E5", ul = "C5", ll = "C4", bitmask = 4096UL),
-      NodeDef("D6", "BT", isDot = false, isSpot = true, above = "D7", below = "D5", ur = "E7", lr = "E6", ul = "C6", ll = "C5", bitmask = 8192UL),
-      NodeDef("D7", "WD", isDot = false, isSpot = true, below = "D6", ur = "E8", lr = "E7", ll = "C6", bitmask = 16384UL),
-      NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
+            // Column D
+            NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
+            NodeDef(
+                "D2",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "D3",
+                ur = "E3",
+                lr = "E2",
+                ul = "C2",
+                bitmask = 512UL,
+            ),
+            NodeDef(
+                "D3",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "D4",
+                below = "D2",
+                ur = "E4",
+                lr = "E3",
+                ul = "C3",
+                ll = "C2",
+                bitmask = 1024UL,
+            ),
+            NodeDef(
+                "D4",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "D5",
+                below = "D3",
+                ur = "E5",
+                lr = "E4",
+                ul = "C4",
+                ll = "C3",
+                bitmask = 2048UL,
+            ),
+            NodeDef(
+                "D5",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "D6",
+                below = "D4",
+                ur = "E6",
+                lr = "E5",
+                ul = "C5",
+                ll = "C4",
+                bitmask = 4096UL,
+            ),
+            NodeDef(
+                "D6",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "D7",
+                below = "D5",
+                ur = "E7",
+                lr = "E6",
+                ul = "C6",
+                ll = "C5",
+                bitmask = 8192UL,
+            ),
+            NodeDef(
+                "D7",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "D6",
+                ur = "E8",
+                lr = "E7",
+                ll = "C6",
+                bitmask = 16384UL,
+            ),
+            NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
 
-      // Column E
-      NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
-      NodeDef("E2", "WT", isDot = false, isSpot = true, above = "E3", ur = "F2", ul = "D2", bitmask = 32768UL),
-      NodeDef("E3", "BZ", isDot = false, isSpot = true, above = "E4", below = "E2", ur = "F3", lr = "F2", ul = "D3", ll = "D2", bitmask = 65536UL),
-      NodeDef("E4", "WG", isDot = false, isSpot = true, potential = false, above = "E5", below = "E3", ur = "F4", lr = "F3", ul = "D4", ll = "D3", bitmask = 131072UL),
-      NodeDef("E5", null, isDot = false, isSpot = true, isCenter = true, above = "E6", below = "E4", ur = "F5", lr = "F4", ul = "D5", ll = "D4", bitmask = 262144UL),
-      NodeDef("E6", "BZ", isDot = false, isSpot = true, potential = false, above = "E7", below = "E5", ur = "F6", lr = "F5", ul = "D6", ll = "D5", bitmask = 524288UL),
-      NodeDef("E7", null, isDot = false, isSpot = true, above = "E8", below = "E6", ur = "F7", lr = "F6", ul = "D7", ll = "D6", bitmask = 1048576UL),
-      NodeDef("E8", "WP", isDot = false, isSpot = true, below = "E7", lr = "F7", ll = "D7", bitmask = 2097152UL),
-      NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
+            // Column E
+            NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
+            NodeDef(
+                "E2",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "E3",
+                ur = "F2",
+                ul = "D2",
+                bitmask = 32768UL,
+            ),
+            NodeDef(
+                "E3",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                above = "E4",
+                below = "E2",
+                ur = "F3",
+                lr = "F2",
+                ul = "D3",
+                ll = "D2",
+                bitmask = 65536UL,
+            ),
+            NodeDef(
+                "E4",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E5",
+                below = "E3",
+                ur = "F4",
+                lr = "F3",
+                ul = "D4",
+                ll = "D3",
+                bitmask = 131072UL,
+            ),
+            NodeDef(
+                "E5",
+                null,
+                isDot = false,
+                isSpot = true,
+                isCenter = true,
+                above = "E6",
+                below = "E4",
+                ur = "F5",
+                lr = "F4",
+                ul = "D5",
+                ll = "D4",
+                bitmask = 262144UL,
+            ),
+            NodeDef(
+                "E6",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E7",
+                below = "E5",
+                ur = "F6",
+                lr = "F5",
+                ul = "D6",
+                ll = "D5",
+                bitmask = 524288UL,
+            ),
+            NodeDef(
+                "E7",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "E8",
+                below = "E6",
+                ur = "F7",
+                lr = "F6",
+                ul = "D7",
+                ll = "D6",
+                bitmask = 1048576UL,
+            ),
+            NodeDef(
+                "E8",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                below = "E7",
+                lr = "F7",
+                ll = "D7",
+                bitmask = 2097152UL,
+            ),
+            NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
 
-      // Column F
-      NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
-      NodeDef("F2", "WG", isDot = false, isSpot = true, potential = false, above = "F3", ur = "G2", ul = "E3", ll = "E2", bitmask = 4194304UL),
-      NodeDef("F3", "BY", isDot = false, isSpot = true, above = "F4", ur = "G3", lr = "G2", ul = "E4", ll = "E3", bitmask = 8388608UL),
-      NodeDef("F4", "BG", isDot = false, isSpot = true, potential = false, above = "F5", ur = "G4", lr = "G3", ul = "E5", ll = "E4", bitmask = 16777216UL),
-      NodeDef("F5", "WY", isDot = false, isSpot = true, potential = false, above = "F6", ur = "G5", lr = "G4", ul = "E6", ll = "E5", bitmask = 33554432UL),
-      NodeDef("F6", "BT", isDot = false, isSpot = true, above = "F7", ur = "G6", lr = "G5", ul = "E7", ll = "E6", bitmask = 67108864UL),
-      NodeDef("F7", "BP", isDot = false, isSpot = true, below = "F6", lr = "G6", ul = "E8", ll = "E7", bitmask = 134217728UL),
-      NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
+            // Column F
+            NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
+            NodeDef(
+                "F2",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F3",
+                ur = "G2",
+                ul = "E3",
+                ll = "E2",
+                bitmask = 4194304UL,
+            ),
+            NodeDef(
+                "F3",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "F4",
+                ur = "G3",
+                lr = "G2",
+                ul = "E4",
+                ll = "E3",
+                bitmask = 8388608UL,
+            ),
+            NodeDef(
+                "F4",
+                "BG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F5",
+                ur = "G4",
+                lr = "G3",
+                ul = "E5",
+                ll = "E4",
+                bitmask = 16777216UL,
+            ),
+            NodeDef(
+                "F5",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F6",
+                ur = "G5",
+                lr = "G4",
+                ul = "E6",
+                ll = "E5",
+                bitmask = 33554432UL,
+            ),
+            NodeDef(
+                "F6",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "F7",
+                ur = "G6",
+                lr = "G5",
+                ul = "E7",
+                ll = "E6",
+                bitmask = 67108864UL,
+            ),
+            NodeDef(
+                "F7",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                below = "F6",
+                lr = "G6",
+                ul = "E8",
+                ll = "E7",
+                bitmask = 134217728UL,
+            ),
+            NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
 
-      // Column G
-      NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
-      NodeDef("G2", "BD", isDot = false, isSpot = true, above = "G3", ur = "H2", ul = "F3", ll = "F2", bitmask = 268435456UL),
-      NodeDef("G3", "WY", isDot = false, isSpot = true, potential = false, above = "G4", ur = "H3", lr = "H2", ul = "F4", ll = "F3", bitmask = 536870912UL),
-      NodeDef("G4", "WP", isDot = false, isSpot = true, above = "G5", ur = "H4", lr = "H3", ul = "F5", ll = "F4", bitmask = 1073741824UL),
-      NodeDef("G5", null, isDot = false, isSpot = true, above = "G6", ur = "H5", lr = "H4", ul = "F6", ll = "F5", bitmask = 2147483648UL),
-      NodeDef("G6", null, isDot = false, isSpot = true, below = "G5", lr = "H5", ul = "F7", ll = "F6", bitmask = 4294967296UL),
-      NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
+            // Column G
+            NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
+            NodeDef(
+                "G2",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                above = "G3",
+                ur = "H2",
+                ul = "F3",
+                ll = "F2",
+                bitmask = 268435456UL,
+            ),
+            NodeDef(
+                "G3",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "G4",
+                ur = "H3",
+                lr = "H2",
+                ul = "F4",
+                ll = "F3",
+                bitmask = 536870912UL,
+            ),
+            NodeDef(
+                "G4",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                above = "G5",
+                ur = "H4",
+                lr = "H3",
+                ul = "F5",
+                ll = "F4",
+                bitmask = 1073741824UL,
+            ),
+            NodeDef(
+                "G5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "G6",
+                ur = "H5",
+                lr = "H4",
+                ul = "F6",
+                ll = "F5",
+                bitmask = 2147483648UL,
+            ),
+            NodeDef(
+                "G6",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "G5",
+                lr = "H5",
+                ul = "F7",
+                ll = "F6",
+                bitmask = 4294967296UL,
+            ),
+            NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
 
-      // Column H
-      NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
-      NodeDef("H2", "WY", isDot = false, isSpot = true, potential = false, above = "H3", ur = "I2", ul = "G3", ll = "G2", bitmask = 8589934592UL),
-      NodeDef("H3", "BZ", isDot = false, isSpot = true, potential = false, above = "H4", ur = "I3", lr = "I2", ul = "G4", ll = "G3", bitmask = 17179869184UL),
-      NodeDef("H4", null, isDot = false, isSpot = true, above = "H5", ur = "I4", lr = "I3", ul = "G5", ll = "G4", bitmask = 34359738368UL),
-      NodeDef("H5", "WD", isDot = false, isSpot = true, below = "H4", lr = "I4", ul = "G6", ll = "G5", bitmask = 68719476736UL),
-      NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
+            // Column H
+            NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
+            NodeDef(
+                "H2",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "H3",
+                ur = "I2",
+                ul = "G3",
+                ll = "G2",
+                bitmask = 8589934592UL,
+            ),
+            NodeDef(
+                "H3",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "H4",
+                ur = "I3",
+                lr = "I2",
+                ul = "G4",
+                ll = "G3",
+                bitmask = 17179869184UL,
+            ),
+            NodeDef(
+                "H4",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "H5",
+                ur = "I4",
+                lr = "I3",
+                ul = "G5",
+                ll = "G4",
+                bitmask = 34359738368UL,
+            ),
+            NodeDef(
+                "H5",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "H4",
+                lr = "I4",
+                ul = "G6",
+                ll = "G5",
+                bitmask = 68719476736UL,
+            ),
+            NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
 
-      // Column I
-      NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
-      NodeDef("I2", "BD", isDot = false, isSpot = true, above = "I3", ul = "H3", ll = "H2", bitmask = 137438953472UL),
-      NodeDef("I3", "WZ", isDot = false, isSpot = true, above = "I4", ul = "H4", ll = "H3", bitmask = 274877906944UL),
-      NodeDef("I4", "WD", isDot = false, isSpot = true, below = "I3", ul = "H5", ll = "H4", bitmask = 549755813888UL),
-      NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
+            // Column I
+            NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
+            NodeDef(
+                "I2",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                above = "I3",
+                ul = "H3",
+                ll = "H2",
+                bitmask = 137438953472UL,
+            ),
+            NodeDef(
+                "I3",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "I4",
+                ul = "H4",
+                ll = "H3",
+                bitmask = 274877906944UL,
+            ),
+            NodeDef(
+                "I4",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "I3",
+                ul = "H5",
+                ll = "H4",
+                bitmask = 549755813888UL,
+            ),
+            NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
 
-      // Column J
-      NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
-      NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
-      NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
-      NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4")
-    )
+            // Column J
+            NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
+            NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
+            NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
+            NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4"),
+        )
 
     val nodesList = LinkedHashSet(nodeDefinitions.map { it.toNode() })
     val board = Board(nodes = nodesList, centerNodeCoordinate = coord("E5"))
 
     // 2. Initialize Players (Current is WHITE, Next is BLACK)
-    val currentPlayer = Player(
-      name = PlayerName.WHITE,
-      abbreviation = "W",
-      piecesInReserve = mutableListOf(
-        piece("WY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("BD", potential = true),
-        piece("BG", potential = false),
-        piece("BZ", potential = true),
-        piece("BG", potential = false)
-      )
-    )
+    val currentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            capturedPieces =
+                mutableListOf(
+                    piece("BD", potential = true),
+                    piece("BG", potential = false),
+                    piece("BZ", potential = true),
+                    piece("BG", potential = false),
+                ),
+        )
 
-    val nextPlayer = Player(
-      name = PlayerName.BLACK,
-      abbreviation = "B",
-      piecesInReserve = mutableListOf(),
-      capturedPieces = mutableListOf(
-        piece("WG", potential = false),
-        piece("WY", potential = true),
-        piece("WP", potential = true)
-      )
-    )
+    val nextPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(),
+            capturedPieces =
+                mutableListOf(
+                    piece("WG", potential = false),
+                    piece("WY", potential = true),
+                    piece("WP", potential = true),
+                ),
+        )
 
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
     var turn = 604
@@ -2628,153 +3033,594 @@ class BitboardTest {
     val bitboard = convertBoardToBitboard(board)
 
     // 3. Initialize Game State
-    val gameState = State(
-      currentPlayer = currentPlayer,
-      nextPlayer = nextPlayer,
-      board = board,
-      bitboard = bitboard,
-      lines = constructLines(board.nodes)
-    )
+    val gameState =
+        State(
+            currentPlayer = currentPlayer,
+            nextPlayer = nextPlayer,
+            board = board,
+            bitboard = bitboard,
+            lines = constructLines(board.nodes),
+        )
 
     // 4. Initialize result map mapping Node context to Collections SingletonSet/LinkedHashSet
     val b3Node = nodesList.first { it.coordinate == coord("B5") }
     val e8Node = nodesList.first { it.coordinate == coord("F7") }
 
-    val result = linkedMapOf(
-      b3Node to setOf(b3Node),
-      e8Node to setOf(e8Node)
-    )
+    val result =
+        linkedMapOf(
+            b3Node to setOf(b3Node),
+            e8Node to setOf(e8Node),
+        )
 
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(gameState)
 
+    val bitboardAvailableMoves = mutableListOf<PossibleBitMove>()
 
-
-    val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
-	    currentPlayer = currentPlayer,
-	    columnInfos = org.example.model.columnInfos
+    bitboard.identifyAvailableMoves(
+        currentPlayer = currentPlayer,
+        columnInfos = org.example.model.columnInfos,
+        bitboardAvailableMoves,
     )
 
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
   }
 
   @Test
-  fun `stuck in while loop 2`(){
+  fun `stuck in while loop 2`() {
     // 1. Re-create the 65 Nodes with the exact piece configurations of the dump
-    val nodeDefinitions = listOf(
-      // Column A
-      NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
-      NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
-      NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
-      NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
-      NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
+    val nodeDefinitions =
+        listOf(
+            // Column A
+            NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
+            NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
+            NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
+            NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
+            NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
 
-      // Column B
-      NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
-      NodeDef("B2", "BY", isDot = false, isSpot = true, above = "B3", ur = "C3", lr = "C2", bitmask = 1UL),
-      NodeDef("B3", "WZ", isDot = false, isSpot = true, above = "B4", below = "B2", ur = "C4", lr = "C3", bitmask = 2UL),
-      NodeDef("B4", "BT", isDot = false, isSpot = true, above = "B5", below = "B3", ur = "C5", lr = "C4", bitmask = 4UL),
-      NodeDef("B5", null, isDot = false, isSpot = true, below = "B4", ur = "C6", lr = "C5", bitmask = 8UL),
-      NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
+            // Column B
+            NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
+            NodeDef(
+                "B2",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "B3",
+                ur = "C3",
+                lr = "C2",
+                bitmask = 1UL,
+            ),
+            NodeDef(
+                "B3",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "B4",
+                below = "B2",
+                ur = "C4",
+                lr = "C3",
+                bitmask = 2UL,
+            ),
+            NodeDef(
+                "B4",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "B5",
+                below = "B3",
+                ur = "C5",
+                lr = "C4",
+                bitmask = 4UL,
+            ),
+            NodeDef(
+                "B5",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "B4",
+                ur = "C6",
+                lr = "C5",
+                bitmask = 8UL,
+            ),
+            NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
 
-      // Column C
-      NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
-      NodeDef("C2", "BY", isDot = false, isSpot = true, above = "C3", ur = "D3", lr = "D2", ul = "B2", bitmask = 16UL),
-      NodeDef("C3", "BP", isDot = false, isSpot = true, above = "C4", below = "C2", ur = "D4", lr = "D3", ul = "B3", ll = "B2", bitmask = 32UL),
-      NodeDef("C4", null, isDot = false, isSpot = true, above = "C5", below = "C3", ur = "D5", lr = "D4", ul = "B4", ll = "B3", bitmask = 64UL),
-      NodeDef("C5", null, isDot = false, isSpot = true, above = "C6", below = "C4", ur = "D6", lr = "D5", ul = "B5", ll = "B4", bitmask = 128UL),
-      NodeDef("C6", null, isDot = false, isSpot = true, below = "C5", ur = "D7", lr = "D6", ll = "B5", bitmask = 256UL),
-      NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
+            // Column C
+            NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
+            NodeDef(
+                "C2",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "C3",
+                ur = "D3",
+                lr = "D2",
+                ul = "B2",
+                bitmask = 16UL,
+            ),
+            NodeDef(
+                "C3",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "C4",
+                below = "C2",
+                ur = "D4",
+                lr = "D3",
+                ul = "B3",
+                ll = "B2",
+                bitmask = 32UL,
+            ),
+            NodeDef(
+                "C4",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "C5",
+                below = "C3",
+                ur = "D5",
+                lr = "D4",
+                ul = "B4",
+                ll = "B3",
+                bitmask = 64UL,
+            ),
+            NodeDef(
+                "C5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "C6",
+                below = "C4",
+                ur = "D6",
+                lr = "D5",
+                ul = "B5",
+                ll = "B4",
+                bitmask = 128UL,
+            ),
+            NodeDef(
+                "C6",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "C5",
+                ur = "D7",
+                lr = "D6",
+                ll = "B5",
+                bitmask = 256UL,
+            ),
+            NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
 
-      // Column D
-      NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
-      NodeDef("D2", "WZ", isDot = false, isSpot = true, above = "D3", ur = "E3", lr = "E2", ul = "C2", bitmask = 512UL),
-      NodeDef("D3", "BP", isDot = false, isSpot = true, above = "D4", below = "D2", ur = "E4", lr = "E3", ul = "C3", ll = "C2", bitmask = 1024UL),
-      NodeDef("D4", "WT", isDot = false, isSpot = true, above = "D5", below = "D3", ur = "E5", lr = "E4", ul = "C4", ll = "C3", bitmask = 2048UL),
-      NodeDef("D5", "WT", isDot = false, isSpot = true, above = "D6", below = "D4", ur = "E6", lr = "E5", ul = "C5", ll = "C4", bitmask = 4096UL),
-      NodeDef("D6", "BT", isDot = false, isSpot = true, above = "D7", below = "D5", ur = "E7", lr = "E6", ul = "C6", ll = "C5", bitmask = 8192UL),
-      NodeDef("D7", "WD", isDot = false, isSpot = true, below = "D6", ur = "E8", lr = "E7", ll = "C6", bitmask = 16384UL),
-      NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
+            // Column D
+            NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
+            NodeDef(
+                "D2",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "D3",
+                ur = "E3",
+                lr = "E2",
+                ul = "C2",
+                bitmask = 512UL,
+            ),
+            NodeDef(
+                "D3",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "D4",
+                below = "D2",
+                ur = "E4",
+                lr = "E3",
+                ul = "C3",
+                ll = "C2",
+                bitmask = 1024UL,
+            ),
+            NodeDef(
+                "D4",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "D5",
+                below = "D3",
+                ur = "E5",
+                lr = "E4",
+                ul = "C4",
+                ll = "C3",
+                bitmask = 2048UL,
+            ),
+            NodeDef(
+                "D5",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "D6",
+                below = "D4",
+                ur = "E6",
+                lr = "E5",
+                ul = "C5",
+                ll = "C4",
+                bitmask = 4096UL,
+            ),
+            NodeDef(
+                "D6",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "D7",
+                below = "D5",
+                ur = "E7",
+                lr = "E6",
+                ul = "C6",
+                ll = "C5",
+                bitmask = 8192UL,
+            ),
+            NodeDef(
+                "D7",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "D6",
+                ur = "E8",
+                lr = "E7",
+                ll = "C6",
+                bitmask = 16384UL,
+            ),
+            NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
 
-      // Column E
-      NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
-      NodeDef("E2", "WT", isDot = false, isSpot = true, above = "E3", ur = "F2", ul = "D2", bitmask = 32768UL),
-      NodeDef("E3", "BZ", isDot = false, isSpot = true, above = "E4", below = "E2", ur = "F3", lr = "F2", ul = "D3", ll = "D2", bitmask = 65536UL),
-      NodeDef("E4", "WG", isDot = false, isSpot = true, potential = false, above = "E5", below = "E3", ur = "F4", lr = "F3", ul = "D4", ll = "D3", bitmask = 131072UL),
-      NodeDef("E5", null, isDot = false, isSpot = true, isCenter = true, above = "E6", below = "E4", ur = "F5", lr = "F4", ul = "D5", ll = "D4", bitmask = 262144UL),
-      NodeDef("E6", "BZ", isDot = false, isSpot = true, potential = false, above = "E7", below = "E5", ur = "F6", lr = "F5", ul = "D6", ll = "D5", bitmask = 524288UL),
-      NodeDef("E7", null, isDot = false, isSpot = true, above = "E8", below = "E6", ur = "F7", lr = "F6", ul = "D7", ll = "D6", bitmask = 1048576UL),
-      NodeDef("E8", "WP", isDot = false, isSpot = true, below = "E7", lr = "F7", ll = "D7", bitmask = 2097152UL),
-      NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
+            // Column E
+            NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
+            NodeDef(
+                "E2",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "E3",
+                ur = "F2",
+                ul = "D2",
+                bitmask = 32768UL,
+            ),
+            NodeDef(
+                "E3",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                above = "E4",
+                below = "E2",
+                ur = "F3",
+                lr = "F2",
+                ul = "D3",
+                ll = "D2",
+                bitmask = 65536UL,
+            ),
+            NodeDef(
+                "E4",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E5",
+                below = "E3",
+                ur = "F4",
+                lr = "F3",
+                ul = "D4",
+                ll = "D3",
+                bitmask = 131072UL,
+            ),
+            NodeDef(
+                "E5",
+                null,
+                isDot = false,
+                isSpot = true,
+                isCenter = true,
+                above = "E6",
+                below = "E4",
+                ur = "F5",
+                lr = "F4",
+                ul = "D5",
+                ll = "D4",
+                bitmask = 262144UL,
+            ),
+            NodeDef(
+                "E6",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E7",
+                below = "E5",
+                ur = "F6",
+                lr = "F5",
+                ul = "D6",
+                ll = "D5",
+                bitmask = 524288UL,
+            ),
+            NodeDef(
+                "E7",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "E8",
+                below = "E6",
+                ur = "F7",
+                lr = "F6",
+                ul = "D7",
+                ll = "D6",
+                bitmask = 1048576UL,
+            ),
+            NodeDef(
+                "E8",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                below = "E7",
+                lr = "F7",
+                ll = "D7",
+                bitmask = 2097152UL,
+            ),
+            NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
 
-      // Column F
-      NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
-      NodeDef("F2", "WG", isDot = false, isSpot = true, potential = false, above = "F3", ur = "G2", ul = "E3", ll = "E2", bitmask = 4194304UL),
-      NodeDef("F3", "BY", isDot = false, isSpot = true, above = "F4", ur = "G3", lr = "G2", ul = "E4", ll = "E3", bitmask = 8388608UL),
-      NodeDef("F4", "BG", isDot = false, isSpot = true, potential = false, above = "F5", ur = "G4", lr = "G3", ul = "E5", ll = "E4", bitmask = 16777216UL),
-      NodeDef("F5", "WY", isDot = false, isSpot = true, potential = false, above = "F6", ur = "G5", lr = "G4", ul = "E6", ll = "E5", bitmask = 33554432UL),
-      NodeDef("F6", "BT", isDot = false, isSpot = true, above = "F7", ur = "G6", lr = "G5", ul = "E7", ll = "E6", bitmask = 67108864UL),
-      NodeDef("F7", "BP", isDot = false, isSpot = true, below = "F6", lr = "G6", ul = "E8", ll = "E7", bitmask = 134217728UL),
-      NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
+            // Column F
+            NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
+            NodeDef(
+                "F2",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F3",
+                ur = "G2",
+                ul = "E3",
+                ll = "E2",
+                bitmask = 4194304UL,
+            ),
+            NodeDef(
+                "F3",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                above = "F4",
+                ur = "G3",
+                lr = "G2",
+                ul = "E4",
+                ll = "E3",
+                bitmask = 8388608UL,
+            ),
+            NodeDef(
+                "F4",
+                "BG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F5",
+                ur = "G4",
+                lr = "G3",
+                ul = "E5",
+                ll = "E4",
+                bitmask = 16777216UL,
+            ),
+            NodeDef(
+                "F5",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F6",
+                ur = "G5",
+                lr = "G4",
+                ul = "E6",
+                ll = "E5",
+                bitmask = 33554432UL,
+            ),
+            NodeDef(
+                "F6",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "F7",
+                ur = "G6",
+                lr = "G5",
+                ul = "E7",
+                ll = "E6",
+                bitmask = 67108864UL,
+            ),
+            NodeDef(
+                "F7",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                below = "F6",
+                lr = "G6",
+                ul = "E8",
+                ll = "E7",
+                bitmask = 134217728UL,
+            ),
+            NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
 
-      // Column G
-      NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
-      NodeDef("G2", "BD", isDot = false, isSpot = true, above = "G3", ur = "H2", ul = "F3", ll = "F2", bitmask = 268435456UL),
-      NodeDef("G3", "WY", isDot = false, isSpot = true, potential = false, above = "G4", ur = "H3", lr = "H2", ul = "F4", ll = "F3", bitmask = 536870912UL),
-      NodeDef("G4", "WP", isDot = false, isSpot = true, above = "G5", ur = "H4", lr = "H3", ul = "F5", ll = "F4", bitmask = 1073741824UL),
-      NodeDef("G5", null, isDot = false, isSpot = true, above = "G6", ur = "H5", lr = "H4", ul = "F6", ll = "F5", bitmask = 2147483648UL),
-      NodeDef("G6", null, isDot = false, isSpot = true, below = "G5", lr = "H5", ul = "F7", ll = "F6", bitmask = 4294967296UL),
-      NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
+            // Column G
+            NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
+            NodeDef(
+                "G2",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                above = "G3",
+                ur = "H2",
+                ul = "F3",
+                ll = "F2",
+                bitmask = 268435456UL,
+            ),
+            NodeDef(
+                "G3",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "G4",
+                ur = "H3",
+                lr = "H2",
+                ul = "F4",
+                ll = "F3",
+                bitmask = 536870912UL,
+            ),
+            NodeDef(
+                "G4",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                above = "G5",
+                ur = "H4",
+                lr = "H3",
+                ul = "F5",
+                ll = "F4",
+                bitmask = 1073741824UL,
+            ),
+            NodeDef(
+                "G5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "G6",
+                ur = "H5",
+                lr = "H4",
+                ul = "F6",
+                ll = "F5",
+                bitmask = 2147483648UL,
+            ),
+            NodeDef(
+                "G6",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "G5",
+                lr = "H5",
+                ul = "F7",
+                ll = "F6",
+                bitmask = 4294967296UL,
+            ),
+            NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
 
-      // Column H
-      NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
-      NodeDef("H2", "WY", isDot = false, isSpot = true, potential = false, above = "H3", ur = "I2", ul = "G3", ll = "G2", bitmask = 8589934592UL),
-      NodeDef("H3", "BZ", isDot = false, isSpot = true, potential = false, above = "H4", ur = "I3", lr = "I2", ul = "G4", ll = "G3", bitmask = 17179869184UL),
-      NodeDef("H4", null, isDot = false, isSpot = true, above = "H5", ur = "I4", lr = "I3", ul = "G5", ll = "G4", bitmask = 34359738368UL),
-      NodeDef("H5", "WD", isDot = false, isSpot = true, below = "H4", lr = "I4", ul = "G6", ll = "G5", bitmask = 68719476736UL),
-      NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
+            // Column H
+            NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
+            NodeDef(
+                "H2",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "H3",
+                ur = "I2",
+                ul = "G3",
+                ll = "G2",
+                bitmask = 8589934592UL,
+            ),
+            NodeDef(
+                "H3",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "H4",
+                ur = "I3",
+                lr = "I2",
+                ul = "G4",
+                ll = "G3",
+                bitmask = 17179869184UL,
+            ),
+            NodeDef(
+                "H4",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "H5",
+                ur = "I4",
+                lr = "I3",
+                ul = "G5",
+                ll = "G4",
+                bitmask = 34359738368UL,
+            ),
+            NodeDef(
+                "H5",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "H4",
+                lr = "I4",
+                ul = "G6",
+                ll = "G5",
+                bitmask = 68719476736UL,
+            ),
+            NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
 
-      // Column I
-      NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
-      NodeDef("I2", "BD", isDot = false, isSpot = true, above = "I3", ul = "H3", ll = "H2", bitmask = 137438953472UL),
-      NodeDef("I3", "WZ", isDot = false, isSpot = true, above = "I4", ul = "H4", ll = "H3", bitmask = 274877906944UL),
-      NodeDef("I4", "WD", isDot = false, isSpot = true, below = "I3", ul = "H5", ll = "H4", bitmask = 549755813888UL),
-      NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
+            // Column I
+            NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
+            NodeDef(
+                "I2",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                above = "I3",
+                ul = "H3",
+                ll = "H2",
+                bitmask = 137438953472UL,
+            ),
+            NodeDef(
+                "I3",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "I4",
+                ul = "H4",
+                ll = "H3",
+                bitmask = 274877906944UL,
+            ),
+            NodeDef(
+                "I4",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "I3",
+                ul = "H5",
+                ll = "H4",
+                bitmask = 549755813888UL,
+            ),
+            NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
 
-      // Column J
-      NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
-      NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
-      NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
-      NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4")
-    )
+            // Column J
+            NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
+            NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
+            NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
+            NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4"),
+        )
 
     val nodesList = LinkedHashSet(nodeDefinitions.map { it.toNode() })
     val board = Board(nodes = nodesList, centerNodeCoordinate = coord("E5"))
 
     // 2. Initialize Players (Current is WHITE, Next is BLACK)
-    val currentPlayer = Player(
-      name = PlayerName.WHITE,
-      abbreviation = "W",
-      piecesInReserve = mutableListOf(
-        piece("WY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("BD", potential = true),
-        piece("BG", potential = false),
-        piece("BZ", potential = true),
-        piece("BG", potential = false)
-      )
-    )
+    val currentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            capturedPieces =
+                mutableListOf(
+                    piece("BD", potential = true),
+                    piece("BG", potential = false),
+                    piece("BZ", potential = true),
+                    piece("BG", potential = false),
+                ),
+        )
 
-    val nextPlayer = Player(
-      name = PlayerName.BLACK,
-      abbreviation = "B",
-      piecesInReserve = mutableListOf(),
-      capturedPieces = mutableListOf(
-        piece("WG", potential = false),
-        piece("WY", potential = true),
-        piece("WP", potential = true)
-      )
-    )
+    val nextPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(),
+            capturedPieces =
+                mutableListOf(
+                    piece("WG", potential = false),
+                    piece("WY", potential = true),
+                    piece("WP", potential = true),
+                ),
+        )
 
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
     var turn = 604
@@ -2782,229 +3628,679 @@ class BitboardTest {
     val bitboard = convertBoardToBitboard(board)
 
     // 3. Initialize Game State
-    val gameState = State(
-      currentPlayer = currentPlayer,
-      nextPlayer = nextPlayer,
-      board = board,
-      bitboard = bitboard,
-      lines = constructLines(board.nodes)
-    )
+    val gameState =
+        State(
+            currentPlayer = currentPlayer,
+            nextPlayer = nextPlayer,
+            board = board,
+            bitboard = bitboard,
+            lines = constructLines(board.nodes),
+        )
 
     // 4. Initialize result map mapping Node context to Collections SingletonSet/LinkedHashSet
     val b3Node = nodesList.first { it.coordinate == coord("B5") }
     val e8Node = nodesList.first { it.coordinate == coord("F7") }
 
-    val result = linkedMapOf(
-      b3Node to setOf(b3Node),
-      e8Node to setOf(e8Node)
-    )
+    val result =
+        linkedMapOf(
+            b3Node to setOf(b3Node),
+            e8Node to setOf(e8Node),
+        )
 
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(gameState)
 
-
-    val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
-      currentPlayer = currentPlayer,
-      columnInfos = org.example.model.columnInfos
+    val bitboardAvailableMoves = mutableListOf<PossibleBitMove>()
+    bitboard.identifyAvailableMoves(
+        currentPlayer = currentPlayer,
+        columnInfos = org.example.model.columnInfos,
+        bitboardAvailableMoves,
     )
 
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
     val bestMove =
-      selectMoveMCTS(
-        bitboard = bitboard,
-        currentPlayer = currentPlayer,
-        nextPlayer = nextPlayer,
-        turnPhase = TurnPhase.PlayerInputWindow,
-        rounds = 0..999
-      )
+        selectMoveMCTS(
+            bitboard = bitboard,
+            currentPlayer = currentPlayer,
+            nextPlayer = nextPlayer,
+            rounds = 0..999,
+            turnPhase = TurnPhase.PlayerInputWindow,
+            Random(1),
+        )
   }
 
   @Test
-  fun `stuck in a while loop`(){
+  fun `stuck in a while loop`() {
     // 1. Re-create the 65 Nodes with the exact piece configurations of the dump
-    val nodeDefinitions = listOf(
-      // Column A
-      NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
-      NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
-      NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
-      NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
-      NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
+    val nodeDefinitions =
+        listOf(
+            // Column A
+            NodeDef("A1", null, isDot = true, isSpot = false, ur = "B2"),
+            NodeDef("A2", null, isDot = true, isSpot = false, ur = "B3", lr = "B2"),
+            NodeDef("A3", null, isDot = true, isSpot = false, ur = "B4", lr = "B3"),
+            NodeDef("A4", null, isDot = true, isSpot = false, ur = "B5", lr = "B4"),
+            NodeDef("A5", null, isDot = true, isSpot = false, lr = "B5"),
 
-      // Column B
-      NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
-      NodeDef("B2", "WG", isDot = false, isSpot = true, potential = false, above = "B3", ur = "C3", lr = "C2", bitmask = 1UL),
-      NodeDef("B3", "WT", isDot = false, isSpot = true, above = "B4", below = "B2", ur = "C4", lr = "C3", bitmask = 2UL),
-      NodeDef("B4", null, isDot = false, isSpot = true, above = "B5", below = "B3", ur = "C5", lr = "C4", bitmask = 4UL),
-      NodeDef("B5", "WT", isDot = false, isSpot = true, below = "B4", ur = "C6", lr = "C5", bitmask = 8UL),
-      NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
+            // Column B
+            NodeDef("B1", null, isDot = true, isSpot = false, above = "B2", ur = "C2"),
+            NodeDef(
+                "B2",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "B3",
+                ur = "C3",
+                lr = "C2",
+                bitmask = 1UL,
+            ),
+            NodeDef(
+                "B3",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                above = "B4",
+                below = "B2",
+                ur = "C4",
+                lr = "C3",
+                bitmask = 2UL,
+            ),
+            NodeDef(
+                "B4",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "B5",
+                below = "B3",
+                ur = "C5",
+                lr = "C4",
+                bitmask = 4UL,
+            ),
+            NodeDef(
+                "B5",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                below = "B4",
+                ur = "C6",
+                lr = "C5",
+                bitmask = 8UL,
+            ),
+            NodeDef("B6", null, isDot = true, isSpot = false, below = "B5", lr = "C6"),
 
-      // Column C
-      NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
-      NodeDef("C2", "WP", isDot = false, isSpot = true, above = "C3", ur = "D3", lr = "D2", ul = "B2", bitmask = 16UL),
-      NodeDef("C3", "BY", isDot = false, isSpot = true, potential = false, above = "C4", below = "C2", ur = "D4", lr = "D3", ul = "B3", ll = "B2", bitmask = 32UL),
-      NodeDef("C4", "BY", isDot = false, isSpot = true, potential = false, above = "C5", below = "C3", ur = "D5", lr = "D4", ul = "B4", ll = "B3", bitmask = 64UL),
-      NodeDef("C5", null, isDot = false, isSpot = true, above = "C6", below = "C4", ur = "D6", lr = "D5", ul = "B5", ll = "B4", bitmask = 128UL),
-      NodeDef("C6", "BD", isDot = false, isSpot = true, below = "C5", ur = "D7", lr = "D6", ll = "B5", bitmask = 256UL),
-      NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
+            // Column C
+            NodeDef("C1", null, isDot = true, isSpot = false, above = "C2", ur = "D2"),
+            NodeDef(
+                "C2",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                above = "C3",
+                ur = "D3",
+                lr = "D2",
+                ul = "B2",
+                bitmask = 16UL,
+            ),
+            NodeDef(
+                "C3",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "C4",
+                below = "C2",
+                ur = "D4",
+                lr = "D3",
+                ul = "B3",
+                ll = "B2",
+                bitmask = 32UL,
+            ),
+            NodeDef(
+                "C4",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "C5",
+                below = "C3",
+                ur = "D5",
+                lr = "D4",
+                ul = "B4",
+                ll = "B3",
+                bitmask = 64UL,
+            ),
+            NodeDef(
+                "C5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "C6",
+                below = "C4",
+                ur = "D6",
+                lr = "D5",
+                ul = "B5",
+                ll = "B4",
+                bitmask = 128UL,
+            ),
+            NodeDef(
+                "C6",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                below = "C5",
+                ur = "D7",
+                lr = "D6",
+                ll = "B5",
+                bitmask = 256UL,
+            ),
+            NodeDef("C7", null, isDot = true, isSpot = false, below = "C6", lr = "D7"),
 
-      // Column D
-      NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
-      NodeDef("D2", null, isDot = false, isSpot = true, above = "D3", ur = "E3", lr = "E2", ul = "C2", bitmask = 512UL),
-      NodeDef("D3", "BD", isDot = false, isSpot = true, above = "D4", below = "D2", ur = "E4", lr = "E3", ul = "C3", ll = "C2", bitmask = 1024UL),
-      NodeDef("D4", "BZ", isDot = false, isSpot = true, above = "D5", below = "D3", ur = "E5", lr = "E4", ul = "C4", ll = "C3", bitmask = 2048UL),
-      NodeDef("D5", null, isDot = false, isSpot = true, above = "D6", below = "D4", ur = "E6", lr = "E5", ul = "C5", ll = "C4", bitmask = 4096UL),
-      NodeDef("D6", null, isDot = false, isSpot = true, above = "D7", below = "D5", ur = "E7", lr = "E6", ul = "C6", ll = "C5", bitmask = 8192UL),
-      NodeDef("D7", null, isDot = false, isSpot = true, below = "D6", ur = "E8", lr = "E7", ll = "C6", bitmask = 16384UL),
-      NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
+            // Column D
+            NodeDef("D1", null, isDot = true, isSpot = false, above = "D2", ur = "E2"),
+            NodeDef(
+                "D2",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "D3",
+                ur = "E3",
+                lr = "E2",
+                ul = "C2",
+                bitmask = 512UL,
+            ),
+            NodeDef(
+                "D3",
+                "BD",
+                isDot = false,
+                isSpot = true,
+                above = "D4",
+                below = "D2",
+                ur = "E4",
+                lr = "E3",
+                ul = "C3",
+                ll = "C2",
+                bitmask = 1024UL,
+            ),
+            NodeDef(
+                "D4",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                above = "D5",
+                below = "D3",
+                ur = "E5",
+                lr = "E4",
+                ul = "C4",
+                ll = "C3",
+                bitmask = 2048UL,
+            ),
+            NodeDef(
+                "D5",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "D6",
+                below = "D4",
+                ur = "E6",
+                lr = "E5",
+                ul = "C5",
+                ll = "C4",
+                bitmask = 4096UL,
+            ),
+            NodeDef(
+                "D6",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "D7",
+                below = "D5",
+                ur = "E7",
+                lr = "E6",
+                ul = "C6",
+                ll = "C5",
+                bitmask = 8192UL,
+            ),
+            NodeDef(
+                "D7",
+                null,
+                isDot = false,
+                isSpot = true,
+                below = "D6",
+                ur = "E8",
+                lr = "E7",
+                ll = "C6",
+                bitmask = 16384UL,
+            ),
+            NodeDef("D8", null, isDot = true, isSpot = false, below = "D7", lr = "E8"),
 
-      // Column E
-      NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
-      NodeDef("E2", null, isDot = false, isSpot = true, above = "E3", ur = "F2", ul = "D2", bitmask = 32768UL),
-      NodeDef("E3", "WG", isDot = false, isSpot = true, potential = false, above = "E4", below = "E2", ur = "F3", lr = "F2", ul = "D3", ll = "D2", bitmask = 65536UL),
-      NodeDef("E4", "BZ", isDot = false, isSpot = true, potential = false, above = "E5", below = "E3", ur = "F4", lr = "F3", ul = "D4", ll = "D3", bitmask = 131072UL),
-      NodeDef("E5", "WP", isDot = false, isSpot = true, isCenter = true, above = "E6", below = "E4", ur = "F5", lr = "F4", ul = "D5", ll = "D4", bitmask = 262144UL),
-      NodeDef("E6", null, isDot = false, isSpot = true, above = "E7", below = "E5", ur = "F6", lr = "F5", ul = "D6", ll = "D5", bitmask = 524288UL),
-      NodeDef("E7", null, isDot = false, isSpot = true, above = "E8", below = "E6", ur = "F7", lr = "F6", ul = "D7", ll = "D6", bitmask = 1048576UL),
-      NodeDef("E8", "BG", isDot = false, isSpot = true, potential = false, below = "E7", lr = "F7", ll = "D7", bitmask = 2097152UL),
-      NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
+            // Column E
+            NodeDef("E1", null, isDot = true, isSpot = false, above = "E2"),
+            NodeDef(
+                "E2",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "E3",
+                ur = "F2",
+                ul = "D2",
+                bitmask = 32768UL,
+            ),
+            NodeDef(
+                "E3",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E4",
+                below = "E2",
+                ur = "F3",
+                lr = "F2",
+                ul = "D3",
+                ll = "D2",
+                bitmask = 65536UL,
+            ),
+            NodeDef(
+                "E4",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "E5",
+                below = "E3",
+                ur = "F4",
+                lr = "F3",
+                ul = "D4",
+                ll = "D3",
+                bitmask = 131072UL,
+            ),
+            NodeDef(
+                "E5",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                isCenter = true,
+                above = "E6",
+                below = "E4",
+                ur = "F5",
+                lr = "F4",
+                ul = "D5",
+                ll = "D4",
+                bitmask = 262144UL,
+            ),
+            NodeDef(
+                "E6",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "E7",
+                below = "E5",
+                ur = "F6",
+                lr = "F5",
+                ul = "D6",
+                ll = "D5",
+                bitmask = 524288UL,
+            ),
+            NodeDef(
+                "E7",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "E8",
+                below = "E6",
+                ur = "F7",
+                lr = "F6",
+                ul = "D7",
+                ll = "D6",
+                bitmask = 1048576UL,
+            ),
+            NodeDef(
+                "E8",
+                "BG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                below = "E7",
+                lr = "F7",
+                ll = "D7",
+                bitmask = 2097152UL,
+            ),
+            NodeDef("E9", null, isDot = true, isSpot = false, below = "E8"),
 
-      // Column F
-      NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
-      NodeDef("F2", "BP", isDot = false, isSpot = true, above = "F3", ur = "G2", ul = "E3", ll = "E2", bitmask = 4194304UL),
-      NodeDef("F3", "WG", isDot = false, isSpot = true, potential = false, above = "F4", ur = "G3", lr = "G2", ul = "E4", ll = "E3", bitmask = 8388608UL),
-      NodeDef("F4", "WP", isDot = false, isSpot = true, above = "F5", ur = "G4", lr = "G3", ul = "E5", ll = "E4", bitmask = 16777216UL),
-      NodeDef("F5", "WZ", isDot = false, isSpot = true, above = "F6", ur = "G5", lr = "G4", ul = "E6", ll = "E5", bitmask = 33554432UL),
-      NodeDef("F6", "BT", isDot = false, isSpot = true, above = "F7", ur = "G6", lr = "G5", ul = "E7", ll = "E6", bitmask = 67108864UL),
-      NodeDef("F7", "WT", isDot = false, isSpot = true, below = "F6", lr = "G6", ul = "E8", ll = "E7", bitmask = 134217728UL),
-      NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
+            // Column F
+            NodeDef("F1", null, isDot = true, isSpot = false, above = "F2", ul = "E2"),
+            NodeDef(
+                "F2",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "F3",
+                ur = "G2",
+                ul = "E3",
+                ll = "E2",
+                bitmask = 4194304UL,
+            ),
+            NodeDef(
+                "F3",
+                "WG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "F4",
+                ur = "G3",
+                lr = "G2",
+                ul = "E4",
+                ll = "E3",
+                bitmask = 8388608UL,
+            ),
+            NodeDef(
+                "F4",
+                "WP",
+                isDot = false,
+                isSpot = true,
+                above = "F5",
+                ur = "G4",
+                lr = "G3",
+                ul = "E5",
+                ll = "E4",
+                bitmask = 16777216UL,
+            ),
+            NodeDef(
+                "F5",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                above = "F6",
+                ur = "G5",
+                lr = "G4",
+                ul = "E6",
+                ll = "E5",
+                bitmask = 33554432UL,
+            ),
+            NodeDef(
+                "F6",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "F7",
+                ur = "G6",
+                lr = "G5",
+                ul = "E7",
+                ll = "E6",
+                bitmask = 67108864UL,
+            ),
+            NodeDef(
+                "F7",
+                "WT",
+                isDot = false,
+                isSpot = true,
+                below = "F6",
+                lr = "G6",
+                ul = "E8",
+                ll = "E7",
+                bitmask = 134217728UL,
+            ),
+            NodeDef("F8", null, isDot = true, isSpot = false, below = "F7", ll = "E8"),
 
-      // Column G
-      NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
-      NodeDef("G2", "BZ", isDot = false, isSpot = true, potential = false, above = "G3", ur = "H2", ul = "F3", ll = "F2", bitmask = 268435456UL),
-      NodeDef("G3", "BT", isDot = false, isSpot = true, above = "G4", ur = "H3", lr = "H2", ul = "F4", ll = "F3", bitmask = 536870912UL),
-      NodeDef("G4", "WY", isDot = false, isSpot = true, potential = false, above = "G5", ur = "H4", lr = "H3", ul = "F5", ll = "F4", bitmask = 1073741824UL),
-      NodeDef("G5", "BP", isDot = false, isSpot = true, above = "G6", ur = "H5", lr = "H4", ul = "F6", ll = "F5", bitmask = 2147483648UL),
-      NodeDef("G6", "WZ", isDot = false, isSpot = true, potential = false, below = "G5", lr = "H5", ul = "F7", ll = "F6", bitmask = 4294967296UL),
-      NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
+            // Column G
+            NodeDef("G1", null, isDot = true, isSpot = false, above = "G2", ul = "F2"),
+            NodeDef(
+                "G2",
+                "BZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "G3",
+                ur = "H2",
+                ul = "F3",
+                ll = "F2",
+                bitmask = 268435456UL,
+            ),
+            NodeDef(
+                "G3",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                above = "G4",
+                ur = "H3",
+                lr = "H2",
+                ul = "F4",
+                ll = "F3",
+                bitmask = 536870912UL,
+            ),
+            NodeDef(
+                "G4",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "G5",
+                ur = "H4",
+                lr = "H3",
+                ul = "F5",
+                ll = "F4",
+                bitmask = 1073741824UL,
+            ),
+            NodeDef(
+                "G5",
+                "BP",
+                isDot = false,
+                isSpot = true,
+                above = "G6",
+                ur = "H5",
+                lr = "H4",
+                ul = "F6",
+                ll = "F5",
+                bitmask = 2147483648UL,
+            ),
+            NodeDef(
+                "G6",
+                "WZ",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                below = "G5",
+                lr = "H5",
+                ul = "F7",
+                ll = "F6",
+                bitmask = 4294967296UL,
+            ),
+            NodeDef("G7", null, isDot = true, isSpot = false, below = "G6", ll = "F7"),
 
-      // Column H
-      NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
-      NodeDef("H2", "WY", isDot = false, isSpot = true, above = "H3", ur = "I2", ul = "G3", ll = "G2", bitmask = 8589934592UL),
-      NodeDef("H3", null, isDot = false, isSpot = true, above = "H4", ur = "I3", lr = "I2", ul = "G4", ll = "G3", bitmask = 17179869184UL),
-      NodeDef("H4", "BG", isDot = false, isSpot = true, potential = false, above = "H5", ur = "I4", lr = "I3", ul = "G5", ll = "G4", bitmask = 34359738368UL),
-      NodeDef("H5", "BT", isDot = false, isSpot = true, below = "H4", lr = "I4", ul = "G6", ll = "G5", bitmask = 68719476736UL),
-      NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
+            // Column H
+            NodeDef("H1", null, isDot = true, isSpot = false, above = "H2", ul = "G2"),
+            NodeDef(
+                "H2",
+                "WY",
+                isDot = false,
+                isSpot = true,
+                above = "H3",
+                ur = "I2",
+                ul = "G3",
+                ll = "G2",
+                bitmask = 8589934592UL,
+            ),
+            NodeDef(
+                "H3",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "H4",
+                ur = "I3",
+                lr = "I2",
+                ul = "G4",
+                ll = "G3",
+                bitmask = 17179869184UL,
+            ),
+            NodeDef(
+                "H4",
+                "BG",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "H5",
+                ur = "I4",
+                lr = "I3",
+                ul = "G5",
+                ll = "G4",
+                bitmask = 34359738368UL,
+            ),
+            NodeDef(
+                "H5",
+                "BT",
+                isDot = false,
+                isSpot = true,
+                below = "H4",
+                lr = "I4",
+                ul = "G6",
+                ll = "G5",
+                bitmask = 68719476736UL,
+            ),
+            NodeDef("H6", null, isDot = true, isSpot = false, below = "H5", ll = "G6"),
 
-      // Column I
-      NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
-      NodeDef("I2", "BY", isDot = false, isSpot = true, potential = false, above = "I3", ul = "H3", ll = "H2", bitmask = 137438953472UL),
-      NodeDef("I3", null, isDot = false, isSpot = true, above = "I4", ul = "H4", ll = "H3", bitmask = 274877906944UL),
-      NodeDef("I4", "WD", isDot = false, isSpot = true, below = "I3", ul = "H5", ll = "H4", bitmask = 549755813888UL),
-      NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
+            // Column I
+            NodeDef("I1", null, isDot = true, isSpot = false, above = "I2", ul = "H2"),
+            NodeDef(
+                "I2",
+                "BY",
+                isDot = false,
+                isSpot = true,
+                potential = false,
+                above = "I3",
+                ul = "H3",
+                ll = "H2",
+                bitmask = 137438953472UL,
+            ),
+            NodeDef(
+                "I3",
+                null,
+                isDot = false,
+                isSpot = true,
+                above = "I4",
+                ul = "H4",
+                ll = "H3",
+                bitmask = 274877906944UL,
+            ),
+            NodeDef(
+                "I4",
+                "WD",
+                isDot = false,
+                isSpot = true,
+                below = "I3",
+                ul = "H5",
+                ll = "H4",
+                bitmask = 549755813888UL,
+            ),
+            NodeDef("I5", null, isDot = true, isSpot = false, below = "I4", ll = "H5"),
 
-      // Column J
-      NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
-      NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
-      NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
-      NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4")
-    )
+            // Column J
+            NodeDef("J1", null, isDot = true, isSpot = false, ul = "I2"),
+            NodeDef("J2", null, isDot = true, isSpot = false, ul = "I3", ll = "I2"),
+            NodeDef("J3", null, isDot = true, isSpot = false, ul = "I4", ll = "I3"),
+            NodeDef("J4", null, isDot = true, isSpot = false, ll = "I4"),
+        )
 
     val nodesList = LinkedHashSet(nodeDefinitions.map { it.toNode() })
     val board = Board(nodes = nodesList, centerNodeCoordinate = coord("E5"))
-    val savedBoardState = Board(nodes = LinkedHashSet(nodesList), centerNodeCoordinate = coord("E5"))
+    val savedBoardState =
+        Board(nodes = LinkedHashSet(nodesList), centerNodeCoordinate = coord("E5"))
 
-// 2. Initialize Players (Current is WHITE, Next is BLACK)
-    val currentPlayer = Player(
-      name = PlayerName.WHITE,
-      abbreviation = "W",
-      piecesInReserve = mutableListOf(
-        piece("WY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("BD", potential = true),
-        piece("BY", potential = true),
-        piece("BG", potential = false),
-        piece("BZ", potential = true),
-        piece("BP", potential = true)
-      )
-    )
+    // 2. Initialize Players (Current is WHITE, Next is BLACK)
+    val currentPlayer =
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            capturedPieces =
+                mutableListOf(
+                    piece("BD", potential = true),
+                    piece("BY", potential = true),
+                    piece("BG", potential = false),
+                    piece("BZ", potential = true),
+                    piece("BP", potential = true),
+                ),
+        )
 
-    val nextPlayer = Player(
-      name = PlayerName.BLACK,
-      abbreviation = "B",
-      piecesInReserve = mutableListOf(
-        piece("BY", potential = false)
-      ),
-      capturedPieces = mutableListOf(
-        piece("WD", potential = true),
-        piece("WY", potential = true),
-        piece("WD", potential = true),
-        piece("WZ", potential = true),
-        piece("WZ", potential = false)
-      )
-    )
+    val nextPlayer =
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve = mutableListOf(piece("BY", potential = false)),
+            capturedPieces =
+                mutableListOf(
+                    piece("WD", potential = true),
+                    piece("WY", potential = true),
+                    piece("WD", potential = true),
+                    piece("WZ", potential = true),
+                    piece("WZ", potential = false),
+                ),
+        )
 
     val playerWhoMadeTheLastMove = nextPlayer // BLACK
 
-// 5. Initialize Bitboard
-    val bitboard = Bitboard(
-      whiteGIPF = 8454145UL,
-      whiteDVONNLayer = ulongArrayOf(549755813888UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(17039376UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 134217738UL,
-      whiteYINSH = 9663676416UL,
-      whiteZERTZ = 4328521728UL,
-      whitePotentials = 558530560026UL,
-      blackGIPF = 34361835520UL,
-      blackDVONNLayer = ulongArrayOf(1280UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(2151677952UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackTAMSK = 69323456512UL,
-      blackYINSH = 137438953568UL,
-      blackZERTZ = 268568576UL,
-      blackPotentials = 71475137792UL,
-//      globalOccupancy = 807452216699UL,
-//      whitePieces = 563907723291UL,
-//      blackPieces = 243544493408UL,
-//      whiteNeutralized = 0UL,
-//      blackNeutralized = 0UL
-    )
+    // 5. Initialize Bitboard
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 8454145UL,
+            whiteDVONNLayer = ulongArrayOf(549755813888UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(17039376UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 134217738UL,
+            whiteYINSH = 9663676416UL,
+            whiteZERTZ = 4328521728UL,
+            whitePotentials = 558530560026UL,
+            blackGIPF = 34361835520UL,
+            blackDVONNLayer = ulongArrayOf(1280UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(2151677952UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 69323456512UL,
+            blackYINSH = 137438953568UL,
+            blackZERTZ = 268568576UL,
+            blackPotentials = 71475137792UL,
+            //      globalOccupancy = 807452216699UL,
+            //      whitePieces = 563907723291UL,
+            //      blackPieces = 243544493408UL,
+            //      whiteNeutralized = 0UL,
+            //      blackNeutralized = 0UL
+        )
 
     // 3. Initialize State
-    val state = State(
-      currentPlayer = currentPlayer,
-      nextPlayer = nextPlayer,
-      board = board,
-      bitboard = bitboard,
-      lines = constructLines(board.nodes)
-    )
+    val state =
+        State(
+            currentPlayer = currentPlayer,
+            nextPlayer = nextPlayer,
+            board = board,
+            bitboard = bitboard,
+            lines = constructLines(board.nodes),
+        )
 
     val eligiblePotentialMoves = org.example.engine.getEligiblePotentialMoves(state)
 
-    val bitboardAvailableMoves = bitboard.identifyAvailableMoves(
-      currentPlayer = currentPlayer,
-      columnInfos = org.example.model.columnInfos
+    val bitboardAvailableMoves = mutableListOf<PossibleBitMove>()
+    bitboard.identifyAvailableMoves(
+        currentPlayer = currentPlayer,
+        columnInfos = org.example.model.columnInfos,
+        movesBuffer = bitboardAvailableMoves,
     )
 
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
     val bestMove =
-      selectMoveMCTS(
-        bitboard = bitboard,
-        currentPlayer = currentPlayer,
-        nextPlayer = nextPlayer,
-        turnPhase = TurnPhase.PlayerInputWindow,
-        rounds = 0..999
-      )
+        selectMoveMCTS(
+            bitboard = bitboard,
+            currentPlayer = currentPlayer,
+            nextPlayer = nextPlayer,
+            rounds = 0..999,
+            turnPhase = TurnPhase.PlayerInputWindow,
+            rng = Random(0),
+        )
   }
 
   @Test
   fun `encodeBitboard`() {
     val whiteGIPF = 8454145UL
 
-    val array = whiteGIPF.toString(2).padStart(40, '0').encodeToByteArray().map {
-      it.mod(48.toByte())
-    }
-
+    val array =
+        whiteGIPF.toString(2).padStart(40, '0').encodeToByteArray().map {
+          it.mod(48.toByte())
+        }
 
     val bitList = whiteGIPF.toBitList()
 
@@ -3013,14 +4309,12 @@ class BitboardTest {
     println(bitList)
     println(array)
 
-    val ndArray =
-      mk.zeros<Int>(47, 41)
+    val ndArray = mk.zeros<Int>(47, 41)
 
     ndArray.set(0, whiteGIPF.toBitList())
 
     println("ndArray:")
     println(ndArray)
-
   }
 
   @Test
@@ -3044,61 +4338,62 @@ class BitboardTest {
       )
     */
 
-    val bitboard = Bitboard(
-      whiteGIPF = 2621440UL,
-      whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      whiteTAMSK = 0UL,
-      whiteYINSH = 0UL,
-      whiteZERTZ = 0UL,
-      whitePotentials = 524288UL,
-      blackGIPF = 491520UL,
-      blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
-      blackTAMSK = 0UL,
-      blackYINSH = 0UL,
-      blackZERTZ = 0UL,
-      blackPotentials = 425984UL,
-    )
+    val bitboard =
+        Bitboard(
+            whiteGIPF = 2621440UL,
+            whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            whiteTAMSK = 0UL,
+            whiteYINSH = 0UL,
+            whiteZERTZ = 0UL,
+            whitePotentials = 524288UL,
+            blackGIPF = 491520UL,
+            blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+            blackTAMSK = 0UL,
+            blackYINSH = 0UL,
+            blackZERTZ = 0UL,
+            blackPotentials = 425984UL,
+        )
 
     // 3. Initialize Current and Opponent Players
     val currentPlayer =
-      Player(
-        name = PlayerName.BLACK,
-        abbreviation = "B",
-        piecesInReserve =
-          mutableListOf(
-            piece("BZ", potential = false),
-            piece("BY", potential = false),
-          ),
-        capturedPieces =
-          mutableListOf(
-            piece("WY", potential = true),
-            piece("WD", potential = true),
-            piece("WG", potential = false),
-          ),
-      )
+        Player(
+            name = PlayerName.BLACK,
+            abbreviation = "B",
+            piecesInReserve =
+                mutableListOf(
+                    piece("BZ", potential = false),
+                    piece("BY", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("WY", potential = true),
+                    piece("WD", potential = true),
+                    piece("WG", potential = false),
+                ),
+        )
 
     val opponentPlayer =
-      Player(
-        name = PlayerName.WHITE,
-        abbreviation = "W",
-        piecesInReserve =
-          mutableListOf(
-            piece("WZ", potential = false),
-            piece("WD", potential = true),
-            piece("WY", potential = false),
-          ),
-        capturedPieces =
-          mutableListOf(
-            piece("BY", potential = true),
-            piece("BD", potential = true),
-            piece("BG", potential = false),
-            piece("BG", potential = false),
-            piece("BD", potential = true),
-            piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
-          ),
-      )
+        Player(
+            name = PlayerName.WHITE,
+            abbreviation = "W",
+            piecesInReserve =
+                mutableListOf(
+                    piece("WZ", potential = false),
+                    piece("WD", potential = true),
+                    piece("WY", potential = false),
+                ),
+            capturedPieces =
+                mutableListOf(
+                    piece("BY", potential = true),
+                    piece("BD", potential = true),
+                    piece("BG", potential = false),
+                    piece("BG", potential = false),
+                    piece("BD", potential = true),
+                    piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
+                ),
+        )
 
     val removablePieces = bitboard.identifyPiecesToRemove(currentPlayer)
 

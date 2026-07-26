@@ -21,13 +21,13 @@ import org.jetbrains.kotlinx.multik.ndarray.data.set
 
 @Serializable
 data class State(
-    val currentPlayer: Player,
-    val nextPlayer: Player,
-    val board: Board,
-    val bitboard: Bitboard,
-    val lines: Lines,
-    val turnMoves: MutableMap<Int, MutableList<PossibleBitMove>> = mutableMapOf(), // moves per turn
-    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+  val currentPlayer: Player,
+  val nextPlayer: Player,
+  val board: Board,
+  val bitboard: Bitboard,
+  @Transient val lines: Lines? = null,
+  val turnMoves: MutableMap<Int, MutableList<PossibleBitMove>> = mutableMapOf(), // moves per turn
+  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): State {
 //    val string = Json.encodeToString(serializer(), this)
@@ -38,33 +38,20 @@ data class State(
 	    nextPlayer = nextPlayer.deepCopy(copyCollector = true),
 	    board = this.board,
 	    bitboard = bitboard.deepCopy(),
-	    lines = this.lines,
+//	    lines = this.lines,
 	    turnMoves = this.turnMoves.toMutableMap(),
 	    collector = if (copyCollector) this.collector else null
     )
   }
 
-  fun updateState(board: Board, state: State): State {
-    state.assertPieceCount()
-
-    return State(
-        currentPlayer = state.nextPlayer,
-        nextPlayer = state.currentPlayer,
-        //		whitePlayer = state.whitePlayer,
-        //		blackPlayer = state.blackPlayer,
-        board = board,
-        bitboard = bitboard,
-        lines = constructLines(board.nodes),
-    )
-  }
-
   fun rotatePlayers(): State {
-    return this.deepCopy()
-        .copy(
-            currentPlayer = this.nextPlayer,
-            nextPlayer = this.currentPlayer,
-            collector = this.collector,
-        )
+    return State(
+      currentPlayer = this.nextPlayer,
+      nextPlayer = this.currentPlayer,
+      board = this.board,
+      bitboard = bitboard.deepCopy(),
+      collector = this.collector,
+    )
   }
 }
 
@@ -1106,6 +1093,6 @@ fun initializeState(): State {
       //		blackPlayer = blackPlayer,
       board = board,
       bitboard = convertBoardToBitboard(board),
-      lines = constructLines(nodes = nodes),
+//      lines = constructLines(nodes = nodes),
   )
 }
