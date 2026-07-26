@@ -317,8 +317,24 @@ data class Bitboard(
 ) {
   fun deepCopy(): Bitboard {
     // TODO Optimize
-    val string = Json.encodeToString(serializer(), this)
-    return Json.decodeFromString(serializer(), string)
+    //    val string = Json.encodeToString(serializer(), this)
+    //    return Json.decodeFromString(serializer(), string)
+    return Bitboard(
+        whiteGIPF = this.whiteGIPF,
+        whiteDVONNLayer = this.whiteDVONNLayer.copyOf(),
+        whitePUNCTLayer = this.whitePUNCTLayer.copyOf(),
+        whiteTAMSK = this.whiteTAMSK,
+        whiteYINSH = this.whiteYINSH,
+        whiteZERTZ = this.whiteZERTZ,
+        whitePotentials = this.whitePotentials,
+        blackGIPF = this.blackGIPF,
+        blackDVONNLayer = this.blackDVONNLayer.copyOf(),
+        blackPUNCTLayer = this.blackPUNCTLayer.copyOf(),
+        blackTAMSK = this.blackTAMSK,
+        blackYINSH = this.blackYINSH,
+        blackZERTZ = this.blackZERTZ,
+        blackPotentials = this.blackPotentials,
+    )
   }
 
   fun diff(oldBitboard: Bitboard): Bitboard {
@@ -2751,7 +2767,7 @@ fun Bitboard.undoUsePiecePotential(possibleBitMove: PossibleBitMove) {
   }
 }
 
-fun Bitboard.getTamskMoves(player: Player): List<PossibleBitMove> {
+fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitMove>) {
   // --- 0. CONFIGURABLE DEBUGGING ---
   val isDebugEnabled = false
   if (isDebugEnabled) {
@@ -2779,7 +2795,7 @@ fun Bitboard.getTamskMoves(player: Player): List<PossibleBitMove> {
       println("No valid TAMSK piece found at center for ${player.name}. Returning null.")
       println("--- GET TAMSK MOVES COMPLETED ---")
     }
-    return emptyList()
+    return
   }
 
   // --- 3. PRE-RETURN SANITY CHECK ---
@@ -2791,11 +2807,11 @@ fun Bitboard.getTamskMoves(player: Player): List<PossibleBitMove> {
   if (isDebugEnabled) println("Valid TAMSK move found for ${player.name} at center spot.")
 
   // --- 4. RETURN MOVE ---
-  return vacantLines.flatMap { columnInfo ->
+  vacantLines.forEach { columnInfo ->
     val start = columnInfo.positions.first() to columnInfo.pushDirections.first
     val end = columnInfo.positions.last() to columnInfo.pushDirections.second
 
-    listOf(
+    movesBuffer.add(
         PossibleBitMove(
             sourceBit = tamskPieceAtCenter,
             pieceType = PieceType.TAMSK,
@@ -2804,7 +2820,10 @@ fun Bitboard.getTamskMoves(player: Player): List<PossibleBitMove> {
             targetBit = start.first,
             pushDirection = start.second,
             moveType = MoveType.AddPiece,
-        ),
+        )
+    )
+
+    movesBuffer.add(
         PossibleBitMove(
             sourceBit = tamskPieceAtCenter,
             pieceType = PieceType.TAMSK,
@@ -2813,7 +2832,7 @@ fun Bitboard.getTamskMoves(player: Player): List<PossibleBitMove> {
             targetBit = end.first,
             pushDirection = end.second,
             moveType = MoveType.AddPiece,
-        ),
+        )
     )
   }
 }
@@ -3238,9 +3257,8 @@ fun Bitboard.undoTamskPotential(
 fun Bitboard.getZertzMoves(
     player: Player,
     columnInfos: List<ColumnInfo>,
-): MutableList<PossibleBitMove> {
-  val validMoves = mutableListOf<PossibleBitMove>()
-
+    movesBuffer: MutableList<PossibleBitMove>,
+) {
   val zertzPieces =
       when (player.name) {
         PlayerName.WHITE -> {
@@ -3251,6 +3269,8 @@ fun Bitboard.getZertzMoves(
           blackZERTZ and blackPotentials
         }
       }
+
+  if (zertzPieces == 0UL) return
 
   columnInfos.forEach { col ->
     if (col.columnMask and zertzPieces > 0UL) {
@@ -3267,7 +3287,7 @@ fun Bitboard.getZertzMoves(
               } else if (
                   (col.positions[index] and globalOccupancy) == 0UL && index.minus(zertzIndex) > 1
               ) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[zertzIndex],
                         targetBit = col.positions[index],
@@ -3290,7 +3310,7 @@ fun Bitboard.getZertzMoves(
               } else if (
                   (col.positions[index] and globalOccupancy) == 0UL && zertzIndex.minus(index) > 1
               ) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[zertzIndex],
                         targetBit = col.positions[index],
@@ -3307,15 +3327,13 @@ fun Bitboard.getZertzMoves(
           }
     }
   }
-  return validMoves
 }
 
 fun Bitboard.getYinshMoves(
     player: Player,
     columnInfos: List<ColumnInfo>,
-): MutableList<PossibleBitMove> {
-  val validMoves = mutableListOf<PossibleBitMove>()
-
+    movesBuffer: MutableList<PossibleBitMove>,
+) {
   val yinchPieces =
       when (player.name) {
         PlayerName.WHITE -> {
@@ -3326,6 +3344,8 @@ fun Bitboard.getYinshMoves(
           blackYINSH and blackPotentials
         }
       }
+
+  if (yinchPieces == 0UL) return
 
   columnInfos.forEach { col ->
     if (col.columnMask and yinchPieces > 0UL) {
@@ -3338,7 +3358,7 @@ fun Bitboard.getYinshMoves(
 
             for (index in yinchIndex.plus(1) until col.positions.size) {
               if ((col.positions[index] and globalOccupancy) == 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[yinchIndex],
                         targetBit = col.positions[index],
@@ -3354,7 +3374,7 @@ fun Bitboard.getYinshMoves(
 
             for (index in yinchIndex.minus(1) downTo 0) {
               if ((col.positions[index] and globalOccupancy) == 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[yinchIndex],
                         targetBit = col.positions[index],
@@ -3370,16 +3390,13 @@ fun Bitboard.getYinshMoves(
           }
     }
   }
-
-  return validMoves
 }
 
 fun Bitboard.getDvonnMoves(
     player: Player,
     columnInfos: List<ColumnInfo>,
-): MutableList<PossibleBitMove> {
-  val validMoves = mutableListOf<PossibleBitMove>()
-
+    movesBuffer: MutableList<PossibleBitMove>,
+) {
   val activeDvonnPieces =
       when (player.name) {
         PlayerName.WHITE -> {
@@ -3391,7 +3408,7 @@ fun Bitboard.getDvonnMoves(
         }
       }
 
-  if (activeDvonnPieces == 0UL) return mutableListOf() // emptyList()
+  if (activeDvonnPieces == 0UL) return // emptyList()
 
   val layers = whiteDVONNLayer.size.minus(1)
   val targetDvonnPieces =
@@ -3499,7 +3516,7 @@ fun Bitboard.getDvonnMoves(
 
             for (index in dvonnIndex.plus(1) until col.positions.size) {
               if ((col.positions[index] and targetDvonnPieces) > 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[dvonnIndex],
                         targetBit = col.positions[index],
@@ -3513,7 +3530,7 @@ fun Bitboard.getDvonnMoves(
 
             for (index in dvonnIndex.minus(1) downTo 0) {
               if ((col.positions[index] and targetDvonnPieces) > 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[dvonnIndex],
                         targetBit = col.positions[index],
@@ -3527,15 +3544,13 @@ fun Bitboard.getDvonnMoves(
           }
     }
   }
-
-  return validMoves
 }
 
 fun Bitboard.getPunctMoves(
     player: Player,
     columnInfos: List<ColumnInfo> = org.example.model.columnInfos,
-): MutableList<PossibleBitMove> {
-  val validMoves = mutableListOf<PossibleBitMove>()
+    movesBuffer: MutableList<PossibleBitMove>,
+) {
 
   val activePunctPieces =
       when (player.name) {
@@ -3548,7 +3563,7 @@ fun Bitboard.getPunctMoves(
         }
       }
 
-  if (activePunctPieces == 0UL) return mutableListOf() // emptyList()
+  if (activePunctPieces == 0UL) return // emptyList()
 
   val layers = whitePUNCTLayer.indices
   val targetPunctPieces =
@@ -3656,7 +3671,7 @@ fun Bitboard.getPunctMoves(
 
             for (index in punctIndex.plus(1) until col.positions.size) {
               if ((col.positions[index] and targetPunctPieces) > 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[punctIndex],
                         targetBit = col.positions[index],
@@ -3670,7 +3685,7 @@ fun Bitboard.getPunctMoves(
 
             for (index in punctIndex.minus(1) downTo 0) {
               if ((col.positions[index] and targetPunctPieces) > 0UL) {
-                validMoves.add(
+                movesBuffer.add(
                     PossibleBitMove(
                         sourceBit = col.positions[punctIndex],
                         targetBit = col.positions[index],
@@ -3684,8 +3699,6 @@ fun Bitboard.getPunctMoves(
           }
     }
   }
-
-  return validMoves
 }
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
@@ -4904,14 +4917,12 @@ private fun Bitboard.createPiece(bitmask: ULong): Piece? {
 fun Bitboard.identifyAvailableMoves(
     currentPlayer: Player,
     columnInfos: List<ColumnInfo> = org.example.model.columnInfos,
-): List<PossibleBitMove> {
-  // TODO PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
-  val tamskMoves = getTamskMoves(currentPlayer)
+    movesBuffer: MutableList<PossibleBitMove>
+) {
+  movesBuffer.clear()
 
-  val gipfPiecesInReserve: List<Piece> =
-      currentPlayer.piecesInReserve
-          .filter { piece -> piece.type == PieceType.GIPF }
-          .distinctBy { piece -> piece.type }
+  val gipfPieceInReserve =
+      currentPlayer.piecesInReserve.filter { piece -> piece.type == PieceType.GIPF }.firstOrNull()
 
   val playableStackedPiecesInReserve: List<Piece> =
       currentPlayer.piecesInReserve
@@ -4920,21 +4931,52 @@ fun Bitboard.identifyAvailableMoves(
           }
           .distinctBy { piece -> piece.type }
 
-  val eligibleMovesUsingPotential =
-      getZertzMoves(currentPlayer, columnInfos) +
-          getYinshMoves(currentPlayer, columnInfos) +
-          getDvonnMoves(currentPlayer, columnInfos) +
-          getPunctMoves(currentPlayer, columnInfos)
+  if (gipfPieceInReserve != null) {
+    vacantLines.forEach { columnInfo ->
+      val start = columnInfo.positions.first() to columnInfo.pushDirections.first
+      val end = columnInfo.positions.last() to columnInfo.pushDirections.second
 
-  // Build a list of all available moves
-  val allAvailableMoves: MutableList<PossibleBitMove> = mutableListOf()
+      movesBuffer.add(
+          PossibleBitMove(
+              piece = gipfPieceInReserve,
+              columnInfos = listOf(columnInfo),
+              targetBit = start.first,
+              pushDirection = start.second,
+              moveType = MoveType.AddPiece,
+          )
+      )
+      movesBuffer.add(
+          PossibleBitMove(
+              piece = gipfPieceInReserve,
+              columnInfos = listOf(columnInfo),
+              targetBit = end.first,
+              pushDirection = end.second,
+              moveType = MoveType.AddPiece,
+          )
+      )
+    }
+    return
+  }
 
+  // TODO PieceType.TAMSK logic is handled by isTamskPieceAtCenter()
+  getTamskMoves(currentPlayer, movesBuffer)
+  if (movesBuffer.isNotEmpty()) return
+
+  /**
+   * TODO rewrite Check check(piece?.potential == false) { // val pieceCoords =
+   * selectedNode.node.coordinate.let { "${it.column}${it.row}" } val currentPotential =
+   * piece?.potential
+   *
+   * // "Invalid piece state at $pieceCoords: Expected piece potential to be spent (false), " // +
+   * "but found potential status is: $currentPotential (Piece Type: ${piece?.type?.name}, Color:
+   * ${piece?.colorName})" }
+   */
   playableStackedPiecesInReserve.forEach { piece ->
     vacantLines.forEach { columnInfo ->
       val start = columnInfo.positions.first() to columnInfo.pushDirections.first
       val end = columnInfo.positions.last() to columnInfo.pushDirections.second
 
-      allAvailableMoves.add(
+      movesBuffer.add(
           PossibleBitMove(
               piece = piece,
               columnInfos = listOf(columnInfo),
@@ -4944,7 +4986,7 @@ fun Bitboard.identifyAvailableMoves(
           )
       )
 
-      allAvailableMoves.add(
+      movesBuffer.add(
           PossibleBitMove(
               piece = piece,
               columnInfos = listOf(columnInfo),
@@ -4956,49 +4998,10 @@ fun Bitboard.identifyAvailableMoves(
     }
   }
 
-  if (gipfPiecesInReserve.isNotEmpty()) {
-    return gipfPiecesInReserve.flatMap { piece ->
-      vacantLines.flatMap { columnInfo ->
-        val start = columnInfo.positions.first() to columnInfo.pushDirections.first
-        val end = columnInfo.positions.last() to columnInfo.pushDirections.second
-
-        listOf(
-            PossibleBitMove(
-                piece = piece,
-                columnInfos = listOf(columnInfo),
-                targetBit = start.first,
-                pushDirection = start.second,
-                moveType = MoveType.AddPiece,
-            ),
-            PossibleBitMove(
-                piece = piece,
-                columnInfos = listOf(columnInfo),
-                targetBit = end.first,
-                pushDirection = end.second,
-                moveType = MoveType.AddPiece,
-            ),
-        )
-      }
-    }
-  } else if (tamskMoves.isNotEmpty()) {
-
-    /**
-     * TODO rewrite Check check(piece?.potential == false) { // val pieceCoords =
-     * selectedNode.node.coordinate.let { "${it.column}${it.row}" } val currentPotential =
-     * piece?.potential
-     *
-     * // "Invalid piece state at $pieceCoords: Expected piece potential to be spent (false), " // +
-     * "but found potential status is: $currentPotential (Piece Type: ${piece?.type?.name}, Color:
-     * ${piece?.colorName})" }
-     */
-    return tamskMoves
-  } else if (allAvailableMoves.isNotEmpty() || eligibleMovesUsingPotential.isNotEmpty()) {
-    return allAvailableMoves + eligibleMovesUsingPotential
-  } else {
-    //  println("Player ${currentPlayer.name} has no available moves left!")
-    return emptyList()
-    //		emptyList<PossibleMove>()
-  }
+  getZertzMoves(currentPlayer, columnInfos, movesBuffer)
+  getYinshMoves(currentPlayer, columnInfos, movesBuffer)
+  getDvonnMoves(currentPlayer, columnInfos, movesBuffer)
+  getPunctMoves(currentPlayer, columnInfos, movesBuffer)
 }
 
 fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
@@ -5025,11 +5028,11 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
 
         val occupiedPositions = positions.filter { it and occupiedBits != 0UL }
 
-//        occupiedBits to occupiedPositions
+        //        occupiedBits to occupiedPositions
         occupiedPositions
       }
 
-//  val fullyPopulatedPositions = fullyPopulatedSubmasksPositions.values.flatten()
+  //  val fullyPopulatedPositions = fullyPopulatedSubmasksPositions.values.flatten()
 
   if (linesWithFourInARow.isNotEmpty()) {
     // TODO Ensure Rules are followed for stack piece retrieval
@@ -5037,55 +5040,57 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
         createPlayerPiecesWithPotentialPowerset(player, positions = fullyPopulatedPositions)
 
     val playerPiecesNotNeutralizedWithoutPotential =
-      fullyPopulatedPositions.filter { bitmask ->
-                val result =
-                    when (player.name) {
-                      PlayerName.WHITE -> {
-                        // TODO FIX - includes neutralized pieces
-                        // pieces without potential and not neutralized
-                        (whitePieces and bitmask) == bitmask &&
-                            (whitePotentials.inv() and bitmask) == bitmask &&
-                            (whiteNeutralized.inv() and bitmask) == bitmask &&
-                            (blackNeutralized.inv() and bitmask) ==
-                                bitmask // for white pieces stacked on neutralized black pieces
-                      }
-
-                      PlayerName.BLACK -> {
-                        (blackPieces and bitmask) == bitmask &&
-                            (blackPotentials.inv() and bitmask) == bitmask &&
-                            (blackNeutralized.inv() and bitmask) == bitmask &&
-                            (whiteNeutralized.inv() and bitmask) ==
-                                bitmask // for black pieces stacked on neutralized black pieces
-                      }
+        fullyPopulatedPositions
+            .filter { bitmask ->
+              val result =
+                  when (player.name) {
+                    PlayerName.WHITE -> {
+                      // TODO FIX - includes neutralized pieces
+                      // pieces without potential and not neutralized
+                      (whitePieces and bitmask) == bitmask &&
+                          (whitePotentials.inv() and bitmask) == bitmask &&
+                          (whiteNeutralized.inv() and bitmask) == bitmask &&
+                          (blackNeutralized.inv() and bitmask) ==
+                              bitmask // for white pieces stacked on neutralized black pieces
                     }
-                result
-              }.distinct()
+
+                    PlayerName.BLACK -> {
+                      (blackPieces and bitmask) == bitmask &&
+                          (blackPotentials.inv() and bitmask) == bitmask &&
+                          (blackNeutralized.inv() and bitmask) == bitmask &&
+                          (whiteNeutralized.inv() and bitmask) ==
+                              bitmask // for black pieces stacked on neutralized black pieces
+                    }
+                  }
+              result
+            }
 
     /**
      * TODO Note: An opponent’s stack of 2 potentials may also be left on the board. Create powerset
      * for this
      */
     val opponentPiecesAndNotNeutralized =
-      fullyPopulatedPositions.filter { bitmask ->
-                val result =
-                    when (player.name) {
-                      PlayerName.WHITE -> {
-                        // opponent pieces and not neutralized
-                        //	            (blackPotentials.inv() and bitmask) == bitmask &&
-                        (blackPieces and bitmask) == bitmask &&
-                            (blackNeutralized.inv() and bitmask) == bitmask &&
-                            (whiteNeutralized.inv() and bitmask) == bitmask
-                      }
-
-                      PlayerName.BLACK -> {
-                        //	            (whitePotentials.inv() and bitmask) == bitmask &&
-                        (whitePieces and bitmask) == bitmask &&
-                            (whiteNeutralized.inv() and bitmask) == bitmask &&
-                            (blackNeutralized.inv() and bitmask) == bitmask
-                      }
+        fullyPopulatedPositions
+            .filter { bitmask ->
+              val result =
+                  when (player.name) {
+                    PlayerName.WHITE -> {
+                      // opponent pieces and not neutralized
+                      //	            (blackPotentials.inv() and bitmask) == bitmask &&
+                      (blackPieces and bitmask) == bitmask &&
+                          (blackNeutralized.inv() and bitmask) == bitmask &&
+                          (whiteNeutralized.inv() and bitmask) == bitmask
                     }
-                result
-              }.distinct()
+
+                    PlayerName.BLACK -> {
+                      //	            (whitePotentials.inv() and bitmask) == bitmask &&
+                      (whitePieces and bitmask) == bitmask &&
+                          (whiteNeutralized.inv() and bitmask) == bitmask &&
+                          (blackNeutralized.inv() and bitmask) == bitmask
+                    }
+                  }
+              result
+            }
 
     // stacked DVONN and PUNCT Pieces
     val neutralizedBitmasks =
@@ -5135,7 +5140,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
                   retrievedCapturedPiecesBit =
                       ((potentialPieces +
                                   playerPiecesNotNeutralizedWithoutPotential +
-                                  opponentPiecesAndNotNeutralized)
+                                  opponentPiecesAndNotNeutralized).distinct()
                               .map { bitmask ->
                                 RetrievedCapturedPieceBit(
                                     bitmask = bitmask,
@@ -5404,7 +5409,11 @@ fun Bitboard.removeSelectedPiecesToRemove(
 }
 
 fun Bitboard.generateMoves(currentPlayer: Player, turnPhase: TurnPhase): List<PossibleBitMove> {
-  val movesAddingPiecesUsingPotentials = identifyAvailableMoves(currentPlayer)
+  val movesAddingPiecesUsingPotentials = mutableListOf<PossibleBitMove>()
+  identifyAvailableMoves(currentPlayer, movesBuffer = movesAddingPiecesUsingPotentials)
+
+  val tamskMoves = mutableListOf<PossibleBitMove>()
+  getTamskMoves(currentPlayer, tamskMoves)
 
   val movesRetrievingCapturingPieces = identifyPiecesToRemove(currentPlayer)
 
@@ -5413,7 +5422,7 @@ fun Bitboard.generateMoves(currentPlayer: Player, turnPhase: TurnPhase): List<Po
       movesRetrievingCapturingPieces
     }
     TurnPhase.ExtraMove -> {
-      getTamskMoves(currentPlayer)
+      tamskMoves
     }
     TurnPhase.PlayerInputWindow -> {
       movesAddingPiecesUsingPotentials
@@ -5428,8 +5437,8 @@ fun Bitboard.assertPieceCount(
     nextPlayer: Player,
 ) {
 
-  currentPlayer.piecesInReserve.sortBy { it.type }
-  nextPlayer.piecesInReserve.sortBy { it.type }
+  //  currentPlayer.piecesInReserve.sortBy { it.type }
+  //  nextPlayer.piecesInReserve.sortBy { it.type }
 
   // 1. Next Player's components
   var nextReservePotentials =

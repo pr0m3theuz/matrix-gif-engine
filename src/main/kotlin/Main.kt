@@ -12,11 +12,13 @@ import org.example.model.identifyAvailableMoves
 import org.example.model.initializeState
 import org.example.model.printStateSummary
 import kotlin.collections.toList
+import kotlin.random.Random
 
 const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
+  val rng = Random(1)
   var gameState: State = initializeState()
 
   var turn = 0
@@ -44,7 +46,7 @@ fun main() {
 
 
 
-    gameState = playerTurn(gameState, turn)
+    gameState = playerTurn(gameState, turn, rng)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
@@ -78,12 +80,12 @@ fun main() {
 
   when (winner?.name) {
     gameState.currentPlayer.name -> {
-      gameState.currentPlayer.collector.endEpisode(1)
-      gameState.nextPlayer.collector.endEpisode(-1)
+      gameState.currentPlayer.collector?.endEpisode(1)
+      gameState.nextPlayer.collector?.endEpisode(-1)
     }
     gameState.nextPlayer.name -> {
-      gameState.nextPlayer.collector.endEpisode(1)
-      gameState.currentPlayer.collector.endEpisode(-1)
+      gameState.nextPlayer.collector?.endEpisode(1)
+      gameState.currentPlayer.collector?.endEpisode(-1)
     }
     else -> {}
   }
@@ -101,7 +103,7 @@ fun main() {
         "does not match the player who executed the winning turn ('$lastTurnPlayer')."
   }
 
-  gameState.collector.saveCurrentEpisodes(agent = "mcts", games = 1.toString())
+  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = 1.toString())
 
   // TODO
   // val combinedExperiences = gameState.currentPlayer.collector.toBuffer() +

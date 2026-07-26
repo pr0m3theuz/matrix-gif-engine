@@ -26,8 +26,16 @@ data class Piece(
 	var stackedPieces: MutableList<Piece> = mutableListOf(),
 	) {
 	fun deepCopy(): Piece {
-		val string = Json.encodeToString(serializer(), this)
-		return Json.decodeFromString(serializer(), string)
+//		val string = Json.encodeToString(serializer(), this)
+//		return Json.decodeFromString(serializer(), string)
+		return Piece(
+			abbreviation = this.abbreviation,
+			potential = this.potential,
+			colorName = this.colorName,
+			type = this.type,
+			isNeutralized = this.isNeutralized,
+			stackedPieces = this.stackedPieces.toMutableList(),
+		)
 	}
 
   fun usePiecePotential(): Piece {

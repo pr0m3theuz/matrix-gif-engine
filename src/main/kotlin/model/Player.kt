@@ -18,11 +18,19 @@ data class Player(
     //    val color: Color,
   val piecesInReserve: MutableList<Piece> = mutableListOf(),
   val capturedPieces: MutableList<Piece> = mutableListOf(),
-  @Transient val collector: ExperienceCollector = ExperienceCollector(),
+  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
-  fun deepCopy(): Player {
-    val string = Json.encodeToString(serializer(), this)
-    return Json.decodeFromString(serializer(), string)
+  fun deepCopy(copyCollector: Boolean = false): Player {
+//    val string = Json.encodeToString(serializer(), this)
+//    return Json.decodeFromString(serializer(), string)
+
+    return Player(
+	    name = this.name,
+	    abbreviation = this.abbreviation,
+	    piecesInReserve = this.piecesInReserve.toMutableList(),
+	    capturedPieces = this.capturedPieces.toMutableList(),
+	    collector = if (copyCollector) this.collector else null
+    )
   }
 
   fun addPiecesToReserve(pieces: List<Piece>) {

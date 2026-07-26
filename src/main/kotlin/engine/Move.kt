@@ -826,7 +826,7 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     }
 
     println("[SHIFT] Grid configuration post-shift step:")
-    newBoard.printHexGrid("POST-SHIFT")
+//    newBoard.printHexGrid("POST-SHIFT")
 
     return newBoard
   } else {
@@ -1338,11 +1338,11 @@ fun identifyAvailableMoves(state: State): List<PossibleMove> {
   val selectableDots: Set<NodeConnections> =
       populatedNodes.filter { it.neighbours.isNotEmpty() }.toSet()
 
-  if (selectableDots.size < populatedNodes.size) {
-    println(
-        "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
-    )
-  }
+//  if (selectableDots.size < populatedNodes.size) {
+//    println(
+//        "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
+//    )
+//  }
 
   val numberOfPiecesBefore = state.currentPlayer.getNumberOfPiecesInReserve()
 
@@ -1544,11 +1544,11 @@ fun identifyNextPlayerAvailableMoves(state: State): List<PossibleMove> {
   val selectableDots: Set<NodeConnections> =
     populatedNodes.filter { it.neighbours.isNotEmpty() }.toSet()
 
-  if (selectableDots.size < populatedNodes.size) {
-    println(
-      "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
-    )
-  }
+//  if (selectableDots.size < populatedNodes.size) {
+//    println(
+//      "Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
+//    )
+//  }
 
   val numberOfPiecesBefore = state.nextPlayer.getNumberOfPiecesInReserve()
 
@@ -1749,11 +1749,11 @@ fun identifyAvailableBitboardMoves(state: State, bitboard: Bitboard, columnInfo:
 	val selectableDots: Set<NodeConnections> =
 		populatedNodes.filter { it.neighbours.isNotEmpty() }.toSet()
 
-	if (selectableDots.size < populatedNodes.size) {
-		println(
-			"Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
-		)
-	}
+//	if (selectableDots.size < populatedNodes.size) {
+//		println(
+//			"Warning: Selectable dots pool (${selectableDots.size}) is smaller than populated nodes (${populatedNodes.size})."
+//		)
+//	}
 
 	val numberOfPiecesBefore = state.currentPlayer.getNumberOfPiecesInReserve()
 

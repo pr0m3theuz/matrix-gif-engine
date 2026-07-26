@@ -27,11 +27,21 @@ data class State(
     val bitboard: Bitboard,
     val lines: Lines,
     val turnMoves: MutableMap<Int, MutableList<PossibleBitMove>> = mutableMapOf(), // moves per turn
-    @Transient val collector: ExperienceCollector = ExperienceCollector(),
+    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
-  fun deepCopy(): State {
-    val string = Json.encodeToString(serializer(), this)
-    return Json.decodeFromString(serializer(), string)
+  fun deepCopy(copyCollector: Boolean = false): State {
+//    val string = Json.encodeToString(serializer(), this)
+//    return Json.decodeFromString(serializer(), string)
+
+    return State(
+	    currentPlayer = currentPlayer.deepCopy(copyCollector = true),
+	    nextPlayer = nextPlayer.deepCopy(copyCollector = true),
+	    board = this.board,
+	    bitboard = bitboard.deepCopy(),
+	    lines = this.lines,
+	    turnMoves = this.turnMoves.toMutableMap(),
+	    collector = if (copyCollector) this.collector else null
+    )
   }
 
   fun updateState(board: Board, state: State): State {
@@ -193,7 +203,8 @@ fun State.encodeState(): D2Array<Int> {
   // todo use fold to accumulate source & target bitmasks? would stacks matter?
   // TODO need to change approach as I need to consider how each move affects the board & potentials
   //  ndArray[num_self_atari_stones][bit] = 1
-  val availableMoves = bitboard.identifyAvailableMoves(currentPlayer).distinctBy { it.targetBit }
+  val availableMoves = mutableListOf<PossibleBitMove>()
+    bitboard.identifyAvailableMoves(currentPlayer, movesBuffer = availableMoves)
 
   val flattenMoves =
       availableMoves
@@ -371,10 +382,10 @@ fun State.encodeState(): D2Array<Int> {
   //  val opponentRetrievalPlanes = ULongArray(8)
   val opponentCapturePlanes = ULongArray(8)
 
-  val availableOpponentMoves =
-      bitboard.identifyAvailableMoves(nextPlayer).distinctBy { it.targetBit }
+  val availableOpponentMoves = mutableListOf<PossibleBitMove>()
+      bitboard.identifyAvailableMoves(nextPlayer, movesBuffer = availableOpponentMoves)
 
-  availableOpponentMoves.forEach { move ->
+  availableOpponentMoves.distinctBy { it.targetBit }.forEach { move ->
     // TODO new bitboard State
     //  ndArray[num_self_atari_stones][move.targetBit] = 1
     val newState = this.deepCopy()

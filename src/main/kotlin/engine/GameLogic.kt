@@ -7,6 +7,7 @@ import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import kotlin.random.Random
 
 /**
  * TODO create a two functions:
@@ -77,16 +78,11 @@ enum class TurnLifecycle {
   Termination, // Engine serializes state changes, prepares for next turn switch
 }
 
-fun playerTurn(state: State, turn: Int): State {
+fun playerTurn(state: State, turn: Int, rng: Random): State {
 
-  var newState =
-      state
-          .deepCopy()
-          .copy(
-              collector = state.collector,
-          )
+  var newState = state.deepCopy(copyCollector = true)
 
-//  newState.board.printHexGrid("START OF TURN")
+  //  newState.board.printHexGrid("START OF TURN")
 
   /**
    * TODO Which one takes precedence at the beginning of a turn: (a) TAMSK extra move or (b) piece
@@ -99,7 +95,7 @@ fun playerTurn(state: State, turn: Int): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
 
     // recombine player pieces
     newState.currentPlayer.combinePieces()
@@ -109,18 +105,18 @@ fun playerTurn(state: State, turn: Int): State {
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, TurnPhase.ExtraMove, turn)
+    newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
   }
 
   newState.assertPieceCount()
 
-  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn)
+  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
 
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
   while (isTamskPieceAtCenter(newState.board, newState.currentPlayer)) {
-    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn)
+    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
   }
 
   newState.assertPieceCount()
@@ -128,22 +124,22 @@ fun playerTurn(state: State, turn: Int): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
     // recombine player pieces
     newState.currentPlayer.combinePieces()
   }
 
   newState.assertPieceCount()
 
-//  newState.board.printHexGrid("END OF TURN")
+  //  newState.board.printHexGrid("END OF TURN")
 
   return newState
 }
 
-fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
+fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): State {
 
-  val savedBoardState = state.board.deepCopy()
-  val savedLines = state.lines.deepCopy()
+  //  val savedBoardState = state.board.deepCopy()
+  //  val savedLines = state.lines.deepCopy()
 
   //	val gameTree: HashMap<String, AlphaBetaScore> = hashMapOf()
 
@@ -168,17 +164,18 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
           nextPlayer = state.nextPlayer,
           turnPhase = turnPhase,
           rounds = 0..999,
+          rng = rng,
       )
 
   if (bestMove != null) {
     // println("Player Move: ${Json.encodeToString(bestMove)}")
 
-    state.currentPlayer.collector.recordDecision(
+    state.currentPlayer.collector?.recordDecision(
         state.encodeState(),
         bestMove.encode(),
     )
 
-    state.collector.recordDecision(
+    state.collector?.recordDecision(
         state.encodeState(),
         bestMove.encode(),
     )
@@ -195,9 +192,10 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
           "Must be the current player's piece!"
         }
 
-        val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
+        //        val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
 
-        node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
+        //        node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
+        bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
         // --- MOVE VALIDATION ---
         requireNotNull(bestMove.targetBit) {
@@ -283,17 +281,17 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int): State {
         nextPlayer = state.nextPlayer,
     )
 
-    val newBoard = bitboard.convertBitboardToBoard(savedBoardState)
+    val newBoard = bitboard.convertBitboardToBoard(state.board)
 
     val newState =
-        state
-            .deepCopy()
-            .copy(
-                board = newBoard,
-                bitboard = bitboard,
-                lines = constructLines(newBoard.nodes),
-                collector = state.collector,
-            )
+        State(
+            currentPlayer = state.currentPlayer.deepCopy(copyCollector = true),
+            nextPlayer = state.nextPlayer.deepCopy(copyCollector = true),
+            board = newBoard,
+            bitboard = bitboard,
+            lines = constructLines(newBoard.nodes),
+            collector = state.collector,
+        )
 
     newState.assertPieceCount(bitboard = bitboard)
 
@@ -549,11 +547,16 @@ fun determineWinner(
       }
 
   val bitboardHasAvailableMoves = bitboard?.let { it ->
+    val currentPlayerMoves = mutableListOf<PossibleBitMove>()
+    val nextPlayerMoves = mutableListOf<PossibleBitMove>()
+
+    it.identifyAvailableMoves(currentPlayer, movesBuffer = currentPlayerMoves)
+    it.identifyAvailableMoves(nextPlayer, movesBuffer = nextPlayerMoves)
+
     when {
-      it.identifyAvailableMoves(currentPlayer).isNotEmpty() &&
-          it.identifyAvailableMoves(nextPlayer).isNotEmpty() -> null
-      it.identifyAvailableMoves(currentPlayer).isNotEmpty() -> currentPlayer
-      it.identifyAvailableMoves(nextPlayer).isNotEmpty() -> nextPlayer
+      currentPlayerMoves.isNotEmpty() && nextPlayerMoves.isNotEmpty() -> null
+      currentPlayerMoves.isNotEmpty() -> currentPlayer
+      nextPlayerMoves.isNotEmpty() -> nextPlayer
       else -> null
     }
   }

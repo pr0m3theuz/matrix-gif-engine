@@ -5,6 +5,7 @@ package org.example.ai.humanEvaluation
 import java.security.MessageDigest
 import kotlin.collections.forEach
 import kotlin.collections.mapNotNull
+import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
@@ -42,7 +43,6 @@ import org.example.model.undoTamskPotential
 import org.example.model.undoUsePiecePotential
 import org.example.model.usePiecePotential
 import org.example.model.useTamskPotential
-import kotlin.math.abs
 
 @Serializable
 data class BestMove(
@@ -361,7 +361,8 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
    */
 
   // evaluate state & calculate score
-  val possibleMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
+  val possibleMoves = mutableListOf<PossibleBitMove>()
+  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, possibleMoves)
 
   if (possibleMoves.isEmpty()) {
     val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)
@@ -399,7 +400,11 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
               .toDouble()
               .unaryMinus()
 
-  val availableMoves = exp(-bitboard.identifyAvailableMoves(currentPlayer, columnInfos).size / 4.0)
+  // current player'S available moves
+  val moves = mutableListOf<PossibleBitMove>()
+  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
+
+  val availableMoves = exp(-moves.size / 4.0)
 
   //      currentPlayer.piecesInReserve.count {
   //        it.potential || it.type == PieceType.GIPF
@@ -415,8 +420,10 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
         }
       }.countOneBits()
 
-  val opponentAvailableMoves =
-      (exp(-bitboard.identifyAvailableMoves(opponentPlayer, columnInfos).size / 4.0)).unaryMinus()
+  // opponent's available moves
+  moves.clear()
+  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
+  val opponentAvailableMoves = (exp(-moves.size / 4.0)).unaryMinus()
 
   //  opponentPlayer.piecesInReserve.count {
   //        it.potential || it.type == PieceType.GIPF
@@ -523,8 +530,8 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           tamskDistanceFromCentre(opponentPlayer)
 
   val noise = Random.nextInt(-10, 10).toDouble()
-  return (((currentValue - opponentValue) + noise) * 1000.0) / (currentValue + opponentValue + abs(noise))
-
+  return (((currentValue - opponentValue) + noise) * 1000.0) /
+      (currentValue + opponentValue + abs(noise))
 }
 
 fun alphabetaAddPieces(
@@ -767,7 +774,8 @@ fun alphabetaBitboardAddPieces(
    * regular move and the extra move. The same goes for situations where you succeed in pushing a
    * second or third TAMSK-stack onto the central spot during one and the same turn.
    */
-  val isTamskPieceAtCenter = bitboard.getTamskMoves(currentPlayer)
+  val isTamskPieceAtCenter = mutableListOf<PossibleBitMove>()
+    bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
 
   var preMoveNewlyStackedPieces: List<Piece> = emptyList()
 
@@ -817,7 +825,8 @@ fun alphabetaBitboardAddPieces(
         null
       }
 
-  val possibleBitMoves = bitboard.identifyAvailableMoves(currentPlayer, columnInfos)
+  val possibleBitMoves = mutableListOf<PossibleBitMove>()
+    bitboard.identifyAvailableMoves(currentPlayer, columnInfos, possibleBitMoves)
 
   // TODO change to depth <= 0
   if (possibleBitMoves.isEmpty() || depth <= 0) {
@@ -968,7 +977,8 @@ fun alphabetaBitboardAddPieces(
 
         // TODO Check if there is Tamsk Potential Move
         var tamskMoveScore: Float = 0f
-        val isTamskPieceAtCenter = bitboard.getTamskMoves(currentPlayer)
+        val isTamskPieceAtCenter = mutableListOf<PossibleBitMove>()
+          bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
           val preTamskMoveBitboardState = bitboard.deepCopy()
 
@@ -1201,7 +1211,8 @@ fun alphabetaBitboardAddPieces(
         // TODO Handle TAMSK Potential
         // TODO Check if there is Tamsk Potential Move
         var tamskMoveScore: Float = 0f
-        val isTamskPieceAtCenter = bitboard.getTamskMoves(currentPlayer)
+        val isTamskPieceAtCenter = mutableListOf<PossibleBitMove>()
+          bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
           val preTamskMoveBitboardState = bitboard.deepCopy()
 

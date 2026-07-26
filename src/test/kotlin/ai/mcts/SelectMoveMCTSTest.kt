@@ -7,6 +7,7 @@ import org.example.model.convertBoardToBitboard
 import org.example.model.initializeState
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import kotlin.random.Random
 
 class SelectMoveMCTSTest {
   @Test fun calculateUCTScore() {}
@@ -21,7 +22,8 @@ class SelectMoveMCTSTest {
 		  currentPlayer = state.currentPlayer,
 		  nextPlayer = state.nextPlayer,
 		  turnPhase = TurnPhase.PlayerInputWindow,
-			rounds = 0..9999
+			rounds = 0..9999,
+		  rng = Random(1)
 	  )
 	}
 
