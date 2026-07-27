@@ -2,6 +2,7 @@ package org.example.engine
 
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
 import org.example.toBitList
@@ -30,14 +31,14 @@ data class PossibleMove(
 @Serializable
 data class PossibleBitMove(
     val piece: Piece? = null,
-    val columnInfos: List<ColumnInfo> = emptyList(),
-    val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
     val sourceBit: ULong? = null,
     val targetBit: ULong? = null,
     val pieceType: PieceType? = null,
     val pieceColor: PlayerName? = null,
     val pushDirection: PushDirection? = null,
     val moveType: MoveType,
+    val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
+    val columnInfos: List<ColumnInfo> = emptyList(),
 ) {
   fun encode(): NDArray<Int, D1> {
     return when (moveType) {
@@ -216,7 +217,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
             )
           }
 
-          centralAreaBoardMask -> {
+          boardCenterSpotMask -> {
             requireNotNull(bestMove.sourceBit) {
               "CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
             }
@@ -386,9 +387,9 @@ fun determineWinner(
   }
 
   if (printStatement) {
-    capturedGIPFPieces?.let { println("Captured GIPF Pieces: $it") }
-    bitboardHasAvailableMoves?.let { println("Has Available Moves (Bitboard): $it") }
-    playerWhoMadeTheLastMove?.let { println("Player Made The Last Move: $it") }
+    capturedGIPFPieces?.let { println("Captured GIPF Pieces: ${Json.encodeToString(it)}") }
+    bitboardHasAvailableMoves?.let { println("Has Available Moves (Bitboard): ${Json.encodeToString(it)}") }
+    playerWhoMadeTheLastMove?.let { println("Player Made The Last Move: ${Json.encodeToString(it)}") }
   }
 
   // TODO should number of pieces captured be a win condition
