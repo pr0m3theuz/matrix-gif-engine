@@ -237,6 +237,10 @@ data class MCTSNode(
             unvisitedMoves = nodeMoves.toMutableList(),
         )
 
+    if (nodeMoves.isEmpty()) {
+      println("Current node has no children!")
+    }
+
     this.childrenNodes.add(childNode)
     this.unvisitedMoves.remove(selectedMove)
 
@@ -265,7 +269,7 @@ data class MCTSNode(
     return winCounts[player.name]!!.div(this.rolloutCounts.toFloat())
   }
 
-  fun selectChildNodeToExplore(): MCTSNode? {
+  fun selectChildNodeToExplore(): MCTSNode {
     val totalRollouts = childrenNodes.sumOf { it.rolloutCounts.toDouble() }
     var bestScore = -1.0
     var bestChildNode: MCTSNode? = null
@@ -283,6 +287,16 @@ data class MCTSNode(
         bestScore = score
         bestChildNode = childNode
       }
+    }
+
+    if (this.childrenNodes.size == 1) {
+      bestChildNode = this.childrenNodes.first()
+    }
+
+    requireNotNull(bestChildNode) {
+      "Search Strategy Failure: Unable to select a best child node from parent node " +
+          "(visitCount=${totalRollouts}, children=${this.childrenNodes.size}). " +
+          "Ensure tree expansion and rollout selection policies are correctly handling non-terminal states."
     }
 
     return bestChildNode
@@ -323,10 +337,21 @@ fun selectMoveMCTS(
             !evaluateCapturedPieces(currentNode.currentPlayer) // &&
     // !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
+      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+        println("Current node has no children!}")
+      }
+
       currentNode = currentNode.selectChildNodeToExplore()
     }
 
-    checkNotNull(currentNode)
+    checkNotNull(currentNode) {
+        "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
+            "Verify tree expansion bounds and parent-child link validity."
+    }
+
+    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+      println("Current node has no children!")
+    }
 
     if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
 
@@ -383,6 +408,9 @@ fun simulateRandomGame(
   val availableMoves = mutableListOf<PossibleBitMove>()
   bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
 
+//  val opponentMoves = mutableListOf<PossibleBitMove>()
+//  bitboard.identifyAvailableMoves(opponentPlayer, movesBuffer = opponentMoves)
+
   while (!evaluateCapturedPieces(activePlayer) || availableMoves.isNotEmpty()) {
     if (availableMoves.isEmpty()) break
 
@@ -403,7 +431,11 @@ fun simulateRandomGame(
     bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
   }
 
-  val winner = determineWinner(activePlayer, opponentPlayer, playerWhoMadeTheLastMove)
+  val winner = determineWinner(
+    activePlayer,
+    opponentPlayer,
+    playerWhoMadeTheLastMove ?: nextPlayer,
+  )
   //  println("Player: ${winner?.name} won")
   return winner
 }

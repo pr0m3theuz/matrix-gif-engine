@@ -3,6 +3,7 @@ package org.example
 import kotlin.collections.toList
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
+import org.example.engine.MoveType
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
@@ -30,7 +31,7 @@ fun main() {
   ) {
     turn = turn.plus(1)
     println("Turn: $turn")
-    gameState.printStateSummary()
+    //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
 
     // TODO implement function to evaluate if the current player's pieces has any valid moves left
@@ -99,8 +100,12 @@ fun main() {
           .toList()
           .takeLast(3)
           .filter { gameState.turnMoves[it]?.isNotEmpty() == true }
-          .let {
-            gameState.turnMoves[it.last()]?.first()?.pieceColor
+          .let { turn ->
+            gameState.turnMoves[turn.last()]
+                ?.first { move ->
+                  move.moveType == MoveType.AddPiece || move.moveType == MoveType.UsePotential
+                }
+                ?.pieceColor
           }
 
   check(winner?.name == lastTurnPlayer) {
