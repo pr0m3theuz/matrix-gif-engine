@@ -1,17 +1,12 @@
 package org.example
 
-import kotlin.collections.toList
-import kotlin.random.Random
 import kotlinx.serialization.json.Json
-import org.example.engine.MoveType
+import org.example.ai.mcts.PackedMove
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
-import org.example.model.Player
-import org.example.model.State
-import org.example.model.assertPieceCount
-import org.example.model.initializeState
-import org.example.model.printStateSummary
+import org.example.model.*
+import kotlin.random.Random
 
 const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
@@ -95,6 +90,7 @@ fun main() {
   gameState.turnMoves.keys.toList().takeLast(3).forEach { turns ->
     println("Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}")
   }
+
   val lastTurnPlayer =
       gameState.turnMoves.keys
           .toList()
@@ -102,10 +98,10 @@ fun main() {
           .filter { gameState.turnMoves[it]?.isNotEmpty() == true }
           .let { turn ->
             gameState.turnMoves[turn.last()]
-                ?.first { move ->
-                  move.moveType == MoveType.AddPiece || move.moveType == MoveType.UsePotential
-                }
-                ?.pieceColor
+                ?.filterIsInstance<PackedMove.Single>()
+                ?.first()
+                ?.value
+                ?.extractPieceColor()
           }
 
   check(winner?.name == lastTurnPlayer) {
