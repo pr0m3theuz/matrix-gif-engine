@@ -1,86 +1,15 @@
 package org.example.engine
 
-import kotlin.random.Random
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.example.ai.mcts.PackedMove
+import org.example.ai.mcts.encode
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
-import org.example.toBitList
-import org.jetbrains.kotlinx.multik.ndarray.data.D1
-import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-
-/**
- * TODO create a two functions:
- * 1. Add new pieces to the board
- * 2. Using piece potentials
- */
-
-// TODO Create  LIST OF ALL POSSIBLE MOVES
-
-@Serializable
-data class PossibleMove(
-    val piece: Piece? = null,
-    val selectableDots: Set<NodeConnections> = emptySet(),
-    val selectedBit: ULong = 0UL,
-    val pushDirection: PushDirection? = null,
-    val eligiblePotentialPieceNode: Node? = null,
-    val eligiblePotentialTargetNodes: Set<Node> = emptySet(),
-    val moveType: MoveType,
-)
-
-@Serializable
-data class PossibleBitMove(
-    val piece: Piece? = null,
-    val sourceBit: ULong? = null,
-    val targetBit: ULong? = null,
-    val pieceType: PieceType? = null,
-    val pieceColor: PlayerName? = null,
-    val pushDirection: PushDirection? = null,
-    val moveType: MoveType,
-    val retrievedCapturedPiecesBit: List<RetrievedCapturedPieceBit> = emptyList(),
-    val columnInfos: List<ColumnInfo> = emptyList(),
-) {
-  fun encode(): NDArray<Int, D1> {
-    return when (moveType) {
-      MoveType.AddPiece,
-      MoveType.UsePotential -> {
-        requireNotNull(targetBit) { "Target bit must not be null" }
-        targetBit.toBitList()
-      }
-      MoveType.RetrieveCapturePieces -> {
-        retrievedCapturedPiecesBit
-            .fold(0UL) { acc, bit ->
-              acc or bit.bitmask
-            }
-            .toBitList()
-      }
-    }
-  }
-}
-
-enum class MoveType {
-  AddPiece,
-  UsePotential,
-  RetrieveCapturePieces,
-}
-
-enum class TurnPhase {
-  ExtraMove,
-  PlayerInputWindow,
-  PieceRemoval,
-}
-
-enum class TurnLifecycle {
-  Initialization, // Engine handles upkeep, updates active player index
-  PreExecutionCheck, // Engine evaluates board for 4-in-a-row BEFORE input
-  InputWindow, // Engine accepts Player Actions (Free, Normal, Potential)
-  PostExecutionCheck, // Engine evaluates board for 4-in-a-row AFTER input
-  Termination, // Engine serializes state changes, prepares for next turn switch
-}
+import kotlin.random.Random
 
 fun playerTurn(state: State, turn: Int, rng: Random): State {
 
-  var newState = state //.deepCopy(copyCollector = true)
+  var newState = state // .deepCopy(copyCollector = true)
 
   //  newState.board.printHexGrid("START OF TURN")
 
@@ -152,114 +81,38 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  val bestMove: PossibleBitMove? =
+  val packedMove: PackedMove? =
       selectMoveMCTS(
-          bitboard = bitboard,
-          currentPlayer = state.currentPlayer,
-          nextPlayer = state.nextPlayer,
-          turnPhase = turnPhase,
-          rounds = 0..999,
-          rng = rng,
-      )
+              bitboard = bitboard,
+              currentPlayer = state.currentPlayer,
+              nextPlayer = state.nextPlayer,
+              turnPhase = turnPhase,
+              rounds = 0..999,
+              rng = rng,
+          )
 
-  if (bestMove != null) {
+  if (packedMove != null) {
     // println("Player Move: ${Json.encodeToString(bestMove)}")
 
     state.currentPlayer.collector?.recordDecision(
-        state.encodeState(),
-        bestMove.encode(),
+      state.encodeState(),
+      packedMove.encode(),
     )
 
     state.collector?.recordDecision(
-        state.encodeState(),
-        bestMove.encode(),
+      state.encodeState(),
+      packedMove.encode(),
     )
 
-    when (bestMove.moveType) {
-      MoveType.AddPiece -> {
+    state.turnMoves.getOrDefault(turn, mutableListOf()).add(packedMove)
 
-        state.turnMoves.getOrDefault(turn, mutableListOf()).add(bestMove)
-
-        require(
-            bestMove.piece?.colorName == state.currentPlayer.name.name ||
-                bestMove.pieceColor == state.currentPlayer.name
-        ) {
-          "Must be the current player's piece!"
-        }
-
-        //        val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
-
-        //        node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
-        val selectedPiece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
-
-        // --- MOVE VALIDATION ---
-        requireNotNull(bestMove.targetBit) {
-          "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
-        }
-        requireNotNull(bestMove.pushDirection) {
-          "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
-        }
-        require(bestMove.columnInfos.isNotEmpty()) {
-          "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
-        }
-
-        when (bestMove.sourceBit) {
-          null -> {
-            requireNotNull(bestMove.piece) {
-              "CRITICAL MOVE ERROR: bestMove.piece cannot be null. A valid move must have a piece."
-            }
-
-            bitboard.addPieceToBitboard(
-                addAtIndex = bestMove.targetBit,
-                pushDirection = bestMove.pushDirection,
-                col = bestMove.columnInfos.first(),
-                piece = bestMove.piece,
-            )
-          }
-
-          boardCenterSpotMask -> {
-            requireNotNull(bestMove.sourceBit) {
-              "CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
-            }
-
-            bitboard.useTamskPotential(
-                player = state.currentPlayer,
-                sourceIndex = bestMove.sourceBit,
-                targetIndex = bestMove.targetBit,
-                col = bestMove.columnInfos.first(),
-                pushDirection = bestMove.pushDirection,
-            )
-          }
-        }
-      }
-
-      MoveType.UsePotential -> {
-        requireNotNull(bestMove.sourceBit) {
-          "CRITICAL MOVE ERROR: Source bit cannot be null. A valid move must have an origin. $bestMove"
-        }
-        requireNotNull(bestMove.targetBit) {
-          "CRITICAL MOVE ERROR: Target bit cannot be null. A valid move must have a target. $bestMove"
-        }
-
-        state.turnMoves.getOrDefault(turn, mutableListOf()).add(bestMove)
-
-        bitboard.usePiecePotential(
-            possibleBitMove = bestMove,
-            currentPlayer = state.currentPlayer,
-            nextPlayer = state.nextPlayer,
-        )
-      }
-
-      MoveType.RetrieveCapturePieces -> {
+    when (packedMove) {
+      is PackedMove.Multiple -> {
         val retrievedCapturedPieces =
-            bitboard.removeSelectedPiecesToRemove(
-                player = state.currentPlayer,
-                piecesToRemove = bestMove.retrievedCapturedPiecesBit,
-            )
-
-        state.turnMoves
-            .getOrDefault(turn, mutableListOf())
-            .add(bestMove.copy(retrievedCapturedPiecesBit = retrievedCapturedPieces))
+          bitboard.removeSelectedPiecesToRemove(
+            player = state.currentPlayer,
+            piecesToRemove = packedMove.values,
+          )
 
         val retrievedPieces = retrievedCapturedPieces.mapNotNull {
           it.retrievedPiece
@@ -272,6 +125,68 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
         state.currentPlayer.addCapturedPieces(capturedPieces)
 
         state.currentPlayer.combinePieces()
+      }
+
+      is PackedMove.Single -> {
+        val bestMove = packedMove.value
+
+        when (bestMove.extractMoveType()) {
+          MoveType.AddPiece -> {
+            val extractedPiece = bestMove.extractPiece()
+
+            if (bestMove.extractSourceBit() == boardCenterSpotMask) {
+              require(bestMove.extractSourceBit() == boardCenterSpotMask) {
+                "CRITICAL MOVE ERROR: bestMove.sourceBit cannot be null. A valid move must have an origin."
+              }
+              bitboard.useTamskPotential(bestMove)
+            } else {
+              //        val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
+              //        node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
+
+              val selectedPiece = extractedPiece?.let { state.currentPlayer.selectPiece(it) }
+
+              require(
+                extractedPiece?.colorName == state.currentPlayer.name
+              ) {
+                "Must be the current player's piece!"
+              }
+
+              // --- MOVE VALIDATION ---
+//            requireNotNull(bestMove.extractTargetBit()) {
+//              "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
+//            }
+//            requireNotNull(bestMove.extractPushDirection()) {
+//              "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
+//            }
+//            requireNotNull(bestMove.extractColumnInfo()) {
+//              "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
+//            }
+
+              selectedPiece?.let {
+                bitboard.addPieceToBitboard(
+                  bestMove
+                )
+              }
+            }
+          }
+
+          MoveType.UsePotential -> {
+            requireNotNull(bestMove.extractSourceBit()) {
+              "CRITICAL MOVE ERROR: Source bit cannot be null. A valid move must have an origin. $bestMove"
+            }
+            requireNotNull(bestMove.extractTargetBit()) {
+              "CRITICAL MOVE ERROR: Target bit cannot be null. A valid move must have a target. $bestMove"
+            }
+
+            bitboard.usePiecePotential(
+              move = bestMove,
+              currentPlayer = state.currentPlayer,
+              nextPlayer = state.nextPlayer,
+            )
+          }
+
+          MoveType.RetrieveCapturePieces -> {}
+        }
       }
     }
 
@@ -325,7 +240,7 @@ fun selectPieceFromReserve(pieces: List<Piece>): Piece? {
 }
 
 fun chooseToRemovePiecesWithPotential(line: Set<Node>, player: Player): Boolean {
-  return line.filter { it.piece?.colorName == player.name.name }.all { it.piece?.potential == true }
+  return line.filter { it.piece?.colorName == player.name }.all { it.piece?.potential == true }
 }
 
 fun evaluateCapturedPieces(state: State): Boolean {
@@ -348,7 +263,7 @@ fun isTamskPieceAtCenter(
   if (piece == null) return false
 
   // Is the piece a TAMSK piece && the current player's piece && potential == true
-  return piece.type == PieceType.TAMSK && piece.colorName == player.name.name && piece.potential
+  return piece.type == PieceType.TAMSK && piece.colorName == player.name && piece.potential
 }
 
 fun determineWinner(
@@ -388,8 +303,12 @@ fun determineWinner(
 
   if (printStatement) {
     capturedGIPFPieces?.let { println("Captured GIPF Pieces: ${Json.encodeToString(it)}") }
-    bitboardHasAvailableMoves?.let { println("Has Available Moves (Bitboard): ${Json.encodeToString(it)}") }
-    playerWhoMadeTheLastMove?.let { println("Player Made The Last Move: ${Json.encodeToString(it)}") }
+    bitboardHasAvailableMoves?.let {
+      println("Has Available Moves (Bitboard): ${Json.encodeToString(it)}")
+    }
+    playerWhoMadeTheLastMove?.let {
+      println("Player Made The Last Move: ${Json.encodeToString(it)}")
+    }
   }
 
   // TODO should number of pieces captured be a win condition
