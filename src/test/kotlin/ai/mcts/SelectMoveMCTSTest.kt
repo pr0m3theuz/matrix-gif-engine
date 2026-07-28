@@ -1,11 +1,10 @@
 package ai.mcts
 
 import org.example.ai.mcts.selectMoveMCTS
-import org.example.engine.TurnPhase
 import org.example.model.State
+import org.example.model.TurnPhase
 import org.example.model.convertBoardToBitboard
 import org.example.model.initializeState
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 

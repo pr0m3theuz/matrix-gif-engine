@@ -15,12 +15,12 @@ class ScoreLinesTest {
 
     val loadedState = Json.decodeFromString<State>(File(filename).bufferedReader().readText())
 
-    loadedState.board.printHexGrid("TEST")
-
-    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.verticalLines)
-
-    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.upwardRightLines)
-
-    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.downwardRightLines)
+//    loadedState.board.printHexGrid("TEST")
+//
+//    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.verticalLines)
+//
+//    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.upwardRightLines)
+//
+//    org.example.model.scoreLines(loadedState.currentPlayer, loadedState.lines.downwardRightLines)
   }
 }
