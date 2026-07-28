@@ -1,15 +1,14 @@
 package org.example.model
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 enum class PieceType() {
   GIPF,
   TAMSK,
   ZERTZ,
-  DVONN,
   YINSH,
+  DVONN,
   PUNCT,
 }
 
@@ -17,12 +16,10 @@ enum class PieceType() {
 data class Piece(
 	val abbreviation: String,
 	var potential: Boolean,
-    //	var position: Coordinate,
-//	@Contextual val color: Color,
-	val colorName: String,
+	val colorName: PlayerName,
 	val type: PieceType,
-	// TODO check that pieces alternate
 	var isNeutralized: Boolean = false,
+	// TODO check that pieces alternate
 	var stackedPieces: MutableList<Piece> = mutableListOf(),
 	) {
 	fun deepCopy(): Piece {
@@ -38,35 +35,62 @@ data class Piece(
 		)
 	}
 
-  fun usePiecePotential(): Piece {
-    potential = false
-	  return Piece(
-		  abbreviation = this.abbreviation,
-		  potential = false,
-//		  color = this.color,
-		  colorName = this.colorName,
-		  type = this.type,
-	  )
-  }
+	fun pack(): UByte {
+		val pieceType = type.ordinal.toUInt()
 
-	fun pushPotential(newPiece: Piece) {
-		val topPiece = stackedPieces.lastOrNull() ?: this
-		require(topPiece.colorName != newPiece.colorName) {
-			"Illegal Layering: Stacks must strictly alternate player colors!"
-		}
-		stackedPieces.add(newPiece)
-		isNeutralized = true
+		val color = colorName.ordinal.toUInt() shl 4
+
+		val potential = when (potential) {
+			true -> 1u
+			false -> 0u
+		} shl 3
+
+
+		val neutralized = when (isNeutralized) {
+			true -> 1u
+			false -> 0u
+		} shl 5
+		
+		return (pieceType or potential or color or neutralized).toUByte()
+	}
+}
+
+fun UByte.unpackPiece(): Piece? {
+	val pieceType = when ((this and 0b111.toUByte()).toInt()) {
+		PieceType.GIPF.ordinal -> PieceType.GIPF
+		PieceType.TAMSK.ordinal -> PieceType.TAMSK
+		PieceType.ZERTZ.ordinal -> PieceType.ZERTZ
+		PieceType.YINSH.ordinal -> PieceType.YINSH
+		PieceType.DVONN.ordinal -> PieceType.DVONN
+		PieceType.PUNCT.ordinal -> PieceType.PUNCT
+		else -> return null
 	}
 
-  fun hasNoPotential(): Boolean {
-    return !potential
-  }
-
-	fun removePiece() {
-		// TODO replace with Piece.removePiece()
-		// TODO figure out how to remove piece from a node. either return the current piece (less the last stacked piece) or null
-		//  how does these functions interact with each other
+	val potential = when (((this and 0b1000.toUByte()).toUInt() shr 3).toInt()) {
+		0 -> false
+		1 -> true
+		else -> false
 	}
+
+	val colorName = when (((this and 0b10000.toUByte()).toUInt() shr 4).toInt()) {
+		PlayerName.WHITE.ordinal -> PlayerName.WHITE
+		PlayerName.BLACK.ordinal -> PlayerName.BLACK
+		else -> error("Invalid color name $this")
+	}
+
+	val neutralized = when (((this and 0b100000.toUByte()).toUInt() shr 5).toInt()) {
+		0 -> false
+		1 -> true
+		else -> false
+	}
+
+	return Piece(
+		abbreviation = "${colorName.name.first()}${pieceType.name.first()}",
+		colorName = colorName,
+		type = pieceType,
+		potential = potential,
+		isNeutralized = neutralized,
+	)
 }
 
 fun createPlayerPieces(player: Player): List<Piece> {
@@ -78,7 +102,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('G'),
             potential = false,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.GIPF,
         )
       }
@@ -89,7 +113,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('T'),
             potential = true,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.TAMSK,
         )
       }
@@ -100,7 +124,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('Z'),
             potential = true,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.ZERTZ,
         )
       }
@@ -111,7 +135,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('D'),
             potential = true,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.DVONN,
         )
       }
@@ -122,7 +146,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('Y'),
             potential = true,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.YINSH,
         )
       }
@@ -133,7 +157,7 @@ fun createPlayerPieces(player: Player): List<Piece> {
             abbreviation = player.abbreviation.plus('P'),
             potential = true,
 //            color = player.color,
-            colorName = player.name.name,
+            colorName = player.name,
             type = PieceType.PUNCT,
         )
       }
