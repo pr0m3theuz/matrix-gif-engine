@@ -2,37 +2,12 @@
 
 package org.example.ai.humanEvaluation
 
-import kotlin.collections.forEach
-import kotlin.collections.mapNotNull
+import kotlinx.serialization.json.Json
+import org.example.engine.determineWinner
+import org.example.model.*
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.random.Random
-import kotlinx.serialization.json.Json
-import org.example.engine.MoveType
-import org.example.engine.PossibleBitMove
-import org.example.engine.determineWinner
-import org.example.model.Bitboard
-import org.example.model.Piece
-import org.example.model.PieceType
-import org.example.model.Player
-import org.example.model.PlayerName
-import org.example.model.addPieceToBitboard
-import org.example.model.assertPieceCount
-import org.example.model.bitDistanceWeights
-import org.example.model.columnInfos
-import org.example.model.createPlayerPiecesWithPotentialPowerset
-import org.example.model.createRetrieveAndCapturePiecesList
-import org.example.model.evaluateLinesForFourInARow
-import org.example.model.getTamskMoves
-import org.example.model.getsSelectedPiecesWithPotentialPowerset
-import org.example.model.identifyAvailableMoves
-import org.example.model.removeRetrieveAndCapturePiecesFromBitboard
-import org.example.model.undoAddPieceToBitboard
-import org.example.model.undoRetrieveAndCapturePieces
-import org.example.model.undoTamskPotential
-import org.example.model.undoUsePiecePotential
-import org.example.model.usePiecePotential
-import org.example.model.useTamskPotential
 
 data class BestBitMove(
     val move: PossibleBitMove? = null,
@@ -449,10 +424,11 @@ fun alphabetaBitboardAddPieces(
 
         requireNotNull(possibleBitMove.targetBit)
         requireNotNull(possibleBitMove.pushDirection)
+        requireNotNull(possibleBitMove.columnInfo)
 
         val addAtIndex = possibleBitMove.targetBit
         val pushDirection = possibleBitMove.pushDirection
-        val columnInfo = possibleBitMove.columnInfos.first()
+        val columnInfo = possibleBitMove.columnInfo
 
         if (isDebugEnabled) {
           println(
@@ -605,7 +581,7 @@ fun alphabetaBitboardAddPieces(
                         sourceBit = possibleBitMove.sourceBit,
                         targetBit = addAtIndex,
                         pushDirection = pushDirection,
-                        columnInfos = listOf(columnInfo),
+                        columnInfo = columnInfo,
                         piece = possibleBitMove.piece,
                         pieceType = possibleBitMove.pieceType,
                         moveType = possibleBitMove.moveType,
@@ -723,13 +699,13 @@ fun alphabetaBitboardAddPieces(
           //                  println("line 371: ply $depth move $index: set best to:
           // $alphaBetaScore")
           //                  println(
-          //                      "line 373: ply $depth player: ${currentPlayer.name.name} index:
+          //                      "line 373: ply $depth player: ${currentPlayer.name} index:
           // $index: move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
           //                  )
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
           //                  println(
-          //                      "line 378: ply $depth player: ${currentPlayer.name.name} move
+          //                      "line 378: ply $depth player: ${currentPlayer.name} move
           // $index: return best: $alphaBetaScore"
           //                  )
 
@@ -898,13 +874,13 @@ fun alphabetaBitboardAddPieces(
 
           //          println("line 430: ply $depth move ${index}: set best to: $alphaBetaScore")
           //          println(
-          //              "line 432: ply $depth player: ${currentPlayer.name.name} index: ${index}:
+          //              "line 432: ply $depth player: ${currentPlayer.name} index: ${index}:
           // move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
           //          )
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
           //          println(
-          //              "line 437: ply $depth player: ${currentPlayer.name.name} move $index:
+          //              "line 437: ply $depth player: ${currentPlayer.name} move $index:
           // return best: $alphaBetaScore"
           //          )
           break@outerLoop
@@ -1047,7 +1023,7 @@ fun resolveBoardRemovals(
 
           check(
               piecesWithPotentialPowerset.all {
-                it.retrievedPiece?.colorName == currentPlayer.name.name
+                it.retrievedPiece?.colorName == currentPlayer.name
               }
           )
 
@@ -1103,10 +1079,10 @@ fun resolveBoardRemovals(
           val move =
               BestBitMove(
                   move =
-                      PossibleBitMove(
-                          retrievedCapturedPiecesBit = allRetrievedCapturedPieces,
-                          moveType = MoveType.RetrieveCapturePieces,
-                      ),
+                    PossibleBitMove(
+                      retrievedCapturedPiecesBit = allRetrievedCapturedPieces,
+                      moveType = MoveType.RetrieveCapturePieces,
+                    ),
                   score =
                       alphabetaBitboardAddPieces(
                               depth = depth.minus(1),
@@ -1163,14 +1139,14 @@ fun resolveBoardRemovals(
 
             //            println("line 371: ply $depth move $index: set best to: $alphaBetaScore")
             //            println(
-            //                "line 373: ply $depth player: ${currentPlayer.name.name} index:
+            //                "line 373: ply $depth player: ${currentPlayer.name} index:
             // $index: move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
             //            )
           }
 
           if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
             //            println(
-            //                "line 378: ply $depth player: ${currentPlayer.name.name} move $index:
+            //                "line 378: ply $depth player: ${currentPlayer.name} move $index:
             // return best: $alphaBetaScore"
             //            )
 
@@ -1266,13 +1242,13 @@ fun resolveBoardRemovals(
 
           //          println("line 371: ply $depth move $index: set best to: $alphaBetaScore")
           //          println(
-          //              "line 373: ply $depth player: ${currentPlayer.name.name} index: $index:
+          //              "line 373: ply $depth player: ${currentPlayer.name} index: $index:
           // move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
           //          )
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
           //          println(
-          //              "line 378: ply $depth player: ${currentPlayer.name.name} move $index:
+          //              "line 378: ply $depth player: ${currentPlayer.name} move $index:
           // return best: $alphaBetaScore"
           //          )
           if (isDebugEnabled) {

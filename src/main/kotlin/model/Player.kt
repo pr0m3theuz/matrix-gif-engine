@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import org.example.engine.ExperienceCollector
-import org.example.engine.PossibleBitMove
 
 enum class PlayerName() {
   WHITE,
@@ -34,12 +33,12 @@ data class Player(
   }
 
   fun addPiecesToReserve(pieces: List<Piece>) {
-		check(pieces.all { piece -> piece.colorName == this.name.name }) {}
+		check(pieces.all { piece -> piece.colorName == this.name }) {}
     this.piecesInReserve.addAll(pieces)
   }
 
   fun addCapturedPieces(pieces: List<Piece>) {
-	  check(pieces.all { piece -> piece.colorName != this.name.name }) {}
+	  check(pieces.all { piece -> piece.colorName != this.name }) {}
     this.capturedPieces.addAll(pieces)
   }
 
@@ -124,7 +123,7 @@ data class Player(
           Piece(
             abbreviation = this.abbreviation + type.name.first(),
             potential = true,
-            colorName = this.name.name,
+            colorName = this.name,
             type = type,
           )
         )
@@ -136,7 +135,7 @@ data class Player(
           Piece(
             abbreviation = this.abbreviation + type.name.first(),
             potential = false,
-            colorName = this.name.name,
+            colorName = this.name,
             type = type,
           )
         )

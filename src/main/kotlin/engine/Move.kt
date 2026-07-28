@@ -22,7 +22,7 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
         it.piece != null &&
             it.piece?.type !in setOf(PieceType.GIPF, PieceType.TAMSK) &&
             it.piece?.potential == true &&
-            it.piece?.colorName == state.currentPlayer.name.name &&
+            it.piece?.colorName == state.currentPlayer.name &&
             it.piece?.isNeutralized == false
       }
 
@@ -218,10 +218,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }
@@ -240,10 +240,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }
@@ -262,10 +262,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }
@@ -307,10 +307,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }
@@ -329,10 +329,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }
@@ -351,10 +351,10 @@ fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
                         it.piece?.type == pieceType &&
                             run {
                               if (it.piece?.isNeutralized == false) {
-                                it.piece?.colorName != state.currentPlayer.name.name
+                                it.piece?.colorName != state.currentPlayer.name
                               } else {
                                 it.piece?.stackedPieces?.lastOrNull()?.colorName ==
-                                    state.nextPlayer.name.name
+                                    state.nextPlayer.name
                               }
                             }
                       }

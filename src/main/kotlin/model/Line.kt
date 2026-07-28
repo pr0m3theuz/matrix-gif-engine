@@ -203,9 +203,9 @@ fun evaluateLines(player: Player, lines: List<Set<Node>>): Pair<Boolean, Set<Nod
           check(node.piece?.type in setOf(PieceType.DVONN, PieceType.PUNCT)) {
             "Only Dvonn and Pünct pieces can be neutralized. \n Node: ${Json.encodeToString<Node>(node)}"
           }
-          node.piece?.stackedPieces?.last()?.colorName == player.name.name
+          node.piece?.stackedPieces?.last()?.colorName == player.name
         } else {
-          node.piece?.colorName == player.name.name
+          node.piece?.colorName == player.name
         }
       }
     }

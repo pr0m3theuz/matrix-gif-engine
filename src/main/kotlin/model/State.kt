@@ -2,56 +2,53 @@
 
 package org.example.model
 
-import kotlin.collections.fold
-import kotlin.collections.forEach
-import kotlin.collections.mutableMapOf
-import kotlin.math.min
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import org.example.ai.mcts.PackedMove
 import org.example.engine.ExperienceCollector
-import org.example.engine.MoveType
-import org.example.engine.PossibleBitMove
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ones
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.set
+import kotlin.math.min
 
 @Serializable
 data class State(
-  val currentPlayer: Player,
-  val nextPlayer: Player,
-  val board: Board,
-  val bitboard: Bitboard,
-  @Transient val lines: Lines? = null,
-  val turnMoves: MutableMap<Int, MutableList<PossibleBitMove>> = mutableMapOf(), // moves per turn
-  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+    val currentPlayer: Player,
+    val nextPlayer: Player,
+    val board: Board,
+    val bitboard: Bitboard,
+    @Transient val lines: Lines? = null,
+    @Transient
+    val turnMoves: MutableMap<Int, MutableList<PackedMove>> = mutableMapOf(), // moves per turn
+    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): State {
-//    val string = Json.encodeToString(serializer(), this)
-//    return Json.decodeFromString(serializer(), string)
+    //    val string = Json.encodeToString(serializer(), this)
+    //    return Json.decodeFromString(serializer(), string)
 
     return State(
-	    currentPlayer = currentPlayer.deepCopy(copyCollector = true),
-	    nextPlayer = nextPlayer.deepCopy(copyCollector = true),
-	    board = this.board,
-	    bitboard = bitboard.deepCopy(),
-//	    lines = this.lines,
-	    turnMoves = this.turnMoves.toMutableMap(),
-	    collector = if (copyCollector) this.collector else null
+        currentPlayer = currentPlayer.deepCopy(copyCollector = true),
+        nextPlayer = nextPlayer.deepCopy(copyCollector = true),
+        board = this.board,
+        bitboard = bitboard.deepCopy(),
+        //	    lines = this.lines,
+        turnMoves = this.turnMoves.toMutableMap(),
+        collector = if (copyCollector) this.collector else null,
     )
   }
 
   fun rotatePlayers(): State {
     return State(
-      currentPlayer = this.nextPlayer,
-      nextPlayer = this.currentPlayer,
-      board = this.board,
-      bitboard = bitboard.deepCopy(),
-      turnMoves = this.turnMoves.toMutableMap(),
-      collector = this.collector,
+        currentPlayer = this.nextPlayer,
+        nextPlayer = this.currentPlayer,
+        board = this.board,
+        bitboard = bitboard.deepCopy(),
+        turnMoves = this.turnMoves.toMutableMap(),
+        collector = this.collector,
     )
   }
 }
@@ -192,7 +189,7 @@ fun State.encodeState(): D2Array<Int> {
   // TODO need to change approach as I need to consider how each move affects the board & potentials
   //  ndArray[num_self_atari_stones][bit] = 1
   val availableMoves = mutableListOf<PossibleBitMove>()
-    bitboard.identifyAvailableMoves(currentPlayer, movesBuffer = availableMoves)
+  bitboard.identifyAvailableMoves(currentPlayer, movesBuffer = availableMoves)
 
   val flattenMoves =
       availableMoves
@@ -217,19 +214,17 @@ fun State.encodeState(): D2Array<Int> {
     val moves = turnMoves[turn] ?: error("Turn $turn moves not found!")
 
     moves.forEach { move ->
-      when (move.moveType) {
-        MoveType.AddPiece,
-        MoveType.UsePotential -> {
-          requireNotNull(move.targetBit)
-          previousTurnsMoves[index] = previousTurnsMoves[index] or move.targetBit
-        }
-        MoveType.RetrieveCapturePieces -> {
-          // todo to make negative somehow
+      when (move) {
+        is PackedMove.Multiple -> {
           val bits =
-              move.retrievedCapturedPiecesBit.fold(0UL) { acc, bit ->
-                acc or bit.bitmask
+              move.values.fold(0UL) { acc, bit ->
+                acc or bit.extractTargetBit()
               }
           previousTurnCaptures[index] = previousTurnCaptures[index] or bits
+        }
+        is PackedMove.Single -> {
+          requireNotNull(move.value.extractTargetBit())
+          previousTurnsMoves[index] = previousTurnsMoves[index] or move.value.extractTargetBit()
         }
       }
     }
@@ -274,8 +269,9 @@ fun State.encodeState(): D2Array<Int> {
     when (move.moveType) {
       MoveType.AddPiece -> {
         requireNotNull(move.pushDirection)
+        requireNotNull(move.columnInfo)
         val pushDirection = move.pushDirection
-        val columnInfo = move.columnInfos.first()
+        val columnInfo = move.columnInfo
 
         val selectedPiece = move.piece?.let { newState.currentPlayer.selectPiece(it) }
 
@@ -371,77 +367,80 @@ fun State.encodeState(): D2Array<Int> {
   val opponentCapturePlanes = ULongArray(8)
 
   val availableOpponentMoves = mutableListOf<PossibleBitMove>()
-      bitboard.identifyAvailableMoves(nextPlayer, movesBuffer = availableOpponentMoves)
+  bitboard.identifyAvailableMoves(nextPlayer, movesBuffer = availableOpponentMoves)
 
-  availableOpponentMoves.distinctBy { it.targetBit }.forEach { move ->
-    // TODO new bitboard State
-    //  ndArray[num_self_atari_stones][move.targetBit] = 1
-    val newState = this.deepCopy()
-    val newBitboard = bitboard.deepCopy()
+  availableOpponentMoves
+      .distinctBy { it.targetBit }
+      .forEach { move ->
+        // TODO new bitboard State
+        //  ndArray[num_self_atari_stones][move.targetBit] = 1
+        val newState = this.deepCopy()
+        val newBitboard = bitboard.deepCopy()
 
-    requireNotNull(move.targetBit)
-    val addAtIndex = move.targetBit
+        requireNotNull(move.targetBit)
+        val addAtIndex = move.targetBit
 
-    when (move.moveType) {
-      MoveType.AddPiece -> {
-        requireNotNull(move.pushDirection)
-        val pushDirection = move.pushDirection
-        val columnInfo = move.columnInfos.first()
+        when (move.moveType) {
+          MoveType.AddPiece -> {
+            requireNotNull(move.pushDirection)
+            requireNotNull(move.columnInfo)
+            val pushDirection = move.pushDirection
+            val columnInfo = move.columnInfo
 
-        val selectedPiece = move.piece?.let { newState.nextPlayer.selectPiece(it) }
+            val selectedPiece = move.piece?.let { newState.nextPlayer.selectPiece(it) }
 
-        selectedPiece?.let {
-          newBitboard.addPieceToBitboard(
-              addAtIndex = addAtIndex,
-              pushDirection = pushDirection,
-              col = columnInfo,
-              piece = it,
-          )
-        }
-            ?: move.sourceBit?.let {
-              newBitboard.useTamskPotential(
-                  player = newState.nextPlayer,
-                  sourceIndex = it,
-                  targetIndex = addAtIndex,
-                  col = columnInfo,
+            selectedPiece?.let {
+              newBitboard.addPieceToBitboard(
+                  addAtIndex = addAtIndex,
                   pushDirection = pushDirection,
+                  col = columnInfo,
+                  piece = it,
               )
             }
-      }
-      MoveType.UsePotential -> {
-        newBitboard.usePiecePotential(
-            possibleBitMove = move,
+                ?: move.sourceBit?.let {
+                  newBitboard.useTamskPotential(
+                      player = newState.nextPlayer,
+                      sourceIndex = it,
+                      targetIndex = addAtIndex,
+                      col = columnInfo,
+                      pushDirection = pushDirection,
+                  )
+                }
+          }
+          MoveType.UsePotential -> {
+            newBitboard.usePiecePotential(
+                possibleBitMove = move,
+                currentPlayer = newState.nextPlayer,
+                nextPlayer = newState.currentPlayer,
+            )
+          }
+          MoveType.RetrieveCapturePieces -> {}
+        }
+
+        newBitboard.assertPieceCount(
             currentPlayer = newState.nextPlayer,
             nextPlayer = newState.currentPlayer,
         )
+
+        newBitboard.identifyPiecesToRemove(newState.nextPlayer).forEach { retrieveCapture ->
+          // newBitboard.deepCopy() or undo removal
+          val capturedPieces =
+              newBitboard
+                  .deepCopy()
+                  .removeSelectedPiecesToRemove(
+                      player = newState.nextPlayer,
+                      piecesToRemove = retrieveCapture.retrievedCapturedPiecesBit,
+                  )
+                  .partition { it.retrievedPiece != null }
+                  .second
+
+          //      val retrievedIndex = min(retrievedPieces.size, 7)
+          val capturedIndex = min(capturedPieces.size, 7)
+
+          //      retrievalPlanes[retrievedIndex] = retrievalPlanes[retrievedIndex] or addAtIndex
+          opponentCapturePlanes[capturedIndex] = opponentCapturePlanes[capturedIndex] or addAtIndex
+        }
       }
-      MoveType.RetrieveCapturePieces -> {}
-    }
-
-    newBitboard.assertPieceCount(
-        currentPlayer = newState.nextPlayer,
-        nextPlayer = newState.currentPlayer,
-    )
-
-    newBitboard.identifyPiecesToRemove(newState.nextPlayer).forEach { retrieveCapture ->
-      // newBitboard.deepCopy() or undo removal
-      val capturedPieces =
-          newBitboard
-              .deepCopy()
-              .removeSelectedPiecesToRemove(
-                  player = newState.nextPlayer,
-                  piecesToRemove = retrieveCapture.retrievedCapturedPiecesBit,
-              )
-              .partition { it.retrievedPiece != null }
-              .second
-
-      //      val retrievedIndex = min(retrievedPieces.size, 7)
-      val capturedIndex = min(capturedPieces.size, 7)
-
-      //      retrievalPlanes[retrievedIndex] = retrievalPlanes[retrievedIndex] or addAtIndex
-      opponentCapturePlanes[capturedIndex] = opponentCapturePlanes[capturedIndex] or addAtIndex
-    }
-  }
 
   // 66, 67, 68, 69, 70, 71, 72, 73
   opponentCapturePlanes
@@ -522,189 +521,188 @@ fun State.assertPieceCount(
 
   // 1. Next Player's components
   var nextReservePotentials =
-      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK && it.potential } * 2
   var nextReserveBasics =
-      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK && !it.potential }
   var nextCapturedPotentials =
-      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } * 2
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && it.potential } * 2
   var nextCapturedBasics =
-      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && !it.potential }
 
   // 2. Current Player's components
   var currentReservePotentials =
       currentPlayer.piecesInReserve.count {
-        it.colorName == PlayerName.BLACK.name && it.potential
+        it.colorName == PlayerName.BLACK && it.potential
       } * 2
   var currentReserveBasics =
-      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK && !it.potential }
   var currentCapturedPotentials =
-      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential } *
-          2
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && it.potential } * 2
   var currentCapturedBasics =
-      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && !it.potential }
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && !it.potential }
 
   // 3. Board components
   var boardPotentials =
       board.nodes.count {
-        it.piece?.colorName == PlayerName.BLACK.name && it.piece?.potential == true
+        it.piece?.colorName == PlayerName.BLACK && it.piece?.potential == true
       } * 2
   var boardBasics =
       board.nodes.count {
-        it.piece?.colorName == PlayerName.BLACK.name && it.piece?.potential == false
+        it.piece?.colorName == PlayerName.BLACK && it.piece?.potential == false
       }
   var boardStacks =
       board.nodes.sumOf {
-        it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.BLACK.name } ?: 0
+        it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.BLACK } ?: 0
       }
 
   var gipfPieces =
       nextPlayer.piecesInReserve.count {
-        it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF
+        it.colorName == PlayerName.BLACK && it.type == PieceType.GIPF
       } +
           nextPlayer.capturedPieces.count {
-            it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.BLACK && it.type == PieceType.GIPF
           } +
           currentPlayer.piecesInReserve.count {
-            it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.BLACK && it.type == PieceType.GIPF
           } +
           currentPlayer.capturedPieces.count {
-            it.colorName == PlayerName.BLACK.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.BLACK && it.type == PieceType.GIPF
           } +
           board.nodes.count {
-            it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.GIPF
+            it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.GIPF
           }
 
   var zertzPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) {
+        if (it.colorName == PlayerName.BLACK && it.type == PieceType.ZERTZ) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.ZERTZ) {
+            if (it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.ZERTZ) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   var tamskPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) {
+        if (it.colorName == PlayerName.BLACK && it.type == PieceType.TAMSK) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.TAMSK) {
+            if (it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.TAMSK) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   var yinshPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) {
+        if (it.colorName == PlayerName.BLACK && it.type == PieceType.YINSH) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.YINSH) {
+            if (it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.YINSH) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   var dvonnPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) {
+        if (it.colorName == PlayerName.BLACK && it.type == PieceType.DVONN) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.DVONN) {
+            if (it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.DVONN) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   var punctPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) {
+        if (it.colorName == PlayerName.BLACK && it.type == PieceType.PUNCT) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.BLACK.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.BLACK && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.PUNCT) {
+            if (it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.PUNCT) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
@@ -724,15 +722,15 @@ fun State.assertPieceCount(
 
   check(totalBlackPieces == EXPECTED_TOTAL) {
     val nextReserveRaw =
-        nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK.name && it.potential }
+        nextPlayer.piecesInReserve.count { it.colorName == PlayerName.BLACK && it.potential }
     val nextCapturedRaw =
-        nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+        nextPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && it.potential }
     val currentReserveRaw =
         currentPlayer.piecesInReserve.count {
-          it.colorName == PlayerName.BLACK.name && it.potential
+          it.colorName == PlayerName.BLACK && it.potential
         }
     val currentCapturedRaw =
-        currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK.name && it.potential }
+        currentPlayer.capturedPieces.count { it.colorName == PlayerName.BLACK && it.potential }
 
     """
     CRITICAL STATE CORRUPTION: Total Black piece weight ($totalBlackPieces) != Expected ($EXPECTED_TOTAL)
@@ -756,13 +754,13 @@ fun State.assertPieceCount(
     3. ACTIVE BOARD
        ├── Potentials (Weighted): $boardPotentials
        ├── Flat Basics (Single pieces on board)
-       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.GIPF }}
-       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.ZERTZ }}
-       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.TAMSK }}
-       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.YINSH }}
+       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.GIPF }}
+       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.ZERTZ }}
+       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.TAMSK }}
+       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.YINSH }}
        └── Stacks (Layered/hidden pieces)
-           ├── DVONN (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.DVONN }}
-           ├── PUNCT (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK.name && it.piece?.type == PieceType.PUNCT }}
+           ├── DVONN (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.DVONN }}
+           ├── PUNCT (Black layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.BLACK && it.piece?.type == PieceType.PUNCT }}
            
     SUMMARY EVALUATION:
     - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
@@ -776,189 +774,188 @@ fun State.assertPieceCount(
 
   // 1. Next Player's components
   nextReservePotentials =
-      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE && it.potential } * 2
   nextReserveBasics =
-      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+      nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE && !it.potential }
   nextCapturedPotentials =
-      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } * 2
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && it.potential } * 2
   nextCapturedBasics =
-      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+      nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && !it.potential }
 
   // 2. Current Player's components
   currentReservePotentials =
       currentPlayer.piecesInReserve.count {
-        it.colorName == PlayerName.WHITE.name && it.potential
+        it.colorName == PlayerName.WHITE && it.potential
       } * 2
   currentReserveBasics =
-      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+      currentPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE && !it.potential }
   currentCapturedPotentials =
-      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential } *
-          2
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && it.potential } * 2
   currentCapturedBasics =
-      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && !it.potential }
+      currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && !it.potential }
 
   // 3. Board components
   boardPotentials =
       board.nodes.count {
-        it.piece?.colorName == PlayerName.WHITE.name && it.piece?.potential == true
+        it.piece?.colorName == PlayerName.WHITE && it.piece?.potential == true
       } * 2
   boardBasics =
       board.nodes.count {
-        it.piece?.colorName == PlayerName.WHITE.name && it.piece?.potential == false
+        it.piece?.colorName == PlayerName.WHITE && it.piece?.potential == false
       }
   boardStacks =
       board.nodes.sumOf {
-        it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.WHITE.name } ?: 0
+        it.piece?.stackedPieces?.count { p -> p.colorName == PlayerName.WHITE } ?: 0
       }
 
   gipfPieces =
       nextPlayer.piecesInReserve.count {
-        it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF
+        it.colorName == PlayerName.WHITE && it.type == PieceType.GIPF
       } +
           nextPlayer.capturedPieces.count {
-            it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.WHITE && it.type == PieceType.GIPF
           } +
           currentPlayer.piecesInReserve.count {
-            it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.WHITE && it.type == PieceType.GIPF
           } +
           currentPlayer.capturedPieces.count {
-            it.colorName == PlayerName.WHITE.name && it.type == PieceType.GIPF
+            it.colorName == PlayerName.WHITE && it.type == PieceType.GIPF
           } +
           board.nodes.count {
-            it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.GIPF
+            it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.GIPF
           }
 
   zertzPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) {
+        if (it.colorName == PlayerName.WHITE && it.type == PieceType.ZERTZ) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.ZERTZ) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.ZERTZ) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.ZERTZ) {
+            if (it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.ZERTZ) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   tamskPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) {
+        if (it.colorName == PlayerName.WHITE && it.type == PieceType.TAMSK) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.TAMSK) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.TAMSK) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.TAMSK) {
+            if (it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.TAMSK) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   yinshPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) {
+        if (it.colorName == PlayerName.WHITE && it.type == PieceType.YINSH) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.YINSH) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.YINSH) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.YINSH) {
+            if (it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.YINSH) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   dvonnPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) {
+        if (it.colorName == PlayerName.WHITE && it.type == PieceType.DVONN) {
           if (it.potential == true) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.DVONN) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.DVONN) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.DVONN) {
+            if (it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.DVONN) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
 
   punctPieces =
       nextPlayer.piecesInReserve.sumOf {
-        if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) {
+        if (it.colorName == PlayerName.WHITE && it.type == PieceType.PUNCT) {
           if (it.potential) 2 else 1
         } else 0
       } +
           nextPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.piecesInReserve.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           currentPlayer.capturedPieces.sumOf {
-            if (it.colorName == PlayerName.WHITE.name && it.type == PieceType.PUNCT) {
+            if (it.colorName == PlayerName.WHITE && it.type == PieceType.PUNCT) {
               if (it.potential == true) 2 else 1
             } else 0
           } +
           board.nodes.sumOf {
-            if (it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.PUNCT) {
+            if (it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.PUNCT) {
               if (it.piece?.potential == true) 2 else 1
             } else 0
           }
@@ -978,15 +975,15 @@ fun State.assertPieceCount(
 
   check(totalWhitePieces == EXPECTED_TOTAL) {
     val nextReserveRaw =
-        nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE.name && it.potential }
+        nextPlayer.piecesInReserve.count { it.colorName == PlayerName.WHITE && it.potential }
     val nextCapturedRaw =
-        nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+        nextPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && it.potential }
     val currentReserveRaw =
         currentPlayer.piecesInReserve.count {
-          it.colorName == PlayerName.WHITE.name && it.potential
+          it.colorName == PlayerName.WHITE && it.potential
         }
     val currentCapturedRaw =
-        currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE.name && it.potential }
+        currentPlayer.capturedPieces.count { it.colorName == PlayerName.WHITE && it.potential }
 
     """
  CRITICAL STATE CORRUPTION: Total White piece weight (${totalWhitePieces}) != Expected ($EXPECTED_TOTAL)
@@ -1010,13 +1007,13 @@ fun State.assertPieceCount(
     3. ACTIVE BOARD
        ├── Potentials (Weighted): $boardPotentials
        ├── Flat Basics (Single pieces on board)
-       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.GIPF }}
-       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.ZERTZ }}
-       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.TAMSK }}
-       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.YINSH }}
+       │   ├── GIPF:  ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.GIPF }}
+       │   ├── ZERTZ: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.ZERTZ }}
+       │   ├── TAMSK: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.TAMSK }}
+       │   └── YINSH: ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.YINSH }}
        └── Stacks (Layered/hidden pieces)
-           ├── DVONN (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.DVONN }}
-           ├── PUNCT (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE.name && it.piece?.type == PieceType.PUNCT }}
+           ├── DVONN (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.DVONN }}
+           ├── PUNCT (White layers 0,2,4): ${board.nodes.filter { it.piece?.colorName == PlayerName.WHITE && it.piece?.type == PieceType.PUNCT }}
            
     SUMMARY EVALUATION:
     - Player Total Weight: ${nextReservePotentials + nextReserveBasics + nextCapturedPotentials + nextCapturedBasics + currentReservePotentials + currentReserveBasics + currentCapturedPotentials + currentCapturedBasics}
@@ -1094,6 +1091,6 @@ fun initializeState(): State {
       //		blackPlayer = blackPlayer,
       board = board,
       bitboard = convertBoardToBitboard(board),
-//      lines = constructLines(nodes = nodes),
+      //      lines = constructLines(nodes = nodes),
   )
 }
