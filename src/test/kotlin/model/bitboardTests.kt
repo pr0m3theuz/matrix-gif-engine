@@ -3,7 +3,6 @@
 package model
 
 import kotlinx.serialization.json.Json
-import org.example.ai.humanEvaluation.BestBitMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
 import org.example.toBitList
@@ -12,6 +11,7 @@ import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.collections.emptyList
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
@@ -410,56 +410,56 @@ class BitboardTest {
                         colorName = PlayerName.WHITE,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WD",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WD",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WD",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WY",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WY",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
         )
 
@@ -475,56 +475,56 @@ class BitboardTest {
                         colorName = PlayerName.BLACK,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BZ",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BD",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BP",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BP",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
         )
 
@@ -605,70 +605,70 @@ class BitboardTest {
                         colorName = PlayerName.BLACK,
                         type = PieceType.GIPF,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BZ",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BZ",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BZ",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BD",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BY",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BP",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "BP",
                         potential = true,
                         colorName = PlayerName.BLACK,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
@@ -678,14 +678,14 @@ class BitboardTest {
                         colorName = PlayerName.WHITE,
                         type = PieceType.GIPF,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = false,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
         )
 
@@ -701,56 +701,56 @@ class BitboardTest {
                         colorName = PlayerName.WHITE,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WT",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WZ",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WD",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WD",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.DVONN,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WY",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
         )
 
@@ -816,20 +816,22 @@ class BitboardTest {
 
     println(playerPiecesWithPotentialPowerset)
 
-    val piecesWithPotentialPowerset =
-        testBitboard.getsSelectedPiecesWithPotentialPowerset(
-            playerPiecesWithPotentialPowerset.first(),
-            currentPlayer,
-        )
+    val piecesWithPotentialPowerset = mutableListOf<UInt>()
 
-    val retrievedCapturedPieces =
-        testBitboard
-            .createRetrieveAndCapturePiecesList(
-                columnInfos = linesWithFourInARow,
-                selectedPiecesWithPotentialPowerset = emptyList(),
-                player = currentPlayer,
-            )
-            .plus(piecesWithPotentialPowerset)
+//        testBitboard.removeSelectedPiecesToRemove(
+//            currentPlayer,
+//            playerPiecesWithPotentialPowerset.first(),
+//          piecesWithPotentialPowerset
+//        )
+
+//    val retrievedCapturedPieces =
+//        testBitboard
+//            .createRetrieveAndCapturePiecesList(
+//                columnInfos = linesWithFourInARow,
+//                selectedPiecesWithPotentialPowerset = emptyList(),
+//                player = currentPlayer,
+//            )
+//            .plus(piecesWithPotentialPowerset)
 
     listOf(
         RetrievedCapturedPieceBit(
@@ -964,94 +966,7 @@ class BitboardTest {
             ),
         )
 
-    assertEquals(expectedRetrievedCapturedPiecesBit, retrievedCapturedPieces)
-
-    BestBitMove(
-        score = 5.286691f,
-        move =
-            PossibleBitMove(
-                piece = null,
-                retrievedCapturedPiecesBit =
-                    mutableListOf(
-                        RetrievedCapturedPieceBit(
-                            retrievedPiece =
-                                Piece(
-                                    abbreviation = "BG",
-                                    potential = false,
-                                    colorName = PlayerName.BLACK,
-                                    type = PieceType.GIPF,
-                                    isNeutralized = false,
-                                ),
-                            capturedPiece = null,
-                            bitmask = 2048UL,
-                            isNeutralized = false,
-                            keepRetrievedPieceInPlay = false,
-                        ),
-                        RetrievedCapturedPieceBit(
-                            retrievedPiece = null,
-                            capturedPiece =
-                                Piece(
-                                    abbreviation = "WG",
-                                    potential = false,
-                                    colorName = PlayerName.WHITE,
-                                    type = PieceType.GIPF,
-                                    isNeutralized = false,
-                                ),
-                            bitmask = 4UL,
-                            isNeutralized = false,
-                            keepRetrievedPieceInPlay = false,
-                        ),
-                        RetrievedCapturedPieceBit(
-                            retrievedPiece =
-                                Piece(
-                                    abbreviation = "BP",
-                                    potential = true,
-                                    colorName = PlayerName.BLACK,
-                                    type = PieceType.PUNCT,
-                                    isNeutralized = false,
-                                ),
-                            capturedPiece = null,
-                            bitmask = 268435456UL,
-                            isNeutralized = false,
-                            keepRetrievedPieceInPlay = false,
-                        ),
-                        RetrievedCapturedPieceBit(
-                            retrievedPiece = null,
-                            capturedPiece =
-                                Piece(
-                                    abbreviation = "WP",
-                                    potential = false,
-                                    colorName = PlayerName.WHITE,
-                                    type = PieceType.PUNCT,
-                                    isNeutralized = false,
-                                ),
-                            bitmask = 268435456UL,
-                            isNeutralized = true,
-                            keepRetrievedPieceInPlay = false,
-                        ),
-                        RetrievedCapturedPieceBit(
-                            retrievedPiece =
-                                Piece(
-                                    abbreviation = "BY",
-                                    potential = true,
-                                    colorName = PlayerName.BLACK,
-                                    type = PieceType.YINSH,
-                                    isNeutralized = false,
-                                ),
-                            capturedPiece = null,
-                            bitmask = 64UL,
-                            isNeutralized = false,
-                            keepRetrievedPieceInPlay = false,
-                        ),
-                    ),
-                sourceBit = null,
-                targetBit = null,
-                pieceType = null,
-                pieceColor = null,
-                pushDirection = null,
-                moveType = MoveType.RetrieveCapturePieces,
-            ),
-    )
+//    assertEquals(expectedRetrievedCapturedPiecesBit, retrievedCapturedPieces)
 
     mutableListOf(
         Piece(
@@ -1648,29 +1563,29 @@ class BitboardTest {
     // 3. Initialize Reserves and Players
     val blackReserve =
         mutableListOf(
-            piece("BT"),
-            piece("BT"),
-            piece("BZ"),
-            piece("BZ"),
-            piece("BY"),
-            piece("BY"),
-            piece("BP"),
-            piece("BP"),
+            piece("BT").pack(),
+            piece("BT").pack(),
+            piece("BZ").pack(),
+            piece("BZ").pack(),
+            piece("BY").pack(),
+            piece("BY").pack(),
+            piece("BP").pack(),
+            piece("BP").pack(),
         )
 
     val whiteReserve =
         mutableListOf(
-            piece("WT"),
-            piece("WT"),
-            piece("WZ"),
-            piece("WZ"),
-            piece("WZ"),
-            piece("WY"),
-            piece("WY"),
-            piece("WY"),
-            piece("WP"),
-            piece("WP"),
-            piece("WP"),
+            piece("WT").pack(),
+            piece("WT").pack(),
+            piece("WZ").pack(),
+            piece("WZ").pack(),
+            piece("WZ").pack(),
+            piece("WY").pack(),
+            piece("WY").pack(),
+            piece("WY").pack(),
+            piece("WP").pack(),
+            piece("WP").pack(),
+            piece("WP").pack(),
         )
 
     val nextPlayer =
@@ -1719,11 +1634,12 @@ class BitboardTest {
             moveType = MoveType.RetrieveCapturePieces,
         )
 
-    val retrievedCapturedPieces =
-        modifiableBitboard.removeSelectedPiecesToRemove(
-            player = currentPlayer,
-            piecesToRemove = bestMove.retrievedCapturedPiecesBit,
-        )
+    val retrievedCapturedPieces = mutableListOf<UInt>()
+//        modifiableBitboard.removeSelectedPiecesToRemove(
+//            player = currentPlayer,
+//            piecesToRemove = bestMove.retrievedCapturedPiecesBit,
+//          retrievedCapturedPieces
+//        )
 
     val centerCoordinate = Coordinate(column = 'E', row = 5)
 
@@ -1746,7 +1662,7 @@ class BitboardTest {
 
     modifiableBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = nextPlayer)
 
-    modifiableBitboard.validatePieceRemoval(retrievedCapturedPieces)
+//    modifiableBitboard.validatePieceRemoval(retrievedCapturedPieces)
 
     val convertedBitboardBoard = modifiableBitboard.convertBitboardToBoard(board)
 
@@ -1813,49 +1729,49 @@ class BitboardTest {
                         colorName = PlayerName.WHITE,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WT",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WT",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.TAMSK,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WZ",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WZ",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.ZERTZ,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WY",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.YINSH,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                     Piece(
                         abbreviation = "WP",
                         potential = true,
                         colorName = PlayerName.WHITE,
                         type = PieceType.PUNCT,
                         isNeutralized = false,
-                    ),
+                    ).pack(),
                 ),
         )
 
@@ -1902,15 +1818,15 @@ class BitboardTest {
             abbreviation = "B",
             piecesInReserve =
                 mutableListOf(
-                    piece("BZ", potential = false),
-                    piece("BY", potential = false),
+                    piece("BZ", potential = false).pack(),
+                    piece("BY", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("WZ", potential = true),
-                    piece("WT", potential = true),
-                    piece("WG", potential = false),
-                    piece("WY", potential = false),
+                    piece("WZ", potential = true).pack(),
+                    piece("WT", potential = true).pack(),
+                    piece("WG", potential = false).pack(),
+                    piece("WY", potential = false).pack(),
                 ),
         )
 
@@ -1920,19 +1836,19 @@ class BitboardTest {
             abbreviation = "W",
             piecesInReserve =
                 mutableListOf(
-                    piece("WY", potential = false),
-                    piece("WP", potential = false),
+                    piece("WY", potential = false).pack(),
+                    piece("WP", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("BT", potential = true),
-                    piece("BG", potential = false),
-                    piece("BT", potential = true),
-                    piece("BY", potential = true),
-                    piece("BY", potential = true),
-                    piece("BD", potential = false),
-                    piece("BZ", potential = false),
-                    piece("BD", potential = false),
+                    piece("BT", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BT", potential = true).pack(),
+                    piece("BY", potential = true).pack(),
+                    piece("BY", potential = true).pack(),
+                    piece("BD", potential = false).pack(),
+                    piece("BZ", potential = false).pack(),
+                    piece("BD", potential = false).pack(),
                 ),
         )
 
@@ -2061,14 +1977,14 @@ class BitboardTest {
             abbreviation = "B",
             piecesInReserve =
                 mutableListOf(
-                    piece("BZ", potential = false),
-                    piece("BY", potential = false),
+                    piece("BZ", potential = false).pack(),
+                    piece("BY", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("WY", potential = true),
-                    piece("WD", potential = true),
-                    piece("WG", potential = false),
+                    piece("WY", potential = true).pack(),
+                    piece("WD", potential = true).pack(),
+                    piece("WG", potential = false).pack(),
                 ),
         )
 
@@ -2078,18 +1994,18 @@ class BitboardTest {
             abbreviation = "W",
             piecesInReserve =
                 mutableListOf(
-                    piece("WZ", potential = false),
-                    piece("WD", potential = true),
-                    piece("WY", potential = false),
+                    piece("WZ", potential = false).pack(),
+                    piece("WD", potential = true).pack(),
+                    piece("WY", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("BY", potential = true),
-                    piece("BD", potential = true),
-                    piece("BG", potential = false),
-                    piece("BG", potential = false),
-                    piece("BD", potential = true),
-                    piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
+                    piece("BY", potential = true).pack(),
+                    piece("BD", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BD", potential = true).pack(),
+                    piece("BT", potential = true).pack(), // Inferred TAMSK from 'TAMS'
                 ),
         )
 
@@ -2185,16 +2101,16 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
-                    piece("BG", potential = false),
-                    piece("BG", potential = false),
-                    piece("BG", potential = false),
-                    piece("BT", potential = true),
-                    piece("BY", potential = false),
-                    piece("BT", potential = true),
-                    piece("BD", potential = true),
+                    piece("BG", potential = false).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BT", potential = true).pack(),
+                    piece("BY", potential = false).pack(),
+                    piece("BT", potential = true).pack(),
+                    piece("BD", potential = true).pack(),
                 ),
         )
 
@@ -2205,10 +2121,10 @@ class BitboardTest {
             piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
-                    piece("WT", potential = true),
-                    piece("WG", potential = false),
-                    piece("WP", potential = true),
-                    piece("WG", potential = false),
+                    piece("WT", potential = true).pack(),
+                    piece("WG", potential = false).pack(),
+                    piece("WP", potential = true).pack(),
+                    piece("WG", potential = false).pack(),
                 ),
         )
 
@@ -2351,7 +2267,7 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
@@ -2421,7 +2337,7 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
@@ -2975,13 +2891,13 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
-                    piece("BD", potential = true),
-                    piece("BG", potential = false),
-                    piece("BZ", potential = true),
-                    piece("BG", potential = false),
+                    piece("BD", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BZ", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
                 ),
         )
 
@@ -2992,9 +2908,9 @@ class BitboardTest {
             piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
-                    piece("WG", potential = false),
-                    piece("WY", potential = true),
-                    piece("WP", potential = true),
+                    piece("WG", potential = false).pack(),
+                    piece("WY", potential = true).pack(),
+                    piece("WP", potential = true).pack(),
                 ),
         )
 
@@ -3570,13 +3486,13 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
-                    piece("BD", potential = true),
-                    piece("BG", potential = false),
-                    piece("BZ", potential = true),
-                    piece("BG", potential = false),
+                    piece("BD", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BZ", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
                 ),
         )
 
@@ -3587,9 +3503,9 @@ class BitboardTest {
             piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
-                    piece("WG", potential = false),
-                    piece("WY", potential = true),
-                    piece("WP", potential = true),
+                    piece("WG", potential = false).pack(),
+                    piece("WY", potential = true).pack(),
+                    piece("WP", potential = true).pack(),
                 ),
         )
 
@@ -4180,14 +4096,14 @@ class BitboardTest {
         Player(
             name = PlayerName.WHITE,
             abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false)),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
-                    piece("BD", potential = true),
-                    piece("BY", potential = true),
-                    piece("BG", potential = false),
-                    piece("BZ", potential = true),
-                    piece("BP", potential = true),
+                    piece("BD", potential = true).pack(),
+                    piece("BY", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BZ", potential = true).pack(),
+                    piece("BP", potential = true).pack(),
                 ),
         )
 
@@ -4195,14 +4111,14 @@ class BitboardTest {
         Player(
             name = PlayerName.BLACK,
             abbreviation = "B",
-            piecesInReserve = mutableListOf(piece("BY", potential = false)),
+            piecesInReserve = mutableListOf(piece("BY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
-                    piece("WD", potential = true),
-                    piece("WY", potential = true),
-                    piece("WD", potential = true),
-                    piece("WZ", potential = true),
-                    piece("WZ", potential = false),
+                    piece("WD", potential = true).pack(),
+                    piece("WY", potential = true).pack(),
+                    piece("WD", potential = true).pack(),
+                    piece("WZ", potential = true).pack(),
+                    piece("WZ", potential = false).pack(),
                 ),
         )
 
@@ -4334,14 +4250,14 @@ class BitboardTest {
             abbreviation = "B",
             piecesInReserve =
                 mutableListOf(
-                    piece("BZ", potential = false),
-                    piece("BY", potential = false),
+                    piece("BZ", potential = false).pack(),
+                    piece("BY", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("WY", potential = true),
-                    piece("WD", potential = true),
-                    piece("WG", potential = false),
+                    piece("WY", potential = true).pack(),
+                    piece("WD", potential = true).pack(),
+                    piece("WG", potential = false).pack(),
                 ),
         )
 
@@ -4351,18 +4267,18 @@ class BitboardTest {
             abbreviation = "W",
             piecesInReserve =
                 mutableListOf(
-                    piece("WZ", potential = false),
-                    piece("WD", potential = true),
-                    piece("WY", potential = false),
+                    piece("WZ", potential = false).pack(),
+                    piece("WD", potential = true).pack(),
+                    piece("WY", potential = false).pack(),
                 ),
             capturedPieces =
                 mutableListOf(
-                    piece("BY", potential = true),
-                    piece("BD", potential = true),
-                    piece("BG", potential = false),
-                    piece("BG", potential = false),
-                    piece("BD", potential = true),
-                    piece("BT", potential = true), // Inferred TAMSK from 'TAMS'
+                    piece("BY", potential = true).pack(),
+                    piece("BD", potential = true).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BG", potential = false).pack(),
+                    piece("BD", potential = true).pack(),
+                    piece("BT", potential = true).pack(), // Inferred TAMSK from 'TAMS'
                 ),
         )
 

@@ -132,7 +132,7 @@ class BitPackingTests {
         )
 
     val packedPiece = piece.pack()
-    val unpackedPiece = packedPiece.unpackPiece()
+    val unpackedPiece = packedPiece.extractPiece()
 
     assertEquals(piece.type, unpackedPiece?.type)
     assertEquals(piece.potential, unpackedPiece?.potential)
@@ -202,7 +202,7 @@ class BitPackingTests {
   @Test
   fun `BitMove manual bit calculation to ensure exact UInt usage`() {
     // Arrange
-    val pieceByte: UByte = 28u // Represents BLACK, potential=true, YINSH
+    val pieceByte: UInt = 28u shl 24 // Represents BLACK, potential=true, YINSH
     val sourceIndex = 4
     val targetIndex = 2
     val pieceType = PieceType.ZERTZ // ordinal 2

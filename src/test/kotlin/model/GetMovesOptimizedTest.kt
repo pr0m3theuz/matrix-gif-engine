@@ -5,6 +5,7 @@ package model
 import kotlin.test.assertEquals
 import org.example.ai.mcts.PackedMove
 import org.example.model.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 
@@ -80,7 +81,7 @@ class GetMovesOptimizedTest {
 
     val expectedPackedPiece = expectedPiece.pack()
 
-    val nullPiece = 63.toUByte().unpackPiece()
+    val nullPiece = 63.toUByte()
 
     val expectedMoves =
         listOf<PossibleBitMove>(
@@ -119,4 +120,74 @@ class GetMovesOptimizedTest {
   @Test fun identifyAvailableMoves() {}
 
   @Test fun identifyPiecesToRemove() {}
+
+  @Test
+  fun `get DVONN Moves when Blocked`() {
+    /**
+     * TODO The DVONN potential has the ability to jump atop any of the opponent's DVONN pieces
+     * (individual pieces or stacks) as long as the both DVONN pieces are on the same line and there
+     * are no other pieces in between them.
+     */
+    // 1. Initialize Active Bitboard (with size-8 arrays)
+    val bitboard =
+      Bitboard(
+        whiteGIPF = 2UL,
+        whiteDVONNLayer = ulongArrayOf(1UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whiteTAMSK = 0UL,
+        whiteYINSH = 0UL,
+        whiteZERTZ = 0UL,
+        whitePotentials = 1UL,
+        blackGIPF = 0UL,
+        blackDVONNLayer = ulongArrayOf(8UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackTAMSK = 0UL,
+        blackYINSH = 0UL,
+        blackZERTZ = 0UL,
+        blackPotentials = 8UL,
+      )
+
+    // 2. Initialize Init Bitboard (slightly different whitePotentials and whiteDVONNLayer)
+    val initBitboard =
+      Bitboard(
+        whiteGIPF = 0UL,
+        whiteDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whitePUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        whiteTAMSK = 0UL,
+        whiteYINSH = 0UL,
+        whiteZERTZ = 0UL,
+        whitePotentials = 0UL,
+        blackGIPF = 0UL,
+        blackDVONNLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackPUNCTLayer = ulongArrayOf(0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL),
+        blackTAMSK = 0UL,
+        blackYINSH = 0UL,
+        blackZERTZ = 0UL,
+        blackPotentials = 0UL,
+      )
+
+    // 3. Initialize Current and Opponent Players
+    val currentPlayer =
+      Player(
+        name = PlayerName.WHITE,
+        abbreviation = "W",
+        piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+      )
+
+    val opponentPlayer =
+      Player(
+        name = PlayerName.BLACK,
+        abbreviation = "B",
+        piecesInReserve = mutableListOf(),
+      )
+
+    val dvonnMoves = mutableListOf<PackedMove>()
+    bitboard.getDvonnMoves(
+      player = currentPlayer,
+      columnInfos = org.example.model.columnInfos,
+      dvonnMoves,
+    )
+
+    Assertions.assertTrue(dvonnMoves.isEmpty())
+  }
 }
