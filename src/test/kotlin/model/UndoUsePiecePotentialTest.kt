@@ -7,6 +7,7 @@ import org.example.model.Player
 import org.example.model.PlayerName
 import org.example.model.undoUsePiecePotential
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
 class UndoUsePiecePotentialTest {
@@ -152,6 +153,6 @@ class UndoUsePiecePotentialTest {
         )
 	  modifiedBitboard.undoUsePiecePotential(moveValue)
 
-	  assertSame(preMoveBitboardState, modifiedBitboard)
+      assertEquals(preMoveBitboardState, modifiedBitboard)
   }
 }

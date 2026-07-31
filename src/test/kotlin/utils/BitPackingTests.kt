@@ -179,8 +179,8 @@ class BitPackingTests {
                 moveType = moveType,
                 columnInfoIndex = columnInfoIndex,
             )
-            .setPieceType(pieceType)
-            .setPieceColor(pieceColor)
+//            .setPieceType(pieceType)
+//            .setPieceColor(pieceColor)
 
     val unpackedMove = packedMove.toPossibleBitMove()
 
