@@ -468,10 +468,16 @@ fun alphaBetaPackedMove(
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
         // TODO undo use piece potential
-        bitboard.undoUsePiecePotential(moveValue)
 
-        bitboard.diff(preMoveBitboardState)
-        bitboard.deepCopy().assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+//        val bitboardCopy = bitboard.deepCopy()
+//        bitboardCopy.undoUsePiecePotential(moveValue)
+//        bitboard.undoUsePiecePotential(moveValue)
+
+//        bitboardCopy.diff(preMoveBitboardState)
+
+        bitboard.restorePreviousBoardState(preMoveBitboardState)
+
+        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
         if (move.score.unaryMinus() > alphaBetaScore.alpha) {
           alphaBetaScore.alpha = move.score.unaryMinus()
@@ -594,7 +600,7 @@ private fun bestPiecesToRemove(
 
       bitboard.removeSelectedPiecesToRemove(
           player = currentPlayer,
-          piecesToRemove = removePieces.values,
+          piecesToRemove = removePieces.values.distinct(),
           movesBuffer = move,
       )
 
@@ -657,7 +663,7 @@ fun resolveBoardRemovals(
        * return of a list containing different combinations of bit positions
        */
       require(removePieces is PackedMove.Multiple)
-      val playerPiecesWithPotentialToRemove = removePieces.values
+      val playerPiecesWithPotentialToRemove = removePieces.values.distinct()
 
       val retrievedCapturedPieces = mutableListOf<UInt>()
       bitboard.removeSelectedPiecesToRemove(
@@ -694,7 +700,7 @@ fun resolveBoardRemovals(
         logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
       }
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+//      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
       // c. Update alpha/beta scores
       val move =

@@ -65,7 +65,7 @@ data class MCTSNode(
     val nextPlayer: Player,
     val parentNode: MCTSNode? = null,
     val move: PackedMove? = null,
-    val turnCount: Int = 0,
+    var turnCount: Int = 0,
     val turnPhase: TurnPhase,
     val previousTurnPhases: List<TurnPhase> = emptyList(),
     val childrenNodes: MutableList<MCTSNode> = mutableListOf(),
@@ -103,6 +103,14 @@ data class MCTSNode(
      * current player? if yes, remove pieces. Add retrieval/capture moves to
      * identifyAvailableMoves()
      */
+
+    this.turnCount = if (parentNode?.currentPlayer?.name == this.currentPlayer.name) {
+	    this.turnCount
+    } else {
+	    this.turnCount.plus(1)
+    }
+
+    var turnPhase: TurnPhase? = null
     when (selectedPackedMove) {
       is PackedMove.Multiple -> {
         val retrievedCapturedPieces = mutableListOf<UInt>()
@@ -112,6 +120,8 @@ data class MCTSNode(
             piecesToRemove = selectedPackedMove.values,
             movesBuffer = retrievedCapturedPieces,
         )
+
+        turnPhase = TurnPhase.PieceRemoval
 
         //        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
         //          it.retrievedPiece
@@ -142,7 +152,11 @@ data class MCTSNode(
             //            val columnInfo = selectedMove.columnInfo
             if (selectedMove.extractSourceBit() == boardCenterSpotMask) {
               childBitboard.useTamskPotential(selectedMove)
+
+              turnPhase = TurnPhase.ExtraMove
             } else {
+              turnPhase = TurnPhase.PlayerInputWindow
+
               val selectedPiece =
                   selectedMove.onlyPiece().let { childCurrentPlayer.selectPiece(it) }
 
@@ -160,6 +174,8 @@ data class MCTSNode(
                 currentPlayer = currentPlayer,
                 nextPlayer = nextPlayer,
             )
+
+            turnPhase = TurnPhase.PlayerInputWindow
           }
           MoveType.RetrieveCapturePieces -> {}
         }
@@ -216,7 +232,7 @@ data class MCTSNode(
                   currentPlayerRemovablePieces,
               )
 
-          !turnHasHadNormalMove ->
+          !turnHasHadNormalMove && turnPhase != TurnPhase.PlayerInputWindow  ->
               ChildState(
                   childCurrentPlayer,
                   childNextPlayer,
@@ -268,9 +284,7 @@ data class MCTSNode(
             nextPlayer = nodeNextPlayer,
             parentNode = this,
             move = selectedPackedMove,
-            turnCount =
-                if (nodeCurrentPlayer.name == this.currentPlayer.name) this.turnCount
-                else this.turnCount.plus(1),
+            turnCount = this.turnCount,
             turnPhase = nodeTurnPhase,
             previousTurnPhases =
                 if (nodeCurrentPlayer.name == this.currentPlayer.name)
@@ -634,7 +648,7 @@ fun simulatePieceRetrievalCapture(
         val retrievedCapturedPieces = mutableListOf<UInt>()
         bitboard.removeSelectedPiecesToRemove(
             player = currentPlayer,
-            piecesToRemove = selectedPieceToRemove.values,
+            piecesToRemove = selectedPieceToRemove.values.distinct(),
             retrievedCapturedPieces,
         )
 

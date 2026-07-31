@@ -328,7 +328,7 @@ fun State.encodeState(): D2Array<Int> {
               .deepCopy()
               .removeSelectedPiecesToRemove(
                   player = newState.currentPlayer,
-                  piecesToRemove = retrieveCapture.values,
+                  piecesToRemove = retrieveCapture.values.distinct(),
                   retrievedCapturedPieces,
               )
 
@@ -438,7 +438,7 @@ fun State.encodeState(): D2Array<Int> {
               .deepCopy()
               .removeSelectedPiecesToRemove(
                   player = newState.nextPlayer,
-                  piecesToRemove = retrieveCapture.values,
+                  piecesToRemove = retrieveCapture.values.distinct(),
                   movesBuffer = retrievedCapturedPieces,
               )
           val capturedPieces =
