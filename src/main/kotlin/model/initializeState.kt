@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example.model
 
 fun initializeState(): State {
@@ -8,6 +10,8 @@ fun initializeState(): State {
       Player(
           name = PlayerName.WHITE,
           abbreviation = "W",
+          model = Model.MINIMAX,
+          strength = Strength.EASY
           //          color = Color.WHITE,
       )
 
@@ -15,6 +19,8 @@ fun initializeState(): State {
       Player(
           name = PlayerName.BLACK,
           abbreviation = "B",
+          model = Model.MINIMAX,
+          strength = Strength.EASY
           //          color = Color.BLACK,
       )
 
@@ -57,7 +63,7 @@ fun initializeState(): State {
       //		whitePlayer = whitePlayer,
       //		blackPlayer = blackPlayer,
       board = board,
-      bitboard = convertBoardToBitboard(board),
+      bitboard = Bitboard(),
       //      lines = constructLines(nodes = nodes),
   )
 }
