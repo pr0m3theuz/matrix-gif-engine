@@ -7,6 +7,7 @@ import org.example.ai.humanEvaluation.alphaBetaPackedMove
 import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
+import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
 import kotlin.random.Random
 
@@ -74,37 +75,37 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
   val bitboard = state.bitboard.deepCopy()
 
-  val packedMove: PackedMove? = when (turnPhase) {
-    TurnPhase.PieceRemoval -> resolveBoardRemovals(
-      currentPlayer = state.currentPlayer.deepCopy(),
-      opponentPlayer = state.nextPlayer.deepCopy(),
-	    bitboard = bitboard,
-	    depth = 3,
-      alphaBetaScore = AlphaBetaScoreBitPacked(),
-      rng = rng,
-    ).move
-    else -> alphaBetaPackedMove(
-      depth = 3,
-      bitboard = bitboard,
-      currentPlayer = state.currentPlayer.deepCopy(),
-      opponentPlayer = state.nextPlayer.deepCopy(),
-      alphaBetaScore = AlphaBetaScoreBitPacked(),
-      rng = rng,
-    )
-      .move
-  }
+//  val packedMove: PackedMove? = when (turnPhase) {
+//    TurnPhase.PieceRemoval -> resolveBoardRemovals(
+//      currentPlayer = state.currentPlayer.deepCopy(),
+//      opponentPlayer = state.nextPlayer.deepCopy(),
+//	    bitboard = bitboard,
+//	    depth = 3,
+//      alphaBetaScore = AlphaBetaScoreBitPacked(),
+//      rng = rng,
+//    ).move
+//    else -> alphaBetaPackedMove(
+//      depth = 3,
+//      bitboard = bitboard,
+//      currentPlayer = state.currentPlayer.deepCopy(),
+//      opponentPlayer = state.nextPlayer.deepCopy(),
+//      alphaBetaScore = AlphaBetaScoreBitPacked(),
+//      rng = rng,
+//    )
+//      .move
+//  }
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  //  val packedMove: PackedMove? =
-//        selectMoveMCTS(
-//            bitboard = bitboard,
-//            currentPlayer = state.currentPlayer,
-//            nextPlayer = state.nextPlayer,
-//            turnPhase = turnPhase,
-//            rounds = 0..999,
-//            rng = rng,
-//        )
+    val packedMove: PackedMove? =
+        selectMoveMCTS(
+            bitboard = bitboard,
+            currentPlayer = state.currentPlayer,
+            nextPlayer = state.nextPlayer,
+            turnPhase = turnPhase,
+            rounds = 0..999,
+            rng = rng,
+        )
 
   if (packedMove != null) {
     // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }

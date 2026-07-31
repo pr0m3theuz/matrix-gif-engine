@@ -117,7 +117,7 @@ data class MCTSNode(
 
         childBitboard.removeSelectedPiecesToRemove(
             player = childCurrentPlayer,
-            piecesToRemove = selectedPackedMove.values,
+            piecesToRemove = selectedPackedMove.values.distinct(),
             movesBuffer = retrievedCapturedPieces,
         )
 
