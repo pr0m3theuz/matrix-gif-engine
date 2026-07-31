@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
 	implementation("io.github.oshai:kotlin-logging:7.0.7")
-	implementation("ch.qos.logback:logback-classic:1.5.6")
+	implementation("ch.qos.logback:logback-classic:1.5.13")
 	testImplementation(kotlin("test"))
 	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 	testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
