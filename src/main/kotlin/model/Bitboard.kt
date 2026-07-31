@@ -626,6 +626,24 @@ data class Bitboard(
     result = 31 * result + globalOccupancy.hashCode()
     return result
   }
+
+  fun restorePreviousBoardState(previousBoardState: Bitboard) {
+    whiteGIPF = previousBoardState.whiteGIPF
+    whiteDVONNLayer = previousBoardState.whiteDVONNLayer
+    whiteYINSH = previousBoardState.whiteYINSH
+    whiteZERTZ = previousBoardState.whiteZERTZ
+    whiteDVONNLayer = previousBoardState.whiteDVONNLayer
+    whitePUNCTLayer = previousBoardState.whitePUNCTLayer
+    whitePotentials = previousBoardState.whitePotentials
+
+    blackGIPF = previousBoardState.blackGIPF
+    blackTAMSK = previousBoardState.blackTAMSK
+    blackYINSH = previousBoardState.blackYINSH
+    blackZERTZ = previousBoardState.blackZERTZ
+    blackDVONNLayer = previousBoardState.blackDVONNLayer
+    blackPUNCTLayer = previousBoardState.blackPUNCTLayer
+    blackPotentials = previousBoardState.blackPotentials
+  }
 }
 
 val Bitboard.vacantLines
