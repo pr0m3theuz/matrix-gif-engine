@@ -8,6 +8,8 @@ import org.example.engine.playerTurn
 import org.example.model.*
 import kotlin.random.Random
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
@@ -25,7 +27,7 @@ fun main() {
   //          gameState.bitboard.identifyAvailableMoves(gameState.currentPlayer).isNotEmpty()
   ) {
     turn = turn.plus(1)
-    println("Turn: $turn")
+    logger.info { "" + ("Turn: $turn") }
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
 
@@ -63,7 +65,7 @@ fun main() {
   }
 
   gameState.printStateSummary()
-  println("State: ${Json.encodeToString(gameState)}")
+  logger.info { "" + ("State: ${Json.encodeToString(gameState)}") }
 
   val winner =
       determineWinner(
@@ -86,9 +88,9 @@ fun main() {
     else -> {}
   }
 
-  println("Player: ${winner?.name} won")
+  logger.info { "" + ("Player: ${winner?.name} won") }
   gameState.turnMoves.keys.toList().takeLast(3).forEach { turns ->
-    println("Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}")
+    logger.info { "" + ("Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}") }
   }
 
   val lastTurnPlayer =

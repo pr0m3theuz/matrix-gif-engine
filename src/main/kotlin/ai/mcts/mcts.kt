@@ -11,6 +11,8 @@ import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 fun calculateUCTScore(
     parentRollouts: Double,
     childRollouts: Int,
@@ -278,7 +280,7 @@ data class MCTSNode(
         )
 
     //    if (nodeMoves.isEmpty()) {
-    //      println("Current node has no children!")
+    //      logger.info { "" + ("Current node has no children!") }
     //    }
 
     this.childrenNodes.add(childNode)
@@ -380,7 +382,7 @@ fun selectMoveMCTS(
     // !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
       //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-      //        println("Current node has no children!}")
+      //        logger.info { "" + ("Current node has no children!}") }
       //      }
 
       currentNode = currentNode.selectChildNodeToExplore()
@@ -392,7 +394,7 @@ fun selectMoveMCTS(
     }
 
     //    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-    //      println("Current node has no children!")
+    //      logger.info { "" + ("Current node has no children!") }
     //    }
 
     if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
@@ -488,7 +490,7 @@ fun simulateRandomGame(
           opponentPlayer,
           playerWhoMadeTheLastMove ?: nextPlayer,
       )
-  //  println("Player: ${winner?.name} won")
+  //  logger.info { "" + ("Player: ${winner?.name} won") }
   return winner
 }
 
@@ -498,12 +500,11 @@ fun simulatePlayerTurn(
     opponentPlayer: Player,
     rng: Random,
 ) {
-  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
-  if (isDebugEnabled) {
-    //		println("--- ALPHA-BETA CALLED ---")
-    println("currentPlayer: $currentPlayer")
-    println("opponentPlayer: $opponentPlayer")
-    println("Bitboard: ${Json.encodeToString(bitboard)}")
+  if (logger.isDebugEnabled()) {
+    //		logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
+    logger.info { "" + ("currentPlayer: $currentPlayer") }
+    logger.info { "" + ("opponentPlayer: $opponentPlayer") }
+    logger.info { "" + ("Bitboard: ${Json.encodeToString(bitboard)}") }
   }
 
   // TODO given a list of moves, select a random move

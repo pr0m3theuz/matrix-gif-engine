@@ -8,6 +8,8 @@ import org.example.ai.mcts.encode
 import org.example.model.*
 import kotlin.random.Random
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 fun playerTurn(state: State, turn: Int, rng: Random): State {
 
   var newState = state // .deepCopy(copyCollector = true)
@@ -94,7 +96,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
   //      )
 
   if (packedMove != null) {
-    // println("Player Move: ${Json.encodeToString(bestMove)}")
+    // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }
 
     state.currentPlayer.collector?.recordDecision(
         state.encodeState(),
@@ -306,12 +308,12 @@ fun determineWinner(
   }
 
   if (printStatement) {
-    capturedGIPFPieces?.let { println("Captured GIPF Pieces: ${Json.encodeToString(it)}") }
+    capturedGIPFPieces?.let { logger.info { "" + ("Captured GIPF Pieces: ${Json.encodeToString(it)}") } }
     bitboardHasAvailableMoves?.let {
-      println("Has Available Moves (Bitboard): ${Json.encodeToString(it)}")
+      logger.info { "" + ("Has Available Moves (Bitboard): ${Json.encodeToString(it)}") }
     }
     playerWhoMadeTheLastMove?.let {
-      println("Player Made The Last Move: ${Json.encodeToString(it)}")
+      logger.info { "" + ("Player Made The Last Move: ${Json.encodeToString(it)}") }
     }
   }
 

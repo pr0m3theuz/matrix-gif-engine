@@ -16,6 +16,8 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import kotlin.math.min
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 @Serializable
 data class State(
     val currentPlayer: Player,
@@ -523,7 +525,7 @@ fun State.printStateSummary() {
     }
   }
 
-  print(sb.toString())
+  logger.info { "" + (sb.toString()) }
 }
 
 fun State.assertPieceCount(

@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.mutableListOf
 import kotlin.random.Random
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 suspend fun main() = coroutineScope {
 	val totalGames = 2
 	val cores = Runtime.getRuntime().availableProcessors()
@@ -23,14 +25,14 @@ suspend fun main() = coroutineScope {
 			try {
 				playOneGame(gameId)
 				val n = completed.incrementAndGet()
-				if (n % 50 == 0) println("Completed $n/$totalGames games")
+				if (n % 50 == 0) logger.info { "" + ("Completed $n/$totalGames games") }
 			} catch (e: Exception) {
-				println("Game $gameId failed: ${e.message}")
+				logger.info { "" + ("Game $gameId failed: ${e.message}") }
 			}
 		}
 	}
 	jobs.awaitAll()
-	println("All games finished.")
+	logger.info { "" + ("All games finished.") }
 }
 
 fun playOneGame(gameId: Int) {

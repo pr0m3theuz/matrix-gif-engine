@@ -4,6 +4,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.example.engine.ExperienceCollector
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 enum class PlayerName {
   WHITE,
   BLACK,
@@ -68,10 +70,9 @@ data class Player(
 
     val pieceCountDifference = initialSize - piecesInReserve.size
 
-    //    println(
-    //        "the delta was $pieceCountDifference (Initial: $initialSize, Current:
+    //    logger.info { "" + (//        "the delta was $pieceCountDifference (Initial: $initialSize, Current:
     // ${piecesInReserve.size})"
-    //    )
+    //) }
 
     check(pieceCountDifference == 1) {
       "Reserve decrement failure! Expected exactly 1 piece to be removed from the reserve, " +
@@ -87,10 +88,9 @@ data class Player(
 
   fun combinePieces(): List<UInt> {
     // --- 0. CONFIGURABLE DEBUGGING ---
-    val isDebugEnabled = false
-    if (isDebugEnabled) {
-      println("--- COMBINE PIECES CALLED ---")
-      println("Reserve size before combining: ${this.piecesInReserve.size}")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("--- COMBINE PIECES CALLED ---") }
+      logger.info { "" + ("Reserve size before combining: ${this.piecesInReserve.size}") }
     }
 
     // --- 1. SINGLE-PASS PARTITIONING ---
@@ -103,7 +103,7 @@ data class Player(
         }
 
     if (piecesToCombine.isEmpty()) {
-      if (isDebugEnabled) println("No combinable pieces found. Exiting.")
+                                   logger.debug { "" + ("No combinable pieces found. Exiting.") }
       return emptyList()
     }
 
@@ -119,10 +119,8 @@ data class Player(
       val pairs = count / 2
       val remainder = count % 2
 
-      if (isDebugEnabled) {
-        println(
-            "  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover."
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover.") }
       }
 
       // Create the newly stacked (Potential) pieces
@@ -173,10 +171,10 @@ data class Player(
     this.piecesInReserve.addAll(leftoverPieces)
     this.piecesInReserve.addAll(newlyStackedPotentials)
 
-    if (isDebugEnabled) {
-      println("Successfully generated ${newlyStackedPotentials.size} new potential pieces.")
-      println("Reserve size after combining: ${this.piecesInReserve.size}")
-      println("--- COMBINE PIECES COMPLETED ---")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("Successfully generated ${newlyStackedPotentials.size} new potential pieces.") }
+      logger.info { "" + ("Reserve size after combining: ${this.piecesInReserve.size}") }
+      logger.info { "" + ("--- COMBINE PIECES COMPLETED ---") }
     }
 
     // FIXED: Only return the actual newly formed stacks, omitting the leftover singletons
@@ -185,10 +183,9 @@ data class Player(
 
   fun uncombinePieces(newlyStackedPieces: List<UInt>) {
     // --- 0. CONFIGURABLE DEBUGGING ---
-    val isDebugEnabled = false
-    if (isDebugEnabled) {
-      println("--- UNCOMBINE PIECES CALLED ---")
-      println("Newly stacked pieces count: ${newlyStackedPieces.size}")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("--- UNCOMBINE PIECES CALLED ---") }
+      logger.info { "" + ("Newly stacked pieces count: ${newlyStackedPieces.size}") }
     }
 
     val preReservePotentials =
@@ -199,7 +196,7 @@ data class Player(
 
     // Early exit for cleaner control flow
     if (newlyStackedPieces.isEmpty()) {
-      if (isDebugEnabled) println("No newly stacked pieces to process. Exiting.")
+                                   logger.debug { "" + ("No newly stacked pieces to process. Exiting.") }
       return
     }
 
@@ -208,13 +205,13 @@ data class Player(
 //    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
 
     if (newlyStackedPieces.isEmpty()) {
-      if (isDebugEnabled) println("None of the newly stacked pieces are 'potential'. Exiting.")
+                                   logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
       return
     }
 
-    if (isDebugEnabled) {
-      println("Found ${newlyStackedPieces.size} potential piece(s) to uncombine.")
-      println("Reserve size before uncombining: ${this.piecesInReserve.size}")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("Found ${newlyStackedPieces.size} potential piece(s) to uncombine.") }
+      logger.info { "" + ("Reserve size before uncombining: ${this.piecesInReserve.size}") }
     }
 
     // --- 2. GENERATE UNCOMBINED PIECES ---
@@ -254,14 +251,14 @@ data class Player(
         } * 2
     val postReserveBasics = piecesInReserve.count { !it.extractPotential() }
 
-    if (isDebugEnabled) {
-      println("Successfully generated and added ${unstackedPieces.size} regular pieces.")
-      println("Reserve size after uncombining: ${this.piecesInReserve.size}")
-      println("Pre Uncombine Potential Pieces: $preReservePotentials")
-      println("Pre Uncombine Basic Pieces: $preReserveBasics")
-      println("Post Uncombine Potential Pieces: $postReservePotentials")
-      println("Post Uncombine Basic Pieces: $postReserveBasics")
-      println("--- UNCOMBINE PIECES COMPLETED ---")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("Successfully generated and added ${unstackedPieces.size} regular pieces.") }
+      logger.info { "" + ("Reserve size after uncombining: ${this.piecesInReserve.size}") }
+      logger.info { "" + ("Pre Uncombine Potential Pieces: $preReservePotentials") }
+      logger.info { "" + ("Pre Uncombine Basic Pieces: $preReserveBasics") }
+      logger.info { "" + ("Post Uncombine Potential Pieces: $postReservePotentials") }
+      logger.info { "" + ("Post Uncombine Basic Pieces: $postReserveBasics") }
+      logger.info { "" + ("--- UNCOMBINE PIECES COMPLETED ---") }
     }
   }
 }

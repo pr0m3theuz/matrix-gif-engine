@@ -5,6 +5,8 @@ import kotlin.math.abs
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 @Serializable
 data class Board(
     val nodes: Set<Node>,
@@ -57,7 +59,7 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
 
   val newNodes = this.deepCopy().nodes.toMutableSet()
 
-	println("Retrieved and Captured Piece & Nodes to remove: ${Json.encodeToString(retrievedCapturedPieceNodes)}")
+	logger.info { "" + ("Retrieved and Captured Piece & Nodes to remove: ${Json.encodeToString(retrievedCapturedPieceNodes)}") }
 
   val updatedNodes =
       retrievedCapturedPieceNodes
@@ -88,7 +90,7 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
     newNodes
         .first { it.coordinate == updatedNode.coordinate }
         .let {
-					println("Removing node $it")
+					logger.info { "" + ("Removing node $it") }
           newNodes.remove(it)
         }
   }
@@ -164,8 +166,8 @@ fun Board.printHexGrid(prefix: String) {
           'J' to 1..4,
       )
 
-  println("=================== $prefix GIPF BOARD ===================")
-  println(" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|")
+  logger.info { "" + ("=================== $prefix GIPF BOARD ===================") }
+  logger.info { "" + (" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|") }
   for (rowLetter in columns) {
     val rowStringBuilder = StringBuilder()
 
@@ -206,13 +208,13 @@ fun Board.printHexGrid(prefix: String) {
 
     if (rowStringBuilder.toString().trim().isNotEmpty()) {
       // Print the Row Letter on the left side
-      println("$rowLetter$rowStringBuilder")
+      logger.info { "" + ("$rowLetter$rowStringBuilder") }
     }
   }
 
   // Print column number footer coordinates
-  println(" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|")
-  println("==================================================")
+  logger.info { "" + (" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|") }
+  logger.info { "" + ("==================================================") }
 }
 
 

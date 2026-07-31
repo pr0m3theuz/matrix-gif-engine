@@ -3,6 +3,8 @@ package org.example.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 /**
  * Lines (Start Node, End Node): A-J 1-9? A1 - I5 B1 - B6 B1 - J4 C1 - C7 C1 - J3 D1 - D8 D1 - J2
  * E1 - E9 F1 - F8 F1 - A2 G1 - G7 G1 - A3 H1 - H6 H1 - A4 I1 - I5 I1 - A5 J1 - B6
@@ -323,7 +325,7 @@ fun scoreLines(player: Player, lines: List<Set<Node>>) {
 
     val grouped = result.groupBy { it.first().piece?.colorName }
 
-    println(grouped.maxBy { it.value.size })
+    logger.info { "" + (grouped.maxBy { it.value.size }) }
 
     result
   }

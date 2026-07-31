@@ -4,6 +4,8 @@ import kotlinx.serialization.json.Json
 import org.example.model.columnInfos
 import org.junit.jupiter.api.Test
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 class Utils {
 	@Test
 	fun calculateNeighboringBits() {
@@ -41,10 +43,10 @@ class Utils {
 			}
 		}
 
-//    println(Json.encodeToString(a))
-//    println(Json.encodeToString(b))
-//    println(Json.encodeToString(c))
-		println(Json.encodeToString(neighbouringBitsBitmasks))
+//    logger.info { "" + (Json.encodeToString(a)) }
+//    logger.info { "" + (Json.encodeToString(b)) }
+//    logger.info { "" + (Json.encodeToString(c)) }
+		logger.info { "" + (Json.encodeToString(neighbouringBitsBitmasks)) }
 	}
 
 	@Test
@@ -60,8 +62,8 @@ class Utils {
 		// features
 		val features = CURRENT_PLAYER_COLOR + 1
 
-		println(features)
-		println()
+		logger.info { "" + (features) }
+		logger.info { "" }
 	}
 
 }
