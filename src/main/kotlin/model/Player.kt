@@ -2,7 +2,16 @@ package org.example.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
+import org.example.ai.humanEvaluation.alphaBetaPackedMove
+import org.example.ai.humanEvaluation.resolveBoardRemovals
+import org.example.ai.mcts.PackedMove
+import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
+import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -13,12 +22,14 @@ enum class PlayerName {
 
 @Serializable
 data class Player(
-    val name: PlayerName,
-    val abbreviation: String,
+  val name: PlayerName,
+  val model: Model = Model.MCTS,
+  val strength: Strength = Strength.RANDOM,
+  val abbreviation: String,
     //    val color: Color,
-    val piecesInReserve: MutableList<UInt> = mutableListOf(),
-    val capturedPieces: MutableList<UInt> = mutableListOf(),
-    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+  val piecesInReserve: MutableList<UInt> = mutableListOf(),
+  val capturedPieces: MutableList<UInt> = mutableListOf(),
+  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): Player {
     //    val string = Json.encodeToString(serializer(), this)
@@ -26,6 +37,8 @@ data class Player(
 
     return Player(
         name = this.name,
+        model = this.model,
+        strength = this.strength,
         abbreviation = this.abbreviation,
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
@@ -259,6 +272,64 @@ data class Player(
       logger.info { "" + ("Post Uncombine Potential Pieces: $postReservePotentials") }
       logger.info { "" + ("Post Uncombine Basic Pieces: $postReserveBasics") }
       logger.info { "" + ("--- UNCOMBINE PIECES COMPLETED ---") }
+    }
+  }
+}
+
+enum class Model {
+  MINIMAX,
+  MCTS,
+  NEURAL_NETWORK
+}
+
+enum class Strength(val difficulty: Int, val minimaxDepth: Int, val mctsRounds: IntRange, val duration: Duration) {
+  RANDOM(difficulty = 0, minimaxDepth = 1, mctsRounds = 0..0, duration = 1.5.toDuration(DurationUnit.SECONDS)),
+  GREEDY(difficulty = 1, minimaxDepth = 1, mctsRounds = 0..0, duration = 1.5.toDuration(DurationUnit.SECONDS)),
+  EASY(difficulty = 1, minimaxDepth = 3, mctsRounds = 0..999, duration = 1.5.toDuration(DurationUnit.SECONDS)),
+  MEDIUM(difficulty = 1, minimaxDepth = 5, mctsRounds = 0..2499, duration = 5.toDuration(DurationUnit.SECONDS)),
+  HARD(difficulty = 1, minimaxDepth = 7, mctsRounds = 0..4999, duration = 10.toDuration(DurationUnit.SECONDS))
+}
+
+
+fun Player.selectMove(turnPhase: TurnPhase, bitboard: Bitboard, opponent: Player, rng: Random, ): PackedMove? {
+   return when (model) {
+	  Model.MINIMAX -> {
+      when (turnPhase) {
+        TurnPhase.PlayerInputWindow, TurnPhase.ExtraMove -> {
+          alphaBetaPackedMove(
+            bitboard = bitboard.deepCopy(),
+            currentPlayer = this.deepCopy(),
+            opponentPlayer = opponent.deepCopy(),
+            alphaBetaScore = AlphaBetaScoreBitPacked(),
+            rng = rng,
+            depth = strength.minimaxDepth,
+          )
+            .move
+        }
+        TurnPhase.PieceRemoval -> {
+          resolveBoardRemovals(
+            currentPlayer = this.deepCopy(),
+            opponentPlayer = opponent.deepCopy(),
+            bitboard = bitboard.deepCopy(),
+            alphaBetaScore = AlphaBetaScoreBitPacked(),
+            rng = rng,
+            depth = strength.minimaxDepth,
+          ).move
+        }
+      }
+    }
+	  Model.MCTS -> {
+      selectMoveMCTS(
+        bitboard = bitboard.deepCopy(),
+        currentPlayer = this.deepCopy(),
+        nextPlayer = opponent.deepCopy(),
+        turnPhase = turnPhase,
+        rounds = strength.mctsRounds,
+        rng = rng,
+      )
+    }
+	  Model.NEURAL_NETWORK -> {
+      TODO("Implement")
     }
   }
 }
