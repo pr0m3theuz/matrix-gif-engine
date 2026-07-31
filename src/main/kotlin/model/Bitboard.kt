@@ -7,6 +7,8 @@ import kotlin.math.exp
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
 val boardCenterSpotMask = 0b0000000000000000000001000000000000000000.toULong()
@@ -332,11 +334,10 @@ data class Bitboard(
 
   fun diff(oldBitboard: Bitboard): Bitboard {
     // --- 0. CONFIGURABLE DEBUGGING ---
-    val isDebugEnabled = false
-    if (isDebugEnabled) {
-      println("--- BITBOARD DIFF CALLED ---")
-      println("Original Bitboard State: ${Json.encodeToString(oldBitboard) }}")
-      println("Current Bitboard State: ${Json.encodeToString(this) }}")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("--- BITBOARD DIFF CALLED ---") }
+      logger.info { "" + ("Original Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
+      logger.info { "" + ("Current Bitboard State: ${Json.encodeToString(this) }}") }
     }
 
     // --- 1. PRE-CONDITION WARNING ---
@@ -376,7 +377,7 @@ data class Bitboard(
             blackPotentials = this.blackPotentials xor oldBitboard.blackPotentials, // FIXED TYPO
         )
 
-    if (isDebugEnabled) {
+    if (logger.isDebugEnabled()) {
       // Optional: Count total changes to easily see if anything happened
       val totalChanges =
           diffBoard.whiteGIPF.countOneBits() +
@@ -394,10 +395,10 @@ data class Bitboard(
               diffBoard.blackDVONNLayer.sumOf { it.countOneBits() } +
               diffBoard.blackPUNCTLayer.sumOf { it.countOneBits() }
 
-      println("Total changes: $totalChanges")
-      println("Diff complete. Total bits flipped across calculated layers.")
-      println("Diff Bitboard State: ${Json.encodeToString(oldBitboard) }}")
-      println("--- BITBOARD DIFF COMPLETED ---")
+      logger.info { "" + ("Total changes: $totalChanges") }
+      logger.info { "" + ("Diff complete. Total bits flipped across calculated layers.") }
+      logger.info { "" + ("Diff Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
+      logger.info { "" + ("--- BITBOARD DIFF COMPLETED ---") }
     }
 
     check(this.globalOccupancy == oldBitboard.globalOccupancy) {
@@ -625,6 +626,24 @@ data class Bitboard(
     result = 31 * result + globalOccupancy.hashCode()
     return result
   }
+
+  fun restorePreviousBoardState(previousBoardState: Bitboard) {
+    whiteGIPF = previousBoardState.whiteGIPF
+    whiteDVONNLayer = previousBoardState.whiteDVONNLayer
+    whiteYINSH = previousBoardState.whiteYINSH
+    whiteZERTZ = previousBoardState.whiteZERTZ
+    whiteDVONNLayer = previousBoardState.whiteDVONNLayer
+    whitePUNCTLayer = previousBoardState.whitePUNCTLayer
+    whitePotentials = previousBoardState.whitePotentials
+
+    blackGIPF = previousBoardState.blackGIPF
+    blackTAMSK = previousBoardState.blackTAMSK
+    blackYINSH = previousBoardState.blackYINSH
+    blackZERTZ = previousBoardState.blackZERTZ
+    blackDVONNLayer = previousBoardState.blackDVONNLayer
+    blackPUNCTLayer = previousBoardState.blackPUNCTLayer
+    blackPotentials = previousBoardState.blackPotentials
+  }
 }
 
 val Bitboard.vacantLines
@@ -645,10 +664,9 @@ val Bitboard.vacantLines
 
 fun Bitboard.executePushUp(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = false // Toggle for detailed trace logs
-  if (isDebugEnabled) {
-    println("--- EXECUTE PUSH UP CALLED ---")
-    println("Column: $col")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- EXECUTE PUSH UP CALLED ---") }
+    logger.info { "" + ("Column: $col") }
   }
 
   require(col.shiftPairs.isNotEmpty()) {
@@ -661,7 +679,7 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
   var vacantBitFound = 0UL
 
   // --- 1. DISCOVERY: Find out exactly which pieces are shifting ---
-  if (isDebugEnabled) println("Starting discovery phase for Push Up...")
+                               logger.debug { "" + ("Starting discovery phase for Push Up...") }
 
   for ((fromMask, toMask) in col.shiftPairs) {
     // Strict bit validation: Ensure masks aren't corrupted
@@ -671,19 +689,19 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
 
     if ((occupiedSpots and fromMask) != 0UL) {
       movesToApply.add(fromMask to toMask)
-      if (isDebugEnabled) println("  -> Piece found at $fromMask. Queuing shift to $toMask.")
+                                   logger.debug { "" + ("  -> Piece found at $fromMask. Queuing shift to $toMask.") }
     } else {
       gapFound = true
       vacantBitFound = fromMask
-      if (isDebugEnabled) println("  -> Gap discovered at $fromMask. Ending discovery phase.")
+                                   logger.debug { "" + ("  -> Gap discovered at $fromMask. Ending discovery phase.") }
       break
     }
 
     if ((occupiedSpots and toMask) == 0UL) {
       gapFound = true
       vacantBitFound = toMask
-      if (isDebugEnabled)
-          println("  -> Gap discovered at ${toMask.toString(2)}. Ending discovery phase.")
+
+          logger.debug { "" + ("  -> Gap discovered at ${toMask.toString(2)}. Ending discovery phase.") }
       break
     }
   }
@@ -699,27 +717,26 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
 
   // --- 3. MODIFICATION: Apply the shifts in REVERSE ---
   // Mutates in place; moving the last piece first prevents teleportation bugs
-  if (isDebugEnabled) {
-    println("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...") }
   }
 
   movesToApply.asReversed().forEach { (fromMask, toMask) ->
-    if (isDebugEnabled) println("  -> Shifting piece from $fromMask to $toMask.")
-    if (isDebugEnabled) println("  -> board before shifting: 0b${globalOccupancy.toString(2)}")
+                                 logger.debug { "" + ("  -> Shifting piece from $fromMask to $toMask.") }
+                                 logger.debug { "" + ("  -> board before shifting: 0b${globalOccupancy.toString(2)}") }
     applyShiftToAll(fromMask, toMask)
-    if (isDebugEnabled) println("  -> board after shifting:  0b${globalOccupancy.toString(2)}")
+                                 logger.debug { "" + ("  -> board after shifting:  0b${globalOccupancy.toString(2)}") }
   }
 
-  if (isDebugEnabled) println("--- PUSH UP COMPLETE. Returning vacant bit: $vacantBitFound ---")
+                               logger.debug { "" + ("--- PUSH UP COMPLETE. Returning vacant bit: $vacantBitFound ---") }
   return vacantBitFound
 }
 
 fun Bitboard.executePushDown(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = false
-  if (isDebugEnabled) {
-    println("--- EXECUTE PUSH DOWN CALLED ---")
-    println("Column: $col")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- EXECUTE PUSH DOWN CALLED ---") }
+    logger.info { "" + ("Column: $col") }
   }
 
   require(col.shiftPairs.isNotEmpty()) {
@@ -732,7 +749,7 @@ fun Bitboard.executePushDown(col: ColumnInfo): ULong {
   var vacantBitFound = 0UL
 
   // --- 1. DISCOVERY: Find out exactly which pieces are shifting ---
-  if (isDebugEnabled) println("Starting discovery phase for Push Down...")
+                               logger.debug { "" + ("Starting discovery phase for Push Down...") }
 
   for ((toMask, fromMask) in col.shiftPairs.asReversed()) {
     // Strict bit validation: Ensure masks aren't corrupted
@@ -742,23 +759,21 @@ fun Bitboard.executePushDown(col: ColumnInfo): ULong {
 
     if ((occupiedSpots and fromMask) != 0UL) {
       movesToApply.add(fromMask to toMask)
-      if (isDebugEnabled)
-          println(
-              "  -> Piece found at ${fromMask.toString(2)}. Queuing shift to ${toMask.toString(2)}."
-          )
+
+          logger.debug { "" + ("  -> Piece found at ${fromMask.toString(2)}. Queuing shift to ${toMask.toString(2)}.") }
     } else {
       gapFound = true
       vacantBitFound = fromMask
-      if (isDebugEnabled)
-          println("  -> Gap discovered at ${fromMask.toString(2)}. Ending discovery phase.")
+
+          logger.debug { "" + ("  -> Gap discovered at ${fromMask.toString(2)}. Ending discovery phase.") }
       break
     }
 
     if ((occupiedSpots and toMask) == 0UL) {
       gapFound = true
       vacantBitFound = toMask
-      if (isDebugEnabled)
-          println("  -> Gap discovered at ${toMask.toString(2)}. Ending discovery phase.")
+
+          logger.debug { "" + ("  -> Gap discovered at ${toMask.toString(2)}. Ending discovery phase.") }
       break
     }
   }
@@ -773,18 +788,18 @@ fun Bitboard.executePushDown(col: ColumnInfo): ULong {
   }
 
   // --- 3. MODIFICATION: Apply the shifts in REVERSE ---
-  if (isDebugEnabled) {
-    println("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...") }
   }
 
   movesToApply.asReversed().forEach { (fromMask, toMask) ->
-    if (isDebugEnabled) println("  -> Shifting piece from $fromMask to $toMask.")
-    if (isDebugEnabled) println("  -> board before shifting: 0b${globalOccupancy.toString(2)}")
+                                 logger.debug { "" + ("  -> Shifting piece from $fromMask to $toMask.") }
+                                 logger.debug { "" + ("  -> board before shifting: 0b${globalOccupancy.toString(2)}") }
     applyShiftToAll(fromMask, toMask)
-    if (isDebugEnabled) println("  -> board after shifting:  0b${globalOccupancy.toString(2)}")
+                                 logger.debug { "" + ("  -> board after shifting:  0b${globalOccupancy.toString(2)}") }
   }
 
-  if (isDebugEnabled) println("--- PUSH DOWN COMPLETE. Returning vacant bit: $vacantBitFound ---")
+                               logger.debug { "" + ("--- PUSH DOWN COMPLETE. Returning vacant bit: $vacantBitFound ---") }
   return vacantBitFound
 }
 
@@ -1071,17 +1086,17 @@ fun Bitboard.convertBitboardToBoard(board: Board): Board {
       // update bitboards
       indexArray.reversed().forEachIndexed { idx, i ->
         val mask = 1UL
-        //				println("shiftedPackedLine: ${(shiftedPackedLine shr idx).toString(radix =
-        // 2).padStart(8, '0')}")
-        //				println("mask             : ${mask.toString(radix = 2).padStart(8, '0')}")
+        //				logger.info { "" + ("shiftedPackedLine: ${(shiftedPackedLine shr idx).toString(radix =
+        // 2).padStart(8, '0')}") }
+        //				logger.info { "" + ("mask             : ${mask.toString(radix = 2).padStart(8, '0')}") }
 
         val value = if (((shiftedPackedLine shr idx) and mask) > 0.toUInt()) 1UL else 0UL
 
         updatedBitboard = updatedBitboard or (value shl i)
 
-        //				println("value            : ${(value shl i).toString(radix = 2).padStart(64, '0')}")
-        //				println("whitePieces      : ${whitePieces.toString(radix = 2).padStart(64, '0')}")
-        //				println("updatedBitboard  : ${updatedBitboard.toString(radix = 2).padStart(64, '0')}")
+        //				logger.info { "" + ("value            : ${(value shl i).toString(radix = 2).padStart(64, '0')}") }
+        //				logger.info { "" + ("whitePieces      : ${whitePieces.toString(radix = 2).padStart(64, '0')}") }
+        //				logger.info { "" + ("updatedBitboard  : ${updatedBitboard.toString(radix = 2).padStart(64, '0')}") }
       }
     }
     PushDirection.DOWN -> {
@@ -1286,19 +1301,13 @@ fun Bitboard.usePiecePotential(
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials =
       if (possibleBitMove.pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
-
-  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
-  if (isDebugEnabled) {
-    println("--- USE POTENTIAL CALLED ---")
-    println("Piece: ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType}")
-    println(
-        "Source Bit:                   0b${possibleBitMove.sourceBit.toString(2).padStart(40, '0')}"
-    )
-    println(
-        "Target Bit:                   0b${possibleBitMove.targetBit.toString(2).padStart(40, '0')}"
-    )
-    println("Player Potentials:            0b${playerPotentials.toString(2).padStart(40, '0')}")
-    println("Board before using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- USE POTENTIAL CALLED ---") }
+    logger.info { "" + ("Piece: ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType}") }
+    logger.info { "" + ("Source Bit:                   0b${possibleBitMove.sourceBit.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("Target Bit:                   0b${possibleBitMove.targetBit.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("Player Potentials:            0b${playerPotentials.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("Board before using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}") }
   }
 
   // --- 1. PRE-CONDITION CHECKS (Input Validation) ---
@@ -1310,12 +1319,10 @@ fun Bitboard.usePiecePotential(
   }
 
   fun safeRemoveAndCheck(board: ULong, boardName: String, removeAtIndex: ULong): ULong {
-    if (isDebugEnabled) {
-      println(
-          "$boardName Board before using $boardName potential\n" +
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("$boardName Board before using $boardName potential\n" +
               "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
-              "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
-      )
+              "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}") }
     }
     check((board and removeAtIndex) != 0UL) {
       "UNDO FAILED: Expected ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType} in $boardName bitboard at $removeAtIndex, but it was missing."
@@ -1326,37 +1333,31 @@ fun Bitboard.usePiecePotential(
     check((newBoard and removeAtIndex) == 0UL) {
       "UNDO FAILED: Failed to use potential for ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType} piece from $boardName bitboard."
     }
-    if (isDebugEnabled) {
-      println(
-          "$boardName Board after using $boardName potential\n" +
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("$boardName Board after using $boardName potential\n" +
               "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
-              "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}"
-      )
+              "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}") }
     }
-    if (isDebugEnabled) println("Successfully removed bit from $boardName.")
+                                 logger.debug { "" + ("Successfully removed bit from $boardName.") }
     return newBoard
   }
 
   fun safeAddAndCheck(board: ULong, boardName: String, addAtIndex: ULong): ULong {
-    if (isDebugEnabled) {
-      println(
-          "$boardName Board before adding piece at \n" +
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("$boardName Board before adding piece at \n" +
               "addAtIndex:    0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
-              "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}"
-      )
+              "$boardName bitboard:      0b${board.toString(2).padStart(40, '0')}") }
     }
     val newBoard = board or addAtIndex
     check((newBoard and addAtIndex) == addAtIndex) {
       "ADD FAILED: Failed to add ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType} piece to $boardName bitboard at index $addAtIndex."
     }
-    if (isDebugEnabled) {
-      println(
-          "$boardName Board after adding piece at \n" +
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("$boardName Board after adding piece at \n" +
               "addAtIndex:    0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
-              "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}"
-      )
+              "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}") }
     }
-    if (isDebugEnabled) println("Successfully added bit to $boardName.")
+                                 logger.debug { "" + ("Successfully added bit to $boardName.") }
     return newBoard
   }
 
@@ -1990,18 +1991,17 @@ fun Bitboard.usePiecePotential(
       }
     }
   }
-  if (isDebugEnabled) {
-    println("--- USE POTENTIAL COMPLETE ---")
-    println("Board after using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- USE POTENTIAL COMPLETE ---") }
+    logger.info { "" + ("Board after using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}") }
   }
 }
 
 fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitMove>) {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = false
-  if (isDebugEnabled) {
-    println("--- GET TAMSK MOVES CALLED ---")
-    println("Player: ${player.name}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- GET TAMSK MOVES CALLED ---") }
+    logger.info { "" + ("Player: ${player.name}") }
   }
 
   // --- 1. EVALUATE CENTER SPOT ---
@@ -2020,9 +2020,9 @@ fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitM
   // --- 2. VALIDATE AVAILABILITY ---
   // If the intersection doesn't perfectly match the center spot mask, no move exists.
   if (tamskPieceAtCenter != boardCenterSpotMask) {
-    if (isDebugEnabled) {
-      println("No valid TAMSK piece found at center for ${player.name}. Returning null.")
-      println("--- GET TAMSK MOVES COMPLETED ---")
+    if (logger.isDebugEnabled()) {
+      logger.info { "" + ("No valid TAMSK piece found at center for ${player.name}. Returning null.") }
+      logger.info { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
     }
     return
   }
@@ -2033,7 +2033,7 @@ fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitM
     "CRITICAL ERROR: Evaluated center spot mask must contain exactly one bit. Got: $tamskPieceAtCenter"
   }
 
-  if (isDebugEnabled) println("Valid TAMSK move found for ${player.name} at center spot.")
+                               logger.debug { "" + ("Valid TAMSK move found for ${player.name} at center spot.") }
 
   // --- 4. RETURN MOVE ---
   vacantLines.forEach { columnInfo ->
@@ -2079,14 +2079,13 @@ fun Bitboard.useTamskPotential(
   // NEW: Verify the player actually has a piece at the source index before moving it
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
-  val isDebugEnabled = false
-  if (isDebugEnabled) {
-    println("--- USE TAMSK POTENTIAL CALLED ---")
-    println("Player: ${player.name} | Source: $sourceIndex | Target: $targetIndex")
-    println("PushDirection: $pushDirection | Col: $col")
-    println("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}")
-    println("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}")
-    println("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- USE TAMSK POTENTIAL CALLED ---") }
+    logger.info { "" + ("Player: ${player.name} | Source: $sourceIndex | Target: $targetIndex") }
+    logger.info { "" + ("PushDirection: $pushDirection | Col: $col") }
+    logger.info { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
   }
 
   // --- 1. PRE-CONDITION CHECKS (Input Validation) ---
@@ -2132,46 +2131,28 @@ fun Bitboard.useTamskPotential(
   // --- REMOVE POTENTIAL BEFORE SHIFTING ---
   when (player.name) {
     PlayerName.WHITE -> {
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
       // Remove from Potentials board (using exact sourceIndex rather than broad mask)
       whitePotentials = whitePotentials and sourceIndex.inv()
       check((whitePotentials and sourceIndex) == 0UL) {
         "Failed to remove White Potential piece from source index."
       }
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
 
     PlayerName.BLACK -> {
-      if (isDebugEnabled) {
-        println(
-            "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
       // Remove from Potentials board (using exact sourceIndex rather than broad mask)
       blackPotentials = blackPotentials and sourceIndex.inv()
@@ -2179,16 +2160,10 @@ fun Bitboard.useTamskPotential(
         "Failed to remove Black Potential piece from source index."
       }
 
-      if (isDebugEnabled) {
-        println(
-            " Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + (" Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
   }
@@ -2199,19 +2174,19 @@ fun Bitboard.useTamskPotential(
   var vacantBitFound = 0UL
 
   if (isIndexOccupied) {
-    if (isDebugEnabled) println("Target index is occupied. Executing shift ($pushDirection).")
+                                 logger.debug { "" + ("Target index is occupied. Executing shift ($pushDirection).") }
     when (pushDirection) {
       PushDirection.UP,
       PushDirection.UPPER_RIGHT,
       PushDirection.LOWER_RIGHT -> {
         vacantBitFound = executePushUp(col)
-        if (isDebugEnabled) println("Executed PushUp. Vacant bit found: $vacantBitFound")
+                                     logger.debug { "" + ("Executed PushUp. Vacant bit found: $vacantBitFound") }
       }
       PushDirection.DOWN,
       PushDirection.UPPER_LEFT,
       PushDirection.LOWER_LEFT -> {
         vacantBitFound = executePushDown(col)
-        if (isDebugEnabled) println("Executed PushDown. Vacant bit found: $vacantBitFound")
+                                     logger.debug { "" + ("Executed PushDown. Vacant bit found: $vacantBitFound") }
       }
     }
 
@@ -2220,54 +2195,36 @@ fun Bitboard.useTamskPotential(
       "SHIFT ERROR: Shift execution must return exactly one vacant bit. Got: $vacantBitFound"
     }
   } else {
-    if (isDebugEnabled) println("Target index is vacant. No shift required.")
+                                 logger.debug { "" + ("Target index is vacant. No shift required.") }
   }
 
   // --- 4. APPLY TO BITBOARDS (With Post-Condition Checks) ---
-  if (isDebugEnabled) println("Applying state changes for ${player.name}...")
+                               logger.debug { "" + ("Applying state changes for ${player.name}...") }
 
   when (player.name) {
     PlayerName.WHITE -> {
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
       // Add to TAMSK board
       whiteTAMSK = whiteTAMSK or targetIndex
       check((whiteTAMSK and targetIndex) != 0UL) {
         "Failed to add White TAMSK piece to target index."
       }
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
 
     PlayerName.BLACK -> {
-      if (isDebugEnabled) {
-        println(
-            "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
 
       // Add to TAMSK board
@@ -2276,22 +2233,16 @@ fun Bitboard.useTamskPotential(
         "Failed to add Black TAMSK piece to target index."
       }
 
-      if (isDebugEnabled) {
-        println(
-            "Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
   }
 
-  if (isDebugEnabled) {
-    println("--- USE TAMSK POTENTIAL COMPLETE ---")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- USE TAMSK POTENTIAL COMPLETE ---") }
   }
 
   return vacantBitFound
@@ -2309,14 +2260,13 @@ fun Bitboard.undoTamskPotential(
   // --- 0. CONFIGURABLE DEBUGGING ---
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
-  val isDebugEnabled = false
-  if (isDebugEnabled) {
-    println("--- UNDO TAMSK POTENTIAL CALLED ---")
-    println("Player: ${player.name} | Source: $sourceIndex | RemoveAt: $removeAtIndex")
-    println("WasOccupied: $wasIndexOccupied | PushDirection: $pushDirection | Col: $col")
-    println("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}")
-    println("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}")
-    println("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- UNDO TAMSK POTENTIAL CALLED ---") }
+    logger.info { "" + ("Player: ${player.name} | Source: $sourceIndex | RemoveAt: $removeAtIndex") }
+    logger.info { "" + ("WasOccupied: $wasIndexOccupied | PushDirection: $pushDirection | Col: $col") }
+    logger.info { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
+    logger.info { "" + ("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
   }
 
   // --- 1. PRE-CONDITION CHECKS (Input Validation) ---
@@ -2361,7 +2311,7 @@ fun Bitboard.undoTamskPotential(
   }
 
   // --- 3. REVERT STATE MUTATIONS (With Pre- and Post-Condition Checks) ---
-  if (isDebugEnabled) println("Reverting bitboards for ${player.name}...")
+                               logger.debug { "" + ("Reverting bitboards for ${player.name}...") }
 
   when (player.name) {
     PlayerName.WHITE -> {
@@ -2389,14 +2339,14 @@ fun Bitboard.undoTamskPotential(
 
   // --- 4. REVERT SHIFTING ---
   if (wasIndexOccupied) {
-    if (isDebugEnabled) println("Reverting board shift. Original push: $pushDirection")
+                                 logger.debug { "" + ("Reverting board shift. Original push: $pushDirection") }
     when (pushDirection) {
       // If the original move pushed UP, we must pull DOWN to undo
       PushDirection.UP,
       PushDirection.UPPER_RIGHT,
       PushDirection.LOWER_RIGHT -> {
         executePullDown(col, vacantBitFound)
-        if (isDebugEnabled) println("Executed PullDown on col $col")
+                                     logger.debug { "" + ("Executed PullDown on col $col") }
       }
 
       // If the original move pushed DOWN, we must pull UP to undo
@@ -2404,27 +2354,21 @@ fun Bitboard.undoTamskPotential(
       PushDirection.UPPER_LEFT,
       PushDirection.LOWER_LEFT -> {
         executePullUp(col, vacantBitFound)
-        if (isDebugEnabled) println("Executed PullUp on col $col")
+                                     logger.debug { "" + ("Executed PullUp on col $col") }
       }
     }
   } else {
-    if (isDebugEnabled) println("Index was not previously occupied. No shifts to revert.")
+                                 logger.debug { "" + ("Index was not previously occupied. No shifts to revert.") }
   }
 
   // --- RESTORE POTENTIAL AFTER SHIFTING ---
-  if (isDebugEnabled) println("--- RESTORE POTENTIAL AFTER SHIFTING ---")
+                               logger.debug { "" + ("--- RESTORE POTENTIAL AFTER SHIFTING ---") }
   when (player.name) {
     PlayerName.WHITE -> {
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
 
       // Restore the potential piece
@@ -2432,30 +2376,18 @@ fun Bitboard.undoTamskPotential(
       check((whitePotentials and sourceIndex) != 0UL) {
         "Failed to restore White Potential piece to center."
       }
-      if (isDebugEnabled) {
-        println(
-            "White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
 
     PlayerName.BLACK -> {
-      if (isDebugEnabled) {
-        println(
-            "Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
 
       // Restore the potential piece
@@ -2464,21 +2396,15 @@ fun Bitboard.undoTamskPotential(
         "Failed to restore Black Potential piece to center."
       }
 
-      if (isDebugEnabled) {
-        println(
-            "TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}"
-        )
-        println(
-            "CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
-        )
+      if (logger.isDebugEnabled()) {
+        logger.info { "" + ("TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}") }
+        logger.info { "" + ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}") }
       }
     }
   }
 
-  if (isDebugEnabled) println("--- UNDO TAMSK POTENTIAL COMPLETE ---")
+                               logger.debug { "" + ("--- UNDO TAMSK POTENTIAL COMPLETE ---") }
 
   return vacantBitFound
 }
@@ -2930,11 +2856,10 @@ fun Bitboard.getPunctMoves(
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  val isDebugEnabled = false
-  if (isDebugEnabled) {
-    println("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---")
-    println("Player: ${player.name}")
-    println("Bitboard State: ${Json.encodeToString<Bitboard>(this)}")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---") }
+    logger.info { "" + ("Player: ${player.name}") }
+    logger.info { "" + ("Bitboard State: ${Json.encodeToString<Bitboard>(this)}") }
   }
 
   val playerPieces =
@@ -2947,55 +2872,52 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
       columnInfos
           .filter { it.positions.size >= 4 }
           .filterIndexed { index, column ->
-            if (isDebugEnabled) {
-              println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-              println(
-                  "Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}"
-              )
+            if (logger.isDebugEnabled()) {
+              logger.info { "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}") }
+              logger.info { "" + ("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}") }
             }
 
             val result =
                 column.submasks.any { submask ->
                   val fourInARow = (submask and playerPieces) == submask
-                  if (isDebugEnabled && fourInARow) {
-                    println("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
-                    println("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-                    println("Result: $fourInARow")
+                  if (logger.isDebugEnabled() && fourInARow) {
+                    logger.info { "" + ("Sublist:              0b${submask.toString(2).padStart(40, '0')}") }
+                    logger.info { "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}") }
+                    logger.info { "" + ("Result: $fourInARow") }
                   }
                   fourInARow
                 }
 
-            if (isDebugEnabled) {
-              if (result) println("--- FOUND FOUR IN A ROW IN LINE $index ---")
-              else println("--- NO 4 IN A ROW IN LINE $index ---")
+            if (logger.isDebugEnabled()) {
+              if (result) logger.info { "" + ("--- FOUND FOUR IN A ROW IN LINE $index ---") }
+              else logger.info { "" + ("--- NO 4 IN A ROW IN LINE $index ---") }
             }
 
             //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
-            //      if (isDebugEnabled) {
-            //        println("--- NO 4 IN A LINE $index ---")
+            //      if (logger.isDebugEnabled()) {
+            //        logger.info { "" + ("--- NO 4 IN A LINE $index ---") }
             //      }
             //      false
             //    } else {
-            //      if (isDebugEnabled) {
-            //        println(
-            //            "--- FOUND FOUR IN A LINE $index ---"
-            //        ) // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
+            //      if (logger.isDebugEnabled()) {
+            //        logger.info { "" + (//            "--- FOUND FOUR IN A LINE $index ---"
+            //) } // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
             //      }
             //
-            //	    println("column.positions.windowed(4).any: ${
+            //	    logger.info { "" + ("column.positions.windowed(4).any: ${
             //		    column.positions.windowed(4).any { sublist ->
             //			    val sum = sublist.fold(0UL) { acc, lng ->
             //				    acc or lng
             //			    }
             //			    (sum and playerPieces) == sum
             //		    }
-            //			}")
+            //			}") }
 
             result
           }
 
-  if (isDebugEnabled) {
-    println("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---")
+  if (logger.isDebugEnabled()) {
+    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---") }
   }
 
   return columns
@@ -3434,7 +3356,7 @@ fun Bitboard.assertPieceCount(
           boardStacks
 
   if (totalBlackPieces > EXPECTED_TOTAL) {
-    println("oooooooooooooo")
+    logger.info { "" + ("oooooooooooooo") }
   }
 
   check(totalBlackPieces == EXPECTED_TOTAL) {
@@ -3576,7 +3498,7 @@ fun Bitboard.assertPieceCount(
           boardStacks
 
   if (totalWhitePieces > EXPECTED_TOTAL) {
-    println("oooooooooooooo")
+    logger.info { "" + ("oooooooooooooo") }
   }
 
   check(totalWhitePieces == EXPECTED_TOTAL) {

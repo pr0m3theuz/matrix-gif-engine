@@ -11,6 +11,8 @@ import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlin.random.Random
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 fun calculateUCTScore(
     parentRollouts: Double,
     childRollouts: Int,
@@ -63,7 +65,7 @@ data class MCTSNode(
     val nextPlayer: Player,
     val parentNode: MCTSNode? = null,
     val move: PackedMove? = null,
-    val turnCount: Int = 0,
+    var turnCount: Int = 0,
     val turnPhase: TurnPhase,
     val previousTurnPhases: List<TurnPhase> = emptyList(),
     val childrenNodes: MutableList<MCTSNode> = mutableListOf(),
@@ -101,15 +103,25 @@ data class MCTSNode(
      * current player? if yes, remove pieces. Add retrieval/capture moves to
      * identifyAvailableMoves()
      */
+
+    this.turnCount = if (parentNode?.currentPlayer?.name == this.currentPlayer.name) {
+	    this.turnCount
+    } else {
+	    this.turnCount.plus(1)
+    }
+
+    var turnPhase: TurnPhase? = null
     when (selectedPackedMove) {
       is PackedMove.Multiple -> {
         val retrievedCapturedPieces = mutableListOf<UInt>()
 
         childBitboard.removeSelectedPiecesToRemove(
             player = childCurrentPlayer,
-            piecesToRemove = selectedPackedMove.values,
+            piecesToRemove = selectedPackedMove.values.distinct(),
             movesBuffer = retrievedCapturedPieces,
         )
+
+        turnPhase = TurnPhase.PieceRemoval
 
         //        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
         //          it.retrievedPiece
@@ -140,7 +152,11 @@ data class MCTSNode(
             //            val columnInfo = selectedMove.columnInfo
             if (selectedMove.extractSourceBit() == boardCenterSpotMask) {
               childBitboard.useTamskPotential(selectedMove)
+
+              turnPhase = TurnPhase.ExtraMove
             } else {
+              turnPhase = TurnPhase.PlayerInputWindow
+
               val selectedPiece =
                   selectedMove.onlyPiece().let { childCurrentPlayer.selectPiece(it) }
 
@@ -158,6 +174,8 @@ data class MCTSNode(
                 currentPlayer = currentPlayer,
                 nextPlayer = nextPlayer,
             )
+
+            turnPhase = TurnPhase.PlayerInputWindow
           }
           MoveType.RetrieveCapturePieces -> {}
         }
@@ -214,7 +232,7 @@ data class MCTSNode(
                   currentPlayerRemovablePieces,
               )
 
-          !turnHasHadNormalMove ->
+          !turnHasHadNormalMove && turnPhase != TurnPhase.PlayerInputWindow  ->
               ChildState(
                   childCurrentPlayer,
                   childNextPlayer,
@@ -266,9 +284,7 @@ data class MCTSNode(
             nextPlayer = nodeNextPlayer,
             parentNode = this,
             move = selectedPackedMove,
-            turnCount =
-                if (nodeCurrentPlayer.name == this.currentPlayer.name) this.turnCount
-                else this.turnCount.plus(1),
+            turnCount = this.turnCount,
             turnPhase = nodeTurnPhase,
             previousTurnPhases =
                 if (nodeCurrentPlayer.name == this.currentPlayer.name)
@@ -278,7 +294,7 @@ data class MCTSNode(
         )
 
     //    if (nodeMoves.isEmpty()) {
-    //      println("Current node has no children!")
+    //      logger.info { "" + ("Current node has no children!") }
     //    }
 
     this.childrenNodes.add(childNode)
@@ -380,7 +396,7 @@ fun selectMoveMCTS(
     // !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
       //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-      //        println("Current node has no children!}")
+      //        logger.info { "" + ("Current node has no children!}") }
       //      }
 
       currentNode = currentNode.selectChildNodeToExplore()
@@ -392,7 +408,7 @@ fun selectMoveMCTS(
     }
 
     //    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-    //      println("Current node has no children!")
+    //      logger.info { "" + ("Current node has no children!") }
     //    }
 
     if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
@@ -488,7 +504,7 @@ fun simulateRandomGame(
           opponentPlayer,
           playerWhoMadeTheLastMove ?: nextPlayer,
       )
-  //  println("Player: ${winner?.name} won")
+  //  logger.info { "" + ("Player: ${winner?.name} won") }
   return winner
 }
 
@@ -498,12 +514,11 @@ fun simulatePlayerTurn(
     opponentPlayer: Player,
     rng: Random,
 ) {
-  val isDebugEnabled = false // Toggle this to true to see detailed trace logs
-  if (isDebugEnabled) {
-    //		println("--- ALPHA-BETA CALLED ---")
-    println("currentPlayer: $currentPlayer")
-    println("opponentPlayer: $opponentPlayer")
-    println("Bitboard: ${Json.encodeToString(bitboard)}")
+  if (logger.isDebugEnabled()) {
+    //		logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
+    logger.info { "" + ("currentPlayer: $currentPlayer") }
+    logger.info { "" + ("opponentPlayer: $opponentPlayer") }
+    logger.info { "" + ("Bitboard: ${Json.encodeToString(bitboard)}") }
   }
 
   // TODO given a list of moves, select a random move
@@ -633,7 +648,7 @@ fun simulatePieceRetrievalCapture(
         val retrievedCapturedPieces = mutableListOf<UInt>()
         bitboard.removeSelectedPiecesToRemove(
             player = currentPlayer,
-            piecesToRemove = selectedPieceToRemove.values,
+            piecesToRemove = selectedPieceToRemove.values.distinct(),
             retrievedCapturedPieces,
         )
 

@@ -145,7 +145,7 @@ fun UInt.extractPiece(): Piece? {
 
 fun UInt.onlyPiece(): UInt {
   // Piece is now packed at bit 24 and takes 6 bits
-  return this and 0b11111u.shl(24)
+  return this and 62u.shl(24)
 }
 
 fun UInt.extractSourceBit(): ULong {
@@ -161,33 +161,33 @@ fun UInt.extractTargetBit(): ULong {
 }
 
 fun UInt.createPiece(pieceType: PieceType, pieceColor: PlayerName, potential: Boolean, isNeutralized: Boolean = false): UInt {
-  val pieceType = pieceType.ordinal.toUInt() shl 24
+  val pieceType = pieceType.ordinal.toUInt() shl 26
 
-  val color = pieceColor.ordinal.toUInt() shl 28
+  val color = pieceColor.ordinal.toUInt() shl 29
 
   val potential =
     when (potential) {
       true -> 1u
       false -> 0u
-    } shl 27
+    } shl 25
 
-//  val neutralized =
-//    when (isNeutralized) {
-//      true -> 1u
-//      false -> 0u
-//    } shl 29
+  val neutralized =
+    when (isNeutralized) {
+      true -> 1u
+      false -> 0u
+    } shl 24
 
-  return this or pieceType or potential or color // or neutralized
+  return this or pieceType or potential or color or neutralized
 }
 
 fun UInt.setPieceType(pieceType: PieceType): UInt {
-  // PieceType is bits 0-2 of the piece, which starts at 24 (so bits 24-26)
-  return (this xor (0u shl 24)) or (pieceType.ordinal.toUInt() shl 24)
+  // PieceType is bits 0-2 of the piece, which starts at 26 (so bits 26-26)
+  return (this xor (0u shl 26)) or (pieceType.ordinal.toUInt() shl 26)
 }
 
 fun UInt.extractPieceType(): PieceType? {
-  // PieceType is bits 0-2 of the piece, which starts at 24 (so bits 24-26)
-  return when (((this shr 24) and 0b111u).toInt()) {
+  // PieceType is bits 0-2 of the piece, which starts at 26 (so bits 26-26)
+  return when (((this shr 26) and 0b111u).toInt()) {
     PieceType.NULL.ordinal -> null
     PieceType.GIPF.ordinal -> PieceType.GIPF
     PieceType.TAMSK.ordinal -> PieceType.TAMSK
@@ -230,18 +230,18 @@ fun UInt.extractColumnInfo(): ColumnInfo {
 }
 
 fun UInt.setPieceColor(pieceColor: PlayerName): UInt {
-  // Color is bit 4 of the piece, which starts at 24 (so bit 28)
+  // Color is bit 4 of the piece, which starts at 24 (so bit 29)
   return when (pieceColor) {
-    PlayerName.WHITE -> this and (1u shl 28).inv()
+    PlayerName.WHITE -> this and (1u shl 29).inv()
     PlayerName.BLACK -> {
-      (this xor (1u shl 28)) or (pieceColor.ordinal.toUInt() shl 28)
+      (this xor (1u shl 29)) or (pieceColor.ordinal.toUInt() shl 29)
     }
   }
 }
 
 fun UInt.extractPieceColor(): PlayerName {
-  // Color is bit 4 of the piece, which starts at 24 (so bit 28)
-  return when (((this shr 28) and 1u).toInt()) {
+  // Color is bit 4 of the piece, which starts at 24 (so bit 29)
+  return when (((this shr 29) and 1u).toInt()) {
     PlayerName.WHITE.ordinal -> PlayerName.WHITE
     PlayerName.BLACK.ordinal -> PlayerName.BLACK
     else -> error("Unknown piece color type for packed int: $this")
@@ -249,29 +249,29 @@ fun UInt.extractPieceColor(): PlayerName {
 }
 
 fun UInt.setPotential(potential: Boolean): UInt {
-  // Potential is bit 3 of the piece, starting at bit 24 (so bit 27)
+  // Potential is bit 3 of the piece, starting at bit 24 (so bit 25)
   return if (potential) {
-    (this xor (1u shl 27)) or (1u shl 27)
+    (this xor (1u shl 25)) or (1u shl 25)
   } else {
-    this and (1u shl 27).inv() // Correctly clears the bit to 0
+    this and (1u shl 25).inv() // Correctly clears the bit to 0
   }
 }
 
 fun UInt.extractPotential(): Boolean {
-  return ((this shr 27) and 1u) == 1u
+  return ((this shr 25) and 1u) == 1u
 }
 
 fun UInt.setNeutralized(neutralized: Boolean): UInt {
-  // Neutralized is bit 5 of the piece, starting at bit 24 (so bit 29)
+  // Neutralized is bit 5 of the piece, starting at bit 24 (so bit 24)
   return if (neutralized) {
-    (this xor (1u shl 29)) or (1u shl 29)
+    (this xor (1u shl 24)) or (1u shl 24)
   } else {
-    this and (1u shl 29).inv() // Correctly clears the bit to 0
+    this and (1u shl 24).inv() // Correctly clears the bit to 0
   }
 }
 
 fun UInt.extractNeutralized(): Boolean {
-  return ((this shr 29) and 1u) == 1u
+  return ((this shr 24) and 1u) == 1u
 }
 
 fun UInt.setRetrieveCapture(retrieveCapture: RetrieveCapture): UInt {

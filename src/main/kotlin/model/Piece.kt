@@ -37,21 +37,21 @@ data class Piece(
   }
 
   fun pack(): UInt {
-    val pieceType = type.ordinal.toUInt() shl 24
+    val pieceType = type.ordinal.toUInt() shl 26
 
-    val color = colorName.ordinal.toUInt() shl 28
+    val color = colorName.ordinal.toUInt() shl 29
 
     val potential =
         when (potential) {
           true -> 1u
           false -> 0u
-        } shl 27
+        } shl 25
 
     val neutralized =
         when (isNeutralized) {
           true -> 1u
           false -> 0u
-        } shl 29
+        } shl 24
 
     return pieceType or potential or color or neutralized
   }

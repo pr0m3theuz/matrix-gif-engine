@@ -12,6 +12,8 @@ import kotlin.collections.mutableListOf
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 /**
  * Batch runner with reproducible failures.
  *
@@ -35,10 +37,10 @@ suspend fun main(args: Array<String>) = coroutineScope {
 				?: error("Usage: replay <gameId> <seed>")
 			val seed = args.getOrNull(2)?.toLongOrNull()
 				?: error("Usage: replay <gameId> <seed>")
-			println("Replaying game $gameId with seed $seed (verbose mode)")
+			logger.info { "" + ("Replaying game $gameId with seed $seed (verbose mode)") }
 			playOneGame(gameId, seed, verbose = true)
-			println("Replay finished without throwing — if you were chasing a crash, " +
-					"check whether all randomness in your game logic is seed-derived.")
+			logger.info { "" + ("Replay finished without throwing — if you were chasing a crash, " +
+					"check whether all randomness in your game logic is seed-derived.") }
 		}
 		else -> runBatch(args)
 	}
@@ -52,8 +54,8 @@ private suspend fun runBatch(args: Array<String>) = coroutineScope {
 	// Print it so you can re-run the exact same batch later if needed.
 	val baseSeed = args.getOrNull(3)?.toLongOrNull() ?: System.currentTimeMillis()
 
-	println("Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed")
-	println("(save baseSeed if you want to reproduce this exact batch later)")
+	logger.info { "" + ("Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed") }
+	logger.info { "" + ("(save baseSeed if you want to reproduce this exact batch later)") }
 
 	val dispatcher = Dispatchers.Default.limitedParallelism(parallelism)
 	val completed = AtomicInteger(0)
@@ -73,7 +75,7 @@ private suspend fun runBatch(args: Array<String>) = coroutineScope {
 						val secs = (System.currentTimeMillis() - startTime) / 1000.0
 						val rate = n / secs
 						val etaSecs = ((totalGames - n) / rate).toLong()
-						println("Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)")
+						logger.info { "" + ("Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)") }
 					}
 				} catch (e: Throwable) {
 					failed.incrementAndGet()
@@ -84,10 +86,10 @@ private suspend fun runBatch(args: Array<String>) = coroutineScope {
 		jobs.awaitAll()
 	}
 
-	println("Done. ${completed.get()} succeeded, ${failed.get()} failed, ${elapsedMs / 1000.0}s elapsed.")
+	logger.info { "" + ("Done. ${completed.get()} succeeded, ${failed.get()} failed, ${elapsedMs / 1000.0}s elapsed.") }
 	if (failed.get() > 0) {
-		println("Failures logged to $FAILURES_LOG — replay any of them with:")
-		println("  java -jar app.jar replay <gameId> <seed>")
+		logger.info { "" + ("Failures logged to $FAILURES_LOG — replay any of them with:") }
+		logger.info { "" + ("  java -jar app.jar replay <gameId> <seed>") }
 	}
 }
 
@@ -124,7 +126,7 @@ private fun recordFailure(gameId: Int, seed: Long, e: Throwable) {
 		File(FAILURES_LOG).appendText(Json.encodeToString(entry) + "\n")
 	}
 
-	System.err.println("Game $gameId FAILED (seed=$seed): ${e.message} — see $traceFile")
+	logger.error { "" + ("Game $gameId FAILED (seed=$seed): ${e.message} — see $traceFile") }
 }
 
 @kotlinx.serialization.Serializable
@@ -168,7 +170,7 @@ fun playOneGame(gameId: Int, seed: Long, verbose: Boolean) {
 			if (evaluateCapturedPieces(gameState)) break
 
 			if (verbose) {
-				println("Turn: $turn")
+				logger.info { "" + ("Turn: $turn") }
 				gameState.printStateSummary()
 			}
 
@@ -224,5 +226,5 @@ private fun dumpCrashState(gameId: Int, seed: Long, turn: Int, gameState: State,
 		// If the state itself can't serialize (e.g. mid-mutation), at least note that.
 		file.writeText("Could not serialize gameState: ${serializationFailure.message}")
 	}
-	System.err.println("Crash at turn $turn in game $gameId — state dumped to $file")
+	logger.error { "" + ("Crash at turn $turn in game $gameId — state dumped to $file") }
 }

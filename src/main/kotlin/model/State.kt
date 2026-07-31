@@ -16,6 +16,8 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import kotlin.math.min
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 @Serializable
 data class State(
     val currentPlayer: Player,
@@ -326,7 +328,7 @@ fun State.encodeState(): D2Array<Int> {
               .deepCopy()
               .removeSelectedPiecesToRemove(
                   player = newState.currentPlayer,
-                  piecesToRemove = retrieveCapture.values,
+                  piecesToRemove = retrieveCapture.values.distinct(),
                   retrievedCapturedPieces,
               )
 
@@ -436,7 +438,7 @@ fun State.encodeState(): D2Array<Int> {
               .deepCopy()
               .removeSelectedPiecesToRemove(
                   player = newState.nextPlayer,
-                  piecesToRemove = retrieveCapture.values,
+                  piecesToRemove = retrieveCapture.values.distinct(),
                   movesBuffer = retrievedCapturedPieces,
               )
           val capturedPieces =
@@ -523,7 +525,7 @@ fun State.printStateSummary() {
     }
   }
 
-  print(sb.toString())
+  logger.info { "" + (sb.toString()) }
 }
 
 fun State.assertPieceCount(

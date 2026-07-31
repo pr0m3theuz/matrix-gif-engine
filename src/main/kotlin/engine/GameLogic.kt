@@ -1,12 +1,17 @@
 package org.example.engine
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
 import org.example.ai.humanEvaluation.alphaBetaPackedMove
+import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
+import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
 import kotlin.random.Random
+
+private val logger = KotlinLogging.logger {}
 
 fun playerTurn(state: State, turn: Int, rng: Random): State {
 
@@ -70,31 +75,40 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
   val bitboard = state.bitboard.deepCopy()
 
-  val packedMove: PackedMove? =
-      alphaBetaPackedMove(
-              depth = 3,
-              bitboard = bitboard,
-              currentPlayer = state.currentPlayer.deepCopy(),
-              opponentPlayer = state.nextPlayer.deepCopy(),
-              alphaBetaScore = AlphaBetaScoreBitPacked(),
-              rng = rng,
-          )
-          .move
+//  val packedMove: PackedMove? = when (turnPhase) {
+//    TurnPhase.PieceRemoval -> resolveBoardRemovals(
+//      currentPlayer = state.currentPlayer.deepCopy(),
+//      opponentPlayer = state.nextPlayer.deepCopy(),
+//	    bitboard = bitboard,
+//	    depth = 3,
+//      alphaBetaScore = AlphaBetaScoreBitPacked(),
+//      rng = rng,
+//    ).move
+//    else -> alphaBetaPackedMove(
+//      depth = 3,
+//      bitboard = bitboard,
+//      currentPlayer = state.currentPlayer.deepCopy(),
+//      opponentPlayer = state.nextPlayer.deepCopy(),
+//      alphaBetaScore = AlphaBetaScoreBitPacked(),
+//      rng = rng,
+//    )
+//      .move
+//  }
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  //  val packedMove: PackedMove? =
-  //      selectMoveMCTS(
-  //          bitboard = bitboard,
-  //          currentPlayer = state.currentPlayer,
-  //          nextPlayer = state.nextPlayer,
-  //          turnPhase = turnPhase,
-  //          rounds = 0..999,
-  //          rng = rng,
-  //      )
+    val packedMove: PackedMove? =
+        selectMoveMCTS(
+            bitboard = bitboard,
+            currentPlayer = state.currentPlayer,
+            nextPlayer = state.nextPlayer,
+            turnPhase = turnPhase,
+            rounds = 0..999,
+            rng = rng,
+        )
 
   if (packedMove != null) {
-    // println("Player Move: ${Json.encodeToString(bestMove)}")
+    // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }
 
     state.currentPlayer.collector?.recordDecision(
         state.encodeState(),
@@ -113,7 +127,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
         val retrievedCapturedPieces = mutableListOf<UInt>()
         bitboard.removeSelectedPiecesToRemove(
             player = state.currentPlayer,
-            piecesToRemove = packedMove.values,
+            piecesToRemove = packedMove.values.distinct(),
             retrievedCapturedPieces,
         )
 
@@ -306,12 +320,12 @@ fun determineWinner(
   }
 
   if (printStatement) {
-    capturedGIPFPieces?.let { println("Captured GIPF Pieces: ${Json.encodeToString(it)}") }
+    capturedGIPFPieces?.let { logger.info { "" + ("Captured GIPF Pieces: ${Json.encodeToString(it)}") } }
     bitboardHasAvailableMoves?.let {
-      println("Has Available Moves (Bitboard): ${Json.encodeToString(it)}")
+      logger.info { "" + ("Has Available Moves (Bitboard): ${Json.encodeToString(it)}") }
     }
     playerWhoMadeTheLastMove?.let {
-      println("Player Made The Last Move: ${Json.encodeToString(it)}")
+      logger.info { "" + ("Player Made The Last Move: ${Json.encodeToString(it)}") }
     }
   }
 

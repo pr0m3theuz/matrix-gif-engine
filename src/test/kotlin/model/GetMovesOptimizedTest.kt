@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 class GetMovesOptimizedTest {
   @Test
   fun getTamskMoves() {
@@ -108,7 +110,7 @@ class GetMovesOptimizedTest {
         (movesBuffer.first() as PackedMove.Single).value.toPossibleBitMove(),
     )
 
-    println(movesBuffer)
+    logger.info { "" + (movesBuffer) }
   }
 
   @Test fun getYinshMoves() {}

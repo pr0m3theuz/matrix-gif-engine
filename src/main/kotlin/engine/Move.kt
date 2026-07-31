@@ -13,6 +13,8 @@ import org.example.model.getNeighborFromPushDirection
 import org.example.model.getNeighbours
 import org.example.model.updateBoard
 
+private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 // TODO fix bug where the target nodes set includes the source node
 fun getEligiblePotentialMoves(state: State): Map<Node, Set<Node?>> {
   // return Map<Node – the node containing a piece with potential
@@ -624,15 +626,13 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     require(currentNode.piece != null) { "Piece ${currentNode.piece} is null" }
   }
 
-  println("[SHIFT] Processing node $currentCoordStr ($pieceDesc) pushing $moveDirection")
+  logger.info { "" + ("[SHIFT] Processing node $currentCoordStr ($pieceDesc) pushing $moveDirection") }
 
   val targetCoordinate = currentNode.neighbors?.getNeighborFromPushDirection(moveDirection)
   val nextNode = board.nodes.firstOrNull { node -> node.coordinate == targetCoordinate }
 
   if (nextNode == null) {
-    println(
-        "[SHIFT INFO] Shift halted: No neighbor found for $currentCoordStr in direction $moveDirection (Edge of track reached)."
-    )
+    logger.info { "" + ("[SHIFT INFO] Shift halted: No neighbor found for $currentCoordStr in direction $moveDirection (Edge of track reached).") }
     return board
   }
 
@@ -673,16 +673,12 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
 
   // Is there empty space in this line else return board
   if (line.first().count { it.piece == null } == 0) {
-    println(
-        "[SHIFT WARN] Move blocked: Line tracking through $currentCoordStr is completely full. No pieces shifted."
-    )
+    logger.info { "" + ("[SHIFT WARN] Move blocked: Line tracking through $currentCoordStr is completely full. No pieces shifted.") }
     return board
   }
 
   if (nextNode.piece == null) {
-    println(
-        "[SHIFT ACTION] Empty space found at $nextCoordStr. Sliding piece from $currentCoordStr -> $nextCoordStr."
-    )
+    logger.info { "" + ("[SHIFT ACTION] Empty space found at $nextCoordStr. Sliding piece from $currentCoordStr -> $nextCoordStr.") }
 
     nextNode.piece = currentNode.piece
 
@@ -701,15 +697,13 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
       "State corruption: Node at coordinate $sourceCoordinate was expected to be empty, but it still contains a piece."
     }
 
-    println("[SHIFT] Grid configuration post-shift step:")
+    logger.info { "" + ("[SHIFT] Grid configuration post-shift step:") }
 //    newBoard.printHexGrid("POST-SHIFT")
 
     return newBoard
   } else {
     val nextPieceDesc = "${nextNode.piece?.colorName} ${nextNode.piece?.type?.name}"
-    println(
-        "[SHIFT CASCADE] Collision at $nextCoordStr ($nextPieceDesc). Initiating recursive push..."
-    )
+    logger.info { "" + ("[SHIFT CASCADE] Collision at $nextCoordStr ($nextPieceDesc). Initiating recursive push...") }
 
     val newBoard =
         shiftPiece(
