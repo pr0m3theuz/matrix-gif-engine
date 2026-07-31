@@ -7,7 +7,6 @@ import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -45,6 +44,15 @@ fun PackedMove.encode(): NDArray<Int, D1> {
       requireNotNull(targetBit) { "Target bit must not be null" }
       targetBit.toBitList()
     }
+  }
+}
+
+fun PackedMove.extractTargetBit(): ULong? {
+  return when (this) {
+    is PackedMove.Single -> {
+      this.value.extractTargetBit()
+    }
+    is PackedMove.Multiple -> null
   }
 }
 
@@ -95,21 +103,22 @@ data class MCTSNode(
      */
     when (selectedPackedMove) {
       is PackedMove.Multiple -> {
-        val retrievedCapturedPieces =
-            childBitboard.removeSelectedPiecesToRemove(
-                player = childCurrentPlayer,
-                piecesToRemove = selectedPackedMove.values,
-            )
+        val retrievedCapturedPieces = mutableListOf<UInt>()
 
-        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
-          it.retrievedPiece
-        }
-        val capturedPieces = retrievedCapturedPieces.mapNotNull {
-          it.capturedPiece
-        }
+        childBitboard.removeSelectedPiecesToRemove(
+            player = childCurrentPlayer,
+            piecesToRemove = selectedPackedMove.values,
+            movesBuffer = retrievedCapturedPieces,
+        )
 
-        childCurrentPlayer.addPiecesToReserve(retrievedPieces)
-        childCurrentPlayer.addCapturedPieces(capturedPieces)
+        //        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
+        //          it.retrievedPiece
+        //        }
+        //        val capturedPieces = retrievedCapturedPieces.mapNotNull {
+        //          it.capturedPiece
+        //        }
+
+        childCurrentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
 
         childCurrentPlayer.combinePieces()
 
@@ -133,11 +142,11 @@ data class MCTSNode(
               childBitboard.useTamskPotential(selectedMove)
             } else {
               val selectedPiece =
-                selectedMove.extractPiece()?.let { childCurrentPlayer.selectPiece(it) }
+                  selectedMove.onlyPiece().let { childCurrentPlayer.selectPiece(it) }
 
               selectedPiece?.let {
                 childBitboard.addPieceToBitboard(
-                  move = selectedMove,
+                    move = selectedMove,
                 )
               }
             }
@@ -268,9 +277,9 @@ data class MCTSNode(
             unvisitedMoves = nodeMoves.toMutableList(),
         )
 
-    if (nodeMoves.isEmpty()) {
-      println("Current node has no children!")
-    }
+    //    if (nodeMoves.isEmpty()) {
+    //      println("Current node has no children!")
+    //    }
 
     this.childrenNodes.add(childNode)
     this.unvisitedMoves.remove(selectedPackedMove)
@@ -370,9 +379,9 @@ fun selectMoveMCTS(
             !evaluateCapturedPieces(currentNode.currentPlayer) // &&
     // !evaluatePiecesInReserve(currentNode.currentPlayer)
     ) {
-      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-        println("Current node has no children!}")
-      }
+      //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+      //        println("Current node has no children!}")
+      //      }
 
       currentNode = currentNode.selectChildNodeToExplore()
     }
@@ -382,9 +391,9 @@ fun selectMoveMCTS(
           "Verify tree expansion bounds and parent-child link validity."
     }
 
-    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-      println("Current node has no children!")
-    }
+    //    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+    //      println("Current node has no children!")
+    //    }
 
     if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
 
@@ -417,12 +426,12 @@ fun selectMoveMCTS(
 }
 
 private fun evaluateCapturedPieces(player: Player): Boolean {
-  return player.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3
+  return player.capturedPieces.count { piece -> piece.extractPieceType() == PieceType.GIPF } == 3
 }
 
 private fun evaluatePiecesInReserve(player: Player): Boolean {
   return player.piecesInReserve.none { piece ->
-    piece.potential || piece.type == PieceType.GIPF
+    piece.extractPotential() || piece.extractPieceType() == PieceType.GIPF
   }
 }
 
@@ -457,10 +466,11 @@ fun simulateRandomGame(
     )
 
     // TODO fix early game turns. white gets an extra move
-//    check(
-//        abs(activePlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF } -
-//            opponentPlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF }) < 2
-//    )
+    //    check(
+    //        abs(activePlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF } -
+    //            opponentPlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF }) <
+    // 2
+    //    )
 
     playerWhoMadeTheLastMove = activePlayer
     // end of turn, rotate players
@@ -566,8 +576,7 @@ fun simulatePlayerMove(
   when (randomPackedMove) {
     is PackedMove.Multiple -> {}
     is PackedMove.Single -> {
-      val randomPossibleBitMove = randomPackedMove.value
-      when (randomPossibleBitMove.extractMoveType()) {
+      when (randomPackedMove.value.extractMoveType()) {
         MoveType.AddPiece -> {
           //          val addAtIndex = randomPossibleBitMove.extractTargetBit()
           //          val pushDirection = randomPossibleBitMove.extractPushDirection()
@@ -576,20 +585,20 @@ fun simulatePlayerMove(
           //          requireNotNull(randomPossibleBitMove.targetBit)
           //          requireNotNull(randomPossibleBitMove.pushDirection)
           //          requireNotNull(randomPossibleBitMove.columnInfo)
-          if (randomPossibleBitMove.extractSourceBit() == boardCenterSpotMask) {
-            bitboard.useTamskPotential(randomPossibleBitMove)
+          if (randomPackedMove.value.extractSourceBit() == boardCenterSpotMask) {
+            bitboard.useTamskPotential(randomPackedMove.value)
           } else {
             val selectedPiece =
-              randomPossibleBitMove.extractPiece()?.let { currentPlayer.selectPiece(it) }
+              randomPackedMove.value.onlyPiece().let { currentPlayer.selectPiece(it) }
 
             selectedPiece?.let {
-              bitboard.addPieceToBitboard(randomPossibleBitMove)
+              bitboard.addPieceToBitboard(randomPackedMove.value)
             }
           }
         }
         MoveType.UsePotential -> {
           bitboard.usePiecePotential(
-              move = randomPossibleBitMove,
+            move = randomPackedMove.value,
               currentPlayer = currentPlayer,
               nextPlayer = opponentPlayer,
           )
@@ -620,21 +629,15 @@ fun simulatePieceRetrievalCapture(
           "There must be at least one column"
         }
 
-        val retrievedCapturedPieces =
-            bitboard.removeSelectedPiecesToRemove(
-                player = currentPlayer,
-                piecesToRemove = selectedPieceToRemove.values,
-            )
+        // can i modify selectedPieceToRemove.values directly
+        val retrievedCapturedPieces = mutableListOf<UInt>()
+        bitboard.removeSelectedPiecesToRemove(
+            player = currentPlayer,
+            piecesToRemove = selectedPieceToRemove.values,
+            retrievedCapturedPieces,
+        )
 
-        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
-          it.retrievedPiece
-        }
-        val capturedPieces = retrievedCapturedPieces.mapNotNull {
-          it.capturedPiece
-        }
-
-        currentPlayer.addPiecesToReserve(retrievedPieces)
-        currentPlayer.addCapturedPieces(capturedPieces)
+        currentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
 
         currentPlayer.combinePieces()
       }

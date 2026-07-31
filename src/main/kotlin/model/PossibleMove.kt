@@ -17,6 +17,11 @@ enum class TurnPhase {
   PieceRemoval,
 }
 
+enum class RetrieveCapture {
+  RETRIEVE,
+  CAPTURE,
+}
+
 @Serializable
 data class PossibleMove(
     val piece: Piece? = null,
@@ -59,7 +64,7 @@ data class PossibleBitMove(
 }
 
 fun UInt.packPossibleBitMove(
-    piece: UByte = 7u,
+    piece: UInt = 0u,
     sourceBit: ULong = 0xFFFFFFFFFFFFFFFFUL,
     targetBit: ULong,
     pushDirection: PushDirection? = null,
@@ -75,14 +80,14 @@ fun UInt.packPossibleBitMove(
   val pushDir = (pushDirection?.ordinal?.toUInt() ?: 7u) shl 14
   val move = moveType.ordinal.toUInt() shl 17
   val index = columnInfoIndex.toUInt() shl 19
-  val p = piece.toUInt() shl 24
+  val p = if (piece != 0u) piece else 0u
 
   return target or source or pushDir or move or index or p
 }
 
 fun UInt.toPossibleBitMove(): PossibleBitMove {
   // 1. Unpack the piece FIRST so we can harvest its internal data
-  val unpackedPiece = (this shr 24 and 0b111111.toUInt()).toUByte().unpackPiece()
+  val unpackedPiece = (this and (0b111111.toUInt()) shl 24).extractPiece()
 
   val sourceShift = (this shr 7 and 0b1111111.toUInt()).toInt()
   val targetShift = (this and 0b1111111.toUInt()).toInt()
@@ -126,8 +131,21 @@ fun UInt.toPossibleBitMove(): PossibleBitMove {
 
 fun UInt.extractPiece(): Piece? {
   // Piece is now packed at bit 24 and takes 6 bits
-  val pieceByte = (this shr 24) and 0b111111.toUInt()
-  return if (pieceByte == 7u) null else pieceByte.toUByte().unpackPiece()
+  val pieceByte = this and (0b111111.toUInt() shl 24)
+  return extractPieceType()?.let {
+	  Piece(
+		  abbreviation = extractPieceColor().name.first().toString() + it.name.first().toString(),
+		  potential = extractPotential(),
+		  colorName = extractPieceColor(),
+		  type = it,
+		  isNeutralized = this.extractNeutralized(),
+	  )
+  }
+}
+
+fun UInt.onlyPiece(): UInt {
+  // Piece is now packed at bit 24 and takes 6 bits
+  return this and 0b11111u.shl(24)
 }
 
 fun UInt.extractSourceBit(): ULong {
@@ -142,14 +160,35 @@ fun UInt.extractTargetBit(): ULong {
   return if (shift == 64u) 0uL else 1uL shl shift.toInt()
 }
 
+fun UInt.createPiece(pieceType: PieceType, pieceColor: PlayerName, potential: Boolean, isNeutralized: Boolean = false): UInt {
+  val pieceType = pieceType.ordinal.toUInt() shl 24
+
+  val color = pieceColor.ordinal.toUInt() shl 28
+
+  val potential =
+    when (potential) {
+      true -> 1u
+      false -> 0u
+    } shl 27
+
+//  val neutralized =
+//    when (isNeutralized) {
+//      true -> 1u
+//      false -> 0u
+//    } shl 29
+
+  return this or pieceType or potential or color // or neutralized
+}
+
 fun UInt.setPieceType(pieceType: PieceType): UInt {
   // PieceType is bits 0-2 of the piece, which starts at 24 (so bits 24-26)
-  return (this xor (7u shl 24)) or (pieceType.ordinal.toUInt() shl 24)
+  return (this xor (0u shl 24)) or (pieceType.ordinal.toUInt() shl 24)
 }
 
 fun UInt.extractPieceType(): PieceType? {
   // PieceType is bits 0-2 of the piece, which starts at 24 (so bits 24-26)
   return when (((this shr 24) and 0b111u).toInt()) {
+    PieceType.NULL.ordinal -> null
     PieceType.GIPF.ordinal -> PieceType.GIPF
     PieceType.TAMSK.ordinal -> PieceType.TAMSK
     PieceType.ZERTZ.ordinal -> PieceType.ZERTZ
@@ -225,7 +264,7 @@ fun UInt.extractPotential(): Boolean {
 fun UInt.setNeutralized(neutralized: Boolean): UInt {
   // Neutralized is bit 5 of the piece, starting at bit 24 (so bit 29)
   return if (neutralized) {
-    this xor or(1u shl 29)
+    (this xor (1u shl 29)) or (1u shl 29)
   } else {
     this and (1u shl 29).inv() // Correctly clears the bit to 0
   }
@@ -233,4 +272,24 @@ fun UInt.setNeutralized(neutralized: Boolean): UInt {
 
 fun UInt.extractNeutralized(): Boolean {
   return ((this shr 29) and 1u) == 1u
+}
+
+fun UInt.setRetrieveCapture(retrieveCapture: RetrieveCapture): UInt {
+  // RetrieveCapture is bit 6 of the piece, starting at bit 24 (so bit 30)
+  return when (retrieveCapture ) {
+	  RetrieveCapture.RETRIEVE -> {
+      this and (1u shl 30).inv() // Correctly clears the bit to 0
+    }
+	  RetrieveCapture.CAPTURE -> {
+      (this xor (1u shl 30)) or (1u shl 30)
+    }
+  }
+}
+
+fun UInt.extractRetrieveCapture(): RetrieveCapture {
+  return when (((this shr 30) and 1u).toInt()) {
+    RetrieveCapture.RETRIEVE.ordinal -> RetrieveCapture.RETRIEVE
+    RetrieveCapture.CAPTURE.ordinal -> RetrieveCapture.CAPTURE
+    else -> error("Unknown retrieval: $this")
+  }
 }

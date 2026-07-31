@@ -1,9 +1,10 @@
 package org.example.engine
 
 import kotlinx.serialization.json.Json
+import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
+import org.example.ai.humanEvaluation.alphaBetaPackedMove
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
-import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
 import kotlin.random.Random
 
@@ -69,60 +70,54 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
   val bitboard = state.bitboard.deepCopy()
 
-  /* var bestMove =
-  alphabetaBitboardAddPieces(
-          depth = 3,
-          bitboard = bitboard,
-          currentPlayer = state.currentPlayer,
-          opponentPlayer = state.nextPlayer,
-          alphaBetaScore = AlphaBetaScoreBit(),
-      )
-      .move*/
+  val packedMove: PackedMove? =
+      alphaBetaPackedMove(
+              depth = 3,
+              bitboard = bitboard,
+              currentPlayer = state.currentPlayer.deepCopy(),
+              opponentPlayer = state.nextPlayer.deepCopy(),
+              alphaBetaScore = AlphaBetaScoreBitPacked(),
+              rng = rng,
+          )
+          .move
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  val packedMove: PackedMove? =
-      selectMoveMCTS(
-              bitboard = bitboard,
-              currentPlayer = state.currentPlayer,
-              nextPlayer = state.nextPlayer,
-              turnPhase = turnPhase,
-              rounds = 0..999,
-              rng = rng,
-          )
+  //  val packedMove: PackedMove? =
+  //      selectMoveMCTS(
+  //          bitboard = bitboard,
+  //          currentPlayer = state.currentPlayer,
+  //          nextPlayer = state.nextPlayer,
+  //          turnPhase = turnPhase,
+  //          rounds = 0..999,
+  //          rng = rng,
+  //      )
 
   if (packedMove != null) {
     // println("Player Move: ${Json.encodeToString(bestMove)}")
 
     state.currentPlayer.collector?.recordDecision(
-      state.encodeState(),
-      packedMove.encode(),
+        state.encodeState(),
+        packedMove.encode(),
     )
 
     state.collector?.recordDecision(
-      state.encodeState(),
-      packedMove.encode(),
+        state.encodeState(),
+        packedMove.encode(),
     )
 
     state.turnMoves.getOrDefault(turn, mutableListOf()).add(packedMove)
 
     when (packedMove) {
       is PackedMove.Multiple -> {
-        val retrievedCapturedPieces =
-          bitboard.removeSelectedPiecesToRemove(
+        val retrievedCapturedPieces = mutableListOf<UInt>()
+        bitboard.removeSelectedPiecesToRemove(
             player = state.currentPlayer,
             piecesToRemove = packedMove.values,
-          )
+            retrievedCapturedPieces,
+        )
 
-        val retrievedPieces = retrievedCapturedPieces.mapNotNull {
-          it.retrievedPiece
-        }
-        val capturedPieces = retrievedCapturedPieces.mapNotNull {
-          it.capturedPiece
-        }
-
-        state.currentPlayer.addPiecesToReserve(retrievedPieces)
-        state.currentPlayer.addCapturedPieces(capturedPieces)
+        state.currentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
 
         state.currentPlayer.combinePieces()
       }
@@ -132,7 +127,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
         when (bestMove.extractMoveType()) {
           MoveType.AddPiece -> {
-            val extractedPiece = bestMove.extractPiece()
+            val extractedPiece = bestMove.onlyPiece()
 
             if (bestMove.extractSourceBit() == boardCenterSpotMask) {
               require(bestMove.extractSourceBit() == boardCenterSpotMask) {
@@ -143,29 +138,28 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
               //        val node = state.board.nodes.first { it.bitmask == bestMove.targetBit }
               //        node.piece = bestMove.piece?.let { state.currentPlayer.selectPiece(it) }
 
-              val selectedPiece = extractedPiece?.let { state.currentPlayer.selectPiece(it) }
+              val selectedPiece = extractedPiece.let { state.currentPlayer.selectPiece(it) }
 
-              require(
-                extractedPiece?.colorName == state.currentPlayer.name
-              ) {
+              require(extractedPiece.extractPieceColor() == state.currentPlayer.name) {
                 "Must be the current player's piece!"
               }
 
               // --- MOVE VALIDATION ---
-//            requireNotNull(bestMove.extractTargetBit()) {
-//              "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move must have a destination."
-//            }
-//            requireNotNull(bestMove.extractPushDirection()) {
-//              "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid move must define the resulting board shift."
-//            }
-//            requireNotNull(bestMove.extractColumnInfo()) {
-//              "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid board columns were provided for this move."
-//            }
+              //            requireNotNull(bestMove.extractTargetBit()) {
+              //              "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move
+              // must have a destination."
+              //            }
+              //            requireNotNull(bestMove.extractPushDirection()) {
+              //              "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid
+              // move must define the resulting board shift."
+              //            }
+              //            requireNotNull(bestMove.extractColumnInfo()) {
+              //              "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid
+              // board columns were provided for this move."
+              //            }
 
               selectedPiece?.let {
-                bitboard.addPieceToBitboard(
-                  bestMove
-                )
+                bitboard.addPieceToBitboard(bestMove)
               }
             }
           }
@@ -179,9 +173,9 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
             }
 
             bitboard.usePiecePotential(
-              move = bestMove,
-              currentPlayer = state.currentPlayer,
-              nextPlayer = state.nextPlayer,
+                move = bestMove,
+                currentPlayer = state.currentPlayer,
+                nextPlayer = state.nextPlayer,
             )
           }
 
@@ -244,8 +238,12 @@ fun chooseToRemovePiecesWithPotential(line: Set<Node>, player: Player): Boolean 
 }
 
 fun evaluateCapturedPieces(state: State): Boolean {
-  return state.currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ||
-      state.nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3
+  return state.currentPlayer.capturedPieces.count { piece ->
+    piece.extractPieceType() == PieceType.GIPF
+  } == 3 ||
+      state.nextPlayer.capturedPieces.count { piece ->
+        piece.extractPieceType() == PieceType.GIPF
+      } == 3
 }
 
 fun isTamskPieceAtCenter(
@@ -278,11 +276,17 @@ fun determineWinner(
 
   val capturedGIPFPieces =
       when {
-        currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 &&
-            nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 -> null
-        currentPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 ->
-            currentPlayer
-        nextPlayer.capturedPieces.count { piece -> piece.type == PieceType.GIPF } == 3 -> nextPlayer
+        currentPlayer.capturedPieces.count { piece ->
+          piece.extractPieceType() == PieceType.GIPF
+        } == 3 &&
+            nextPlayer.capturedPieces.count { piece ->
+              piece.extractPieceType() == PieceType.GIPF
+            } == 3 -> null
+        currentPlayer.capturedPieces.count { piece ->
+          piece.extractPieceType() == PieceType.GIPF
+        } == 3 -> currentPlayer
+        nextPlayer.capturedPieces.count { piece -> piece.extractPieceType() == PieceType.GIPF } ==
+            3 -> nextPlayer
         else -> null
       }
 
