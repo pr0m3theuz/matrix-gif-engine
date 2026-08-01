@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.ai.scoreBitboardState
 import org.example.model.*
+import kotlin.math.sin
 import kotlin.random.Random
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -121,7 +122,7 @@ fun alphaBetaPackedMove(
   outerLoop@ for ((index, packedMove) in availableMoves.withIndex()) {
     //    val mutableState = state.deepCopy()
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("Move: $index") }
+      logger.info { "Move: $index" }
       logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
     }
 
@@ -278,10 +279,6 @@ fun alphaBetaPackedMove(
                         else 0f,
             )
 
-        if (moveValue == 20463525u && depth == 3) {
-          logger.info { "" + ("WTF!") }
-        }
-
         if (logger.isDebugEnabled()) {
           logger.info { "" + ("--- ALPHA-BETA COMPLETED ---") }
         }
@@ -295,21 +292,22 @@ fun alphaBetaPackedMove(
 
         currentPlayer.uncombinePieces(newlyStackedPieces)
 
-        bitboard.assertPieceCount(
-            currentPlayer = currentPlayer,
-            nextPlayer = opponentPlayer,
-        )
-
         currentPlayer.removeRetrievedCapturedPieces(bestPiecesToRetrieveCapture2)
 
-        bitboard.undoRetrieveAndCapturePieces(bestPiecesToRetrieveCapture2)
+//        bitboard.assertPieceCount(
+//            currentPlayer = currentPlayer,
+//            nextPlayer = opponentPlayer,
+//        )
 
-        bitboard.diff(postMoveBitboardState)
 
-        bitboard.assertPieceCount(
-            currentPlayer = currentPlayer,
-            nextPlayer = opponentPlayer,
-        )
+//        bitboard.undoRetrieveAndCapturePieces(bestPiecesToRetrieveCapture2)
+
+//        bitboard.diff(postMoveBitboardState)
+
+//        bitboard.assertPieceCount(
+//            currentPlayer = currentPlayer,
+//            nextPlayer = opponentPlayer,
+//        )
 
         //	              val gameStateHash =
         //		              MessageDigest.getInstance("MD5")
@@ -319,26 +317,27 @@ fun alphaBetaPackedMove(
         // TODO Undo Move - should this be after undoing piece retrieval/capture
 
         if (moveValue.extractSourceBit() == boardCenterSpotMask) {
-          bitboard.undoTamskPotential(
-              move = moveValue,
-              vacantBitFound = vacantBitFound,
-              wasIndexOccupied = vacantBitFound != 0UL,
-          )
+//          bitboard.undoTamskPotential(
+//              move = moveValue,
+//              vacantBitFound = vacantBitFound,
+//              wasIndexOccupied = vacantBitFound != 0UL,
+//          )
         } else {
 
-          bitboard.undoAddPieceToBitboard(
-              move = moveValue,
-              vacantBitFound = vacantBitFound,
-              wasIndexOccupied = vacantBitFound != 0UL,
-          )
+//          bitboard.undoAddPieceToBitboard(
+//              move = moveValue,
+//              vacantBitFound = vacantBitFound,
+//              wasIndexOccupied = vacantBitFound != 0UL,
+//          )
 
-          bitboard.diff(preMoveBitboardState)
+//          bitboard.diff(preMoveBitboardState)
 
           // TODO Add selected piece back to player reserve
           moveValue.onlyPiece().let { currentPlayer.piecesInReserve.add(it) }
         }
 
-        bitboard.diff(preMoveBitboardState)
+//        bitboard.diff(preMoveBitboardState)
+          bitboard.restorePreviousBoardState(preMoveBitboardState)
 
         bitboard.assertPieceCount(
             currentPlayer = currentPlayer,
@@ -461,11 +460,11 @@ fun alphaBetaPackedMove(
 
         currentPlayer.removeRetrievedCapturedPieces(bestPiecesToRetrieveCapture3)
 
-        bitboard.undoRetrieveAndCapturePieces(bestPiecesToRetrieveCapture3)
+//        bitboard.undoRetrieveAndCapturePieces(bestPiecesToRetrieveCapture3)
 
-        bitboard.diff(postUsePotentialBitboardState)
+//        bitboard.diff(postUsePotentialBitboardState)
 
-        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+//        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
         // TODO undo use piece potential
 
@@ -515,7 +514,7 @@ fun alphaBetaPackedMove(
   if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
     currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
 
-    bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+//    bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
     currentPlayer.removeRetrievedCapturedPieces(bestPiecesToRetrieveCapture1)
 
@@ -555,8 +554,13 @@ fun alphaBetaPackedMove(
   	}
   }*/
 
-  if (alphaBetaScore.move?.let { (it as PackedMove.Single).value == 20463525u} == true && depth == 3) {
-    logger.info { "" + ("WTF!") }
+  val singleMove = alphaBetaScore.move as? PackedMove.Single
+
+  if (singleMove != null) {
+    check(singleMove in availableMoves) {
+      "AlphaBeta Search Invariant Violation: Best move extracted (${alphaBetaScore.move}) is not in the set of available moves. " +
+          "Available move count: ${availableMoves.size}. Sample legal moves: ${availableMoves.take(3)}"
+    }
   }
 
   return BestPackedMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
@@ -582,7 +586,7 @@ private fun bestPiecesToRemove(
           rng = rng,
       )
 
-  bitboard.diff(postUsePotentialBitboardState)
+//  bitboard.diff(postUsePotentialBitboardState)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -646,131 +650,131 @@ fun resolveBoardRemovals(
 
   val initBitboard = bitboard.deepCopy()
 
-  val removePiecesPowerset = mutableListOf<PackedMove>()
+  val removePiecesPowerset: MutableList<PackedMove> = mutableListOf<PackedMove>()
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
 
   // region Retrieve/Capture Pieces with Player Potential Powerset
   if (removePiecesPowerset.isNotEmpty()) {
-    removePiecesPowerset.forEachIndexed { index, removePieces ->
-      // 1. Generate your powerset of choices for these lines
-      // 2. Loop through each choice in the powerset:
-      // a. Apply the piece removals to the board
+	  for ((index, removePieces) in removePiecesPowerset.withIndex()) {
+		  // 1. Generate your powerset of choices for these lines
+		  // 2. Loop through each choice in the powerset:
+		  // a. Apply the piece removals to the board
 
-      /**
-       * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
-       * stack in play TODO Minimax/MCTS — what it would be like to remove at least one of these
-       * pieces if all pieces have potentials use line score heuristic and pieces in reserve TODO
-       * return of a list containing different combinations of bit positions
-       */
-      require(removePieces is PackedMove.Multiple)
-      val playerPiecesWithPotentialToRemove = removePieces.values.distinct()
+		  /**
+		   * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
+		   * stack in play TODO Minimax/MCTS — what it would be like to remove at least one of these
+		   * pieces if all pieces have potentials use line score heuristic and pieces in reserve TODO
+		   * return of a list containing different combinations of bit positions
+		   */
+		  require(removePieces is PackedMove.Multiple)
+		  val playerPiecesWithPotentialToRemove = removePieces.values.distinct()
 
-      val retrievedCapturedPieces = mutableListOf<UInt>()
-      bitboard.removeSelectedPiecesToRemove(
-          player = currentPlayer,
-          piecesToRemove = playerPiecesWithPotentialToRemove,
-          movesBuffer = retrievedCapturedPieces,
-      )
+		  val retrievedCapturedPieces = mutableListOf<UInt>()
+		  bitboard.removeSelectedPiecesToRemove(
+			  player = currentPlayer,
+			  piecesToRemove = playerPiecesWithPotentialToRemove,
+			  movesBuffer = retrievedCapturedPieces,
+		  )
 
-      currentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
+		  currentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
 
-      val newlyStackedPieces = currentPlayer.combinePieces()
+		  val newlyStackedPieces = currentPlayer.combinePieces()
 
-      val postPieceRemovalBitboardState = bitboard.deepCopy()
-      bitboard.diff(postPieceRemovalBitboardState)
+		  val postPieceRemovalBitboardState = bitboard.deepCopy()
+		  bitboard.diff(postPieceRemovalBitboardState)
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      // b. Recurse! Call resolveBoardRemovals() again for the SAME player
-      //    to handle any chain reactions caused by the removal
-      //      val bestPiecesToRemove =
-      //          resolveBoardRemovals(
-      //              currentPlayer = currentPlayer,
-      //              opponentPlayer = opponentPlayer,
-      //              bitboard = bitboard,
-      //              depth = depth,
-      //              alphaBetaScore = alphaBetaScore.copy(move = null),
-      //          )
+		  // b. Recurse! Call resolveBoardRemovals() again for the SAME player
+		  //    to handle any chain reactions caused by the removal
+		  //      val bestPiecesToRemove =
+		  //          resolveBoardRemovals(
+		  //              currentPlayer = currentPlayer,
+		  //              opponentPlayer = opponentPlayer,
+		  //              bitboard = bitboard,
+		  //              depth = depth,
+		  //              alphaBetaScore = alphaBetaScore.copy(move = null),
+		  //          )
 
-      bitboard.diff(postPieceRemovalBitboardState)
+		  //      bitboard.diff(postPieceRemovalBitboardState)
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      if (logger.isDebugEnabled()) {
-        logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
-      }
+		  if (logger.isDebugEnabled()) {
+			  logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
+		  }
 
-//      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  //      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      // c. Update alpha/beta scores
-      val move =
-          BestPackedMove(
-              move = removePieces,
-              score =
-                  alphaBetaPackedMove(
-                          depth = depth.minus(1),
-                          // state = state,
-                          bitboard = bitboard,
-                          currentPlayer = opponentPlayer,
-                          opponentPlayer = currentPlayer,
-                          // gameTree = gameTree,
-                          alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
-                          rng = rng,
-                      )
-                      .score,
-          )
+		  // c. Update alpha/beta scores
+		  val move =
+			  BestPackedMove(
+				  move = removePieces,
+				  score =
+					  alphaBetaPackedMove(
+						  depth = depth.minus(1),
+						  // state = state,
+						  bitboard = bitboard,
+						  currentPlayer = opponentPlayer,
+						  opponentPlayer = currentPlayer,
+						  // gameTree = gameTree,
+						  alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
+						  rng = rng,
+					  )
+						  .score,
+			  )
 
-      if (logger.isDebugEnabled()) {
-        logger.info { "" + ("--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---") }
-      }
+		  if (logger.isDebugEnabled()) {
+			  logger.info { "" + ("--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---") }
+		  }
 
-      bitboard.diff(postPieceRemovalBitboardState)
+		  //      bitboard.diff(postPieceRemovalBitboardState)
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      // d. UNDO the piece removals to evaluate the next choice
-      currentPlayer.uncombinePieces(newlyStackedPieces)
+		  // d. UNDO the piece removals to evaluate the next choice
+		  currentPlayer.uncombinePieces(newlyStackedPieces)
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      currentPlayer.removeRetrievedCapturedPieces(retrievedCapturedPieces)
+		  currentPlayer.removeRetrievedCapturedPieces(retrievedCapturedPieces)
 
-      bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
-      //      bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
+		  bitboard.undoRetrieveAndCapturePieces(retrievedCapturedPieces)
+		  //      bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
 
-      bitboard.diff(initBitboard)
+		  //      bitboard.diff(initBitboard)
 
-      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+		  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      // c. Update alpha/beta scores
-      if (move.score.unaryMinus() > alphaBetaScore.alpha) {
-        alphaBetaScore.alpha = move.score.unaryMinus()
+		  // c. Update alpha/beta scores
+		  if (move.score.unaryMinus() > alphaBetaScore.alpha) {
+			  alphaBetaScore.alpha = move.score.unaryMinus()
 
-        alphaBetaScore.move = move.move
-        //								              gameTree[gameStateHash] = alphaBetaScore
+			  alphaBetaScore.move = move.move
+			  //								              gameTree[gameStateHash] = alphaBetaScore
 
-        //            logger.info { "" + ("line 371: ply $depth move $index: set best to: $alphaBetaScore") }
-        //            logger.info { "" + (//                "line 373: ply $depth player: ${currentPlayer.name} index:
-        // $index: move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
-        //) }
-      }
+			  //            logger.info { "" + ("line 371: ply $depth move $index: set best to: $alphaBetaScore") }
+			  //            logger.info { "" + (//                "line 373: ply $depth player: ${currentPlayer.name} index:
+			  // $index: move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
+			  //) }
+		  }
 
-      if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
-        //            logger.info { "" + (//                "line 378: ply $depth player: ${currentPlayer.name} move $index:
-        // return best: $alphaBetaScore"
-        //) }
+		  if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
+			  //            logger.info { "" + (//                "line 378: ply $depth player: ${currentPlayer.name} move $index:
+			  // return best: $alphaBetaScore"
+			  //) }
 
-        if (logger.isDebugEnabled()) {
-          logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
-        }
-        //            break@removalLoop
-        //            return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
-      }
-    }
+			  if (logger.isDebugEnabled()) {
+				  logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
+			  }
+			  //            break@removalLoop
+			  //            return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
+		  }
+	  }
   }
   // endregion
 
-  bitboard.diff(initBitboard)
+//  bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   if (logger.isDebugEnabled()) {
