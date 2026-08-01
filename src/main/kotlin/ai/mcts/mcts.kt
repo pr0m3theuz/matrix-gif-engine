@@ -330,20 +330,20 @@ data class MCTSNode(
     var bestScore = -1.0
     var bestChildNode: MCTSNode? = null
 
-    this.childrenNodes.forEach { childNode ->
-      val score =
-          calculateUCTScore(
-              parentRollouts = totalRollouts,
-              childRollouts = childNode.rolloutCounts,
-              winPercentage = childNode.winPercentage(nextPlayer),
-              temperature = 1.5,
-          )
+	  for (childNode in this.childrenNodes) {
+		  val score =
+			  calculateUCTScore(
+				  parentRollouts = totalRollouts,
+				  childRollouts = childNode.rolloutCounts,
+				  winPercentage = childNode.winPercentage(nextPlayer),
+				  temperature = 1.5,
+			  )
 
-      if (score > bestScore) {
-        bestScore = score
-        bestChildNode = childNode
-      }
-    }
+		  if (score > bestScore) {
+			  bestScore = score
+			  bestChildNode = childNode
+		  }
+	  }
 
     if (this.childrenNodes.size == 1) {
       bestChildNode = this.childrenNodes.first()
@@ -429,13 +429,13 @@ fun selectMoveMCTS(
 
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
-  rootMCTSNode.childrenNodes.forEach { child ->
-    val winPercentage = child.winPercentage(nextPlayer)
-    if (winPercentage > bestPercentage) {
-      bestPercentage = winPercentage
-      bestMove = child.move
-    }
-  }
+	for (child in rootMCTSNode.childrenNodes) {
+		val winPercentage = child.winPercentage(nextPlayer)
+		if (winPercentage > bestPercentage) {
+			bestPercentage = winPercentage
+			bestMove = child.move
+		}
+	}
 
   // TODO What to do when no best move is found?
   return bestMove ?: availableMoves.random(rng)

@@ -245,12 +245,12 @@ data class Player(
     // --- 3. MUTATE STATE (With Post-Condition Checks) ---
 
     // Safely remove the combined potentials
-    newlyStackedPieces.forEach { piece ->
-      val wasRemoved = this.piecesInReserve.remove(piece)
-      check(wasRemoved) {
-        "STATE ERROR: Cannot uncombine piece; ${piece.extractPieceColor()} ${piece.extractPieceType()} (Potential) was not found in the reserve."
-      }
-    }
+	  for (piece in newlyStackedPieces) {
+		  val wasRemoved = this.piecesInReserve.remove(piece)
+		  check(wasRemoved) {
+			  "STATE ERROR: Cannot uncombine piece; ${piece.extractPieceColor()} ${piece.extractPieceType()} (Potential) was not found in the reserve."
+		  }
+	  }
 
     // Safely add the unstacked pieces back
     val wereAdded = this.piecesInReserve.addAll(unstackedPieces)
