@@ -119,6 +119,7 @@ fun alphaBetaPackedMove(
 
   // how to see which move trigger retrieve and capture
   // how to make a move and then assess the state/
+  availableMoves.shuffle(rng)
   outerLoop@ for ((index, packedMove) in availableMoves.withIndex()) {
     //    val mutableState = state.deepCopy()
     if (logger.isDebugEnabled()) {
@@ -654,6 +655,16 @@ fun resolveBoardRemovals(
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
 
   // region Retrieve/Capture Pieces with Player Potential Powerset
+  removePiecesPowerset.sortByDescending {
+    when (it) {
+	    is PackedMove.Multiple -> {
+        it.values.size
+      }
+	    is PackedMove.Single -> {
+        0
+      }
+    }
+  }
   if (removePiecesPowerset.isNotEmpty()) {
 	  for ((index, removePieces) in removePiecesPowerset.withIndex()) {
 		  // 1. Generate your powerset of choices for these lines
