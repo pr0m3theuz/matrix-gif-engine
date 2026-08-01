@@ -1,20 +1,20 @@
 package org.example.ai
 
+import org.example.ai.mcts.PackedMove
 import org.example.engine.determineWinner
 import org.example.model.Bitboard
 import org.example.model.PieceType
 import org.example.model.Player
 import org.example.model.PlayerName
-import org.example.model.PossibleBitMove
 import org.example.model.bitDistanceWeights
 import org.example.model.columnInfos
 import org.example.model.extractPieceType
 import org.example.model.extractPotential
-import org.example.model.identifyAvailableMoves
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.random.Random
 
+// this is slow/get called a lot
 fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer: Player, rng: Random): Double {
   // TODO how to score control over the board/line
   // TODO how to score attacking positions, i.e. 4 in the row
@@ -65,10 +65,12 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
    */
 
   // evaluate state & calculate score
-  val possibleMoves = mutableListOf<PossibleBitMove>()
-  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, possibleMoves)
+  val movesBuffer = mutableListOf<PackedMove>()
+  // TODO replace with a more efficient function specifically for evaluation purposes
+  //  assess playable pieces & vacant lines and use potentials
+  var moves = bitboard.evaluateAvailableMoves(currentPlayer, columnInfos, movesBuffer)
 
-  if (possibleMoves.isEmpty()) {
+  if (moves == 0) {
     val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)
     winner?.let {
       return if (it.name == currentPlayer.name) {
@@ -105,10 +107,10 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
               .unaryMinus()
 
   // current player'S available moves
-  val moves = mutableListOf<PossibleBitMove>()
-  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
+//  val moves = mutableListOf<PossibleBitMove>()
+//  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
 
-  val availableMoves = exp(-moves.size / 4.0)
+  val availableMoves = exp(-moves / 4.0)
 
   //      currentPlayer.piecesInReserve.count {
   //        it.extractPotential() || it.extractPieceType() == PieceType.GIPF
@@ -125,9 +127,8 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
       }.countOneBits()
 
   // opponent's available moves
-  moves.clear()
-  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
-  val opponentAvailableMoves = (exp(-moves.size / 4.0)).unaryMinus()
+  moves = bitboard.evaluateAvailableMoves(opponentPlayer, columnInfos, movesBuffer)
+  val opponentAvailableMoves = (exp(-moves / 4.0)).unaryMinus()
 
   //  opponentPlayer.piecesInReserve.count {
   //        it.extractPotential() || it.extractPieceType() == PieceType.GIPF
@@ -164,21 +165,28 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
 
     when (player.name) {
       PlayerName.WHITE -> {
-        for (k in 0..39) {
-          val whiteBit = (bitboard.whitePieces shr k) and 1UL
-          //          val blackBit = (bitboard.blackPieces shr k) and 1UL
+        val whitePieces = bitboard.whitePieces
+        if (whitePieces != 0UL) {
+          for (k in 0..39) {
+            val whiteBit = (whitePieces shr k) and 1UL
+            //          val blackBit = (bitboard.blackPieces shr k) and 1UL
 
-          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
-          //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+            bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
+            //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+          }
         }
       }
-      PlayerName.BLACK -> {
-        for (k in 0..39) {
-          val blackBit = (bitboard.blackPieces shr k) and 1UL
-          //          val whiteBit = (bitboard.whitePieces shr k) and 1UL
 
-          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
-          //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+      PlayerName.BLACK -> {
+        val blackPieces = bitboard.blackPieces
+        if (blackPieces != 0UL) {
+          for (k in 0..39) {
+            val blackBit = (blackPieces shr k) and 1UL
+            //          val whiteBit = (bitboard.whitePieces shr k) and 1UL
+
+            bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
+            //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+          }
         }
       }
     }
@@ -192,22 +200,27 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
     when (player.name) {
       PlayerName.WHITE -> {
         val whiteTamskPotential = bitboard.whiteTAMSK and bitboard.whitePotentials
-        for (k in 0..39) {
-          val whiteBit = (whiteTamskPotential shr k) and 1UL
-          //          val blackBit = (blackTamskPotential shr k) and 1UL
+        if (whiteTamskPotential != 0UL) {
+          for (k in 0..39) {
+            val whiteBit = (whiteTamskPotential shr k) and 1UL
+            //          val blackBit = (blackTamskPotential shr k) and 1UL
 
-          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
-          //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+            bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight += it }
+            //          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight -= it }
+          }
         }
       }
+
       PlayerName.BLACK -> {
         val blackTamskPotential = bitboard.blackTAMSK and bitboard.blackPotentials
-        for (k in 0..39) {
-          val blackBit = (blackTamskPotential shr k) and 1UL
-          //          val whiteBit = (whiteTamskPotential shr k) and 1UL
+        if (blackTamskPotential != 0UL) {
+          for (k in 0..39) {
+            val blackBit = (blackTamskPotential shr k) and 1UL
+            //          val whiteBit = (whiteTamskPotential shr k) and 1UL
 
-          bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
-          //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+            bitDistanceWeights[k]?.times(blackBit.toInt())?.let { weight += it }
+            //          bitDistanceWeights[k]?.times(whiteBit.toInt())?.let { weight -= it }
+          }
         }
       }
     }
@@ -225,7 +238,7 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           tamskDistanceFromCentre(currentPlayer)
 
   val opponentValue =
-      20 +
+      -20 +
           countCapturedGIPFPieces.times(exp(countCapturedGIPFPieces)) +
           countCapturedPieces +
           opponentAvailableMoves +
@@ -234,6 +247,6 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           tamskDistanceFromCentre(opponentPlayer)
 
   val noise = rng.nextInt(-10, 10).toDouble()
-  return (((currentValue - opponentValue) + noise) * 1000.0) /
-      (currentValue + opponentValue + abs(noise))
+  return (((currentValue + opponentValue) + noise) * 1000) /
+      (currentValue + abs(opponentValue) + abs(noise))
 }
