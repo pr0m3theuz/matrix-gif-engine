@@ -270,7 +270,10 @@ val columnInfos: List<ColumnInfo> =
           )
         }
 
-val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = run {
+val neighbouringBitsBitmasks: Map<ULong, ULong> = calculateNeighbouringBitmasks()
+
+fun calculateNeighbouringBitmasks(): Map<ULong, ULong> {
+
   val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = mutableMapOf()
 
   for (column in columnInfos) {
@@ -280,7 +283,15 @@ val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = run {
     }
   }
 
-  return@run neighbouringBitsBitmasks
+  return neighbouringBitsBitmasks.toMap()
+}
+
+val threeRunSubmasks: List<ULong> = columnInfos.flatMap { (_, positions, _, _, _, _) ->
+  positions.windowed(3).map { sublist ->
+    sublist.fold(0UL) { acc, lng ->
+      acc or lng
+    }
+  }
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
