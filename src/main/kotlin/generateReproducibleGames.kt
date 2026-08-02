@@ -30,6 +30,26 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  * <SEED> -v <VERBOSE> -m <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS
  * <AGENT-2-DIFFICULTY
  */
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS greedy
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS random
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS easy
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS random
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS greedy
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS easy
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M minimax -MS greedy
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M minimax -MS easy
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M mcts -MS random
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M mcts -MS easy
+
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS easy
+// java -Xmx20g -jar app.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS easy
+
+
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
 
