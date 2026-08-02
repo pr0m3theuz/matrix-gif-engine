@@ -3,9 +3,6 @@ package org.example.engine
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
-import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
-import org.example.ai.humanEvaluation.alphaBetaPackedMove
-import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
 import org.example.model.*
@@ -97,28 +94,35 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
   val bitboard = state.bitboard.deepCopy()
 
   val packedMove: PackedMove? =
-      when (turnPhase) {
-        TurnPhase.PieceRemoval ->
-            resolveBoardRemovals(
-                    currentPlayer = state.currentPlayer.deepCopy(),
-                    opponentPlayer = state.nextPlayer.deepCopy(),
-                    bitboard = bitboard.deepCopy(),
-                    depth = 3,
-                    alphaBetaScore = AlphaBetaScoreBitPacked(),
-                    rng = rng,
-                )
-                .move
-        else ->
-            alphaBetaPackedMove(
-                    depth = 3,
-                    bitboard = bitboard.deepCopy(),
-                    currentPlayer = state.currentPlayer.deepCopy(),
-                    opponentPlayer = state.nextPlayer.deepCopy(),
-                    alphaBetaScore = AlphaBetaScoreBitPacked(),
-                    rng = rng,
-                )
-                .move
-      }
+      state.currentPlayer.selectMove(
+          turnPhase = turnPhase,
+          bitboard = bitboard.deepCopy(),
+          opponent = state.nextPlayer.deepCopy(),
+          rng = rng,
+      )
+
+  //      when (turnPhase) {
+  //        TurnPhase.PieceRemoval ->
+  //            resolveBoardRemovals(
+  //                    currentPlayer = state.currentPlayer.deepCopy(),
+  //                    opponentPlayer = state.nextPlayer.deepCopy(),
+  //                    bitboard = bitboard.deepCopy(),
+  //                    depth = 3,
+  //                    alphaBetaScore = AlphaBetaScoreBitPacked(),
+  //                    rng = rng,
+  //                )
+  //                .move
+  //        else ->
+  //            alphaBetaPackedMove(
+  //                    depth = 3,
+  //                    bitboard = bitboard.deepCopy(),
+  //                    currentPlayer = state.currentPlayer.deepCopy(),
+  //                    opponentPlayer = state.nextPlayer.deepCopy(),
+  //                    alphaBetaScore = AlphaBetaScoreBitPacked(),
+  //                    rng = rng,
+  //                )
+  //                .move
+  //      }
 
   // TODO use agent to selectMove
   // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
@@ -136,13 +140,15 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
     // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }
 
     state.currentPlayer.collector?.recordDecision(
-        state.encodeState(),
-        packedMove.encode(),
+        state = state.encodeState(),
+        action = packedMove.encode(),
+        globalState = state.encodeGlobalState(turnPhase = turnPhase),
     )
 
     state.collector?.recordDecision(
-        state.encodeState(),
-        packedMove.encode(),
+        state = state.encodeState(),
+        action = packedMove.encode(),
+        globalState = state.encodeGlobalState(turnPhase = turnPhase),
     )
 
     state.turnMoves.getOrDefault(turn, mutableListOf()).add(packedMove)
@@ -197,9 +203,9 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
               // board columns were provided for this move."
               //            }
 
-	            selectedPiece.let {
-		            bitboard.addPieceToBitboard(bestMove)
-	            }
+              selectedPiece.let {
+                bitboard.addPieceToBitboard(bestMove)
+              }
             }
           }
 

@@ -37,7 +37,10 @@ suspend fun main() = coroutineScope {
 
 fun playOneGame(gameId: Int) {
 	val rng = Random(1)
-	var gameState: State = initializeState()
+	var gameState: State = initializeState(
+		playerOneModel = Model.MCTS,
+		playerTwoModel = Model.MCTS,
+	)
 	var turn = 0
 	var playerWhoMadeTheLastMove: Player? = null
 
