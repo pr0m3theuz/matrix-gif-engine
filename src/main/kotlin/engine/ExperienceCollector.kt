@@ -20,6 +20,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D4Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import kotlin.collections.plus
 
 
 data class ExperienceCollector(
@@ -34,10 +35,19 @@ data class ExperienceCollector(
 ) {
   fun beginEpisode() {}
 
+  operator fun plus(other: ExperienceCollector): ExperienceCollector {
+    return ExperienceCollector(
+      states = (this.states + other.states).toMutableList(),
+      actions = (this.actions + other.actions).toMutableList(),
+      globalStates = (this.globalStates + other.globalStates).toMutableList(),
+      rewards = (this.rewards + other.rewards).toMutableList(),
+    )
+  }
+
   fun endEpisode(reward: Int) {
-    states.add(currentEpisodeStates)
-    actions.add(currentEpisodeActions)
-    globalStates.add(currentEpisodeGlobalStates)
+    states.add(currentEpisodeStates.toList())
+    actions.add(currentEpisodeActions.toList())
+    globalStates.add(currentEpisodeGlobalStates.toList())
     rewards.add(List<Int>(currentEpisodeStates.size) { reward })
 
     currentEpisodeStates.clear()

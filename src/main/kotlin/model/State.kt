@@ -51,8 +51,8 @@ data class State(
         currentPlayer = this.nextPlayer,
         nextPlayer = this.currentPlayer,
         board = this.board,
-        bitboard = bitboard.deepCopy(),
-        turnMoves = this.turnMoves.toMutableMap(),
+        bitboard = bitboard,
+        turnMoves = this.turnMoves,
         collector = this.collector,
     )
   }
