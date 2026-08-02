@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package ai.minimax
 
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
