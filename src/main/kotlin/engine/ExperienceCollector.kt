@@ -7,7 +7,6 @@ import ncsa.hdf.`object`.Datatype
 import ncsa.hdf.`object`.Group
 import ncsa.hdf.`object`.h5.H5Datatype
 import ncsa.hdf.`object`.h5.H5File
-import org.example.engine.toPaddedD3Array
 import org.jetbrains.kotlinx.multik.api.d2arrayIndices
 import org.jetbrains.kotlinx.multik.api.d4arrayIndices
 import org.jetbrains.kotlinx.multik.api.io.writeNPZ
@@ -21,33 +20,38 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D4Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.plus
-import org.jetbrains.kotlinx.multik.ndarray.operations.plusAssign
+import kotlin.time.times
 
 
 data class ExperienceCollector(
     // list of episodes<game states per episode<features & nodes>>
     val states: MutableList<List<D2Array<Int>>> = mutableListOf(),
     val actions: MutableList<List<D1Array<Int>>> = mutableListOf(),
+    val globalStates: MutableList<List<D1Array<Float>>> = mutableListOf(),
     val rewards: MutableList<List<Int>> = mutableListOf(),
     val currentEpisodeStates: MutableList<D2Array<Int>> = mutableListOf(),
     val currentEpisodeActions: MutableList<D1Array<Int>> = mutableListOf(),
+    val currentEpisodeGlobalStates: MutableList<D1Array<Float>> = mutableListOf(),
 ) {
   fun beginEpisode() {}
 
   fun endEpisode(reward: Int) {
     states.add(currentEpisodeStates)
-//    actions.add(currentEpisodeActions)
+    actions.add(currentEpisodeActions)
+    globalStates.add(currentEpisodeGlobalStates)
     rewards.add(List<Int>(currentEpisodeStates.size) { reward })
 
     currentEpisodeStates.clear()
     currentEpisodeActions.clear()
+    currentEpisodeGlobalStates.clear()
   }
 
   // action is the possibleBitMove.targetBit.toBitList() or retrievedCapturedPiecesBit
   // sum.toBitList()
-  fun recordDecision(state: D2Array<Int>, action: D1Array<Int>) {
+  fun recordDecision(state: D2Array<Int>, action: D1Array<Int>, globalState: D1Array<Float>) {
     currentEpisodeStates.add(state)
     currentEpisodeActions.add(action)
+    currentEpisodeGlobalStates.add(globalState)
   }
 
   fun save(agent: String, games: String) {
@@ -64,6 +68,7 @@ data class ExperienceCollector(
       Path("experience_${agent}_${games}_${now().toString().replace(":", "-")}.npz"),
       padStates(currentEpisodeStates, currentEpisodeStates.size),
       padActions(currentEpisodeActions, currentEpisodeActions.size),
+      padGlobalStates(currentEpisodeGlobalStates, currentEpisodeGlobalStates.size),
     )
   }
 
@@ -71,6 +76,7 @@ data class ExperienceCollector(
     return ExperienceBuffer(
         states.toPaddedD4Array(),
         actions.toPaddedD3Array(),
+        globalStates.toPaddedD3Array(),
         rewards.toPaddedD2Array(),
     )
   }
@@ -80,6 +86,7 @@ data class ExperienceCollector(
 data class ExperienceBuffer(
     val states: D4Array<Int>,
     val actions: D3Array<Int>,
+    val globalStates: D3Array<Float>,
     val rewards: D2Array<Int>,
 ) {
   fun serialize(h5File: H5File) {
@@ -87,6 +94,7 @@ data class ExperienceBuffer(
     try {
       val experience: Group = h5File.createGroup("experience", null)
       val intType = H5Datatype(Datatype.CLASS_INTEGER, 4, Datatype.ORDER_LE, Datatype.SIGN_2)
+      val floatType = H5Datatype(Datatype.CLASS_FLOAT, 4, Datatype.ORDER_LE, Datatype.SIGN_NONE)
 
       val statesDims = states.shape.map { it.toLong() }.toLongArray()
       h5File.createScalarDS(
@@ -112,6 +120,18 @@ data class ExperienceBuffer(
           actions.toFlatArray3D(),
       )
 
+      val globalStatesDims = globalStates.shape.map { it.toLong() }.toLongArray()
+      h5File.createScalarDS(
+        "globalStates",
+        experience,
+        floatType,
+        globalStatesDims,
+        null,
+        globalStatesDims,
+        0,
+        globalStates.toFlatArray3D(),
+      )
+
       val rewardsDims = rewards.shape.map { it.toLong() }.toLongArray()
       h5File.createScalarDS(
           "rewards",
@@ -132,6 +152,7 @@ data class ExperienceBuffer(
     return ExperienceBuffer(
       states = this.states + other.states,
       actions = this.actions + other.actions,
+      globalStates = this.globalStates + other.globalStates,
       rewards = this.rewards + other.rewards,
     )
   }
@@ -141,13 +162,15 @@ data class ExperienceBuffer(
     try {
       val statesDs = h5File.get("/experience/states") as Dataset
       val actionsDs = h5File.get("/experience/actions") as Dataset
+      val globalStatesDs = h5File.get("/experience/globalStates") as Dataset
       val rewardsDs = h5File.get("/experience/rewards") as Dataset
 
       val states = statesDs.read4D()
       val actions = actionsDs.read3D()
+      val globalStates = globalStatesDs.read3DFloat()
       val rewards = rewardsDs.read2D()
 
-      return ExperienceBuffer(states = states, actions = actions, rewards = rewards)
+      return ExperienceBuffer(states = states, actions = actions, globalStates = globalStates, rewards = rewards)
     } finally {
       h5File.close()
     }
@@ -173,6 +196,17 @@ data class ExperienceBuffer(
     return out
   }
 
+  private fun D3Array<Float>.toFlatArray3D(): FloatArray {
+    val (d0, d1, d2) = shape
+    val out = FloatArray(d0 * d1 * d2)
+    var idx = 0
+    for (i in 0 until d0) for (j in 0 until d1) for (k in 0 until d2) {
+      out[idx++] = this[i, j, k]
+    }
+    return out
+  }
+
+
 
   private fun D2Array<Int>.toFlatArray2D(): IntArray {
     val (d0, d1) = shape
@@ -193,8 +227,15 @@ data class ExperienceBuffer(
 
   private fun Dataset.read3D(): D3Array<Int> {
     val dims = dims
-    require(dims.size == 3) { "Expected 4D dataset, got ${dims.size}D" }
+    require(dims.size == 3) { "Expected 3D dataset, got ${dims.size}D" }
     val flat = read() as IntArray
+    return mk.ndarray(flat, dims[0].toInt(), dims[1].toInt(), dims[2].toInt())
+  }
+
+  private fun Dataset.read3DFloat(): D3Array<Float> {
+    val dims = dims
+    require(dims.size == 3) { "Expected 3D dataset, got ${dims.size}D" }
+    val flat = read() as FloatArray
     return mk.ndarray(flat, dims[0].toInt(), dims[1].toInt(), dims[2].toInt())
   }
 
@@ -251,6 +292,24 @@ fun List<List<D1Array<Int>>>.toPaddedD3Array(paddingValue: Int = 0): D3Array<Int
       val matrix = this[i][j]
       for (k in 0 until d3) {
           padded[i, j, k] = matrix[k]
+      }
+    }
+  }
+  return padded
+}
+
+fun List<List<D1Array<Float>>>.toPaddedD3Array(paddingValue: Int = 0): D3Array<Float> {
+  val d1 = this.size
+  val maxD2 = this.maxOf { it.size } // Find max variable length
+  val d3 = this[0][0].shape[0]
+
+  val padded = mk.zeros<Float>(d1, maxD2, d3)
+
+  for (i in this.indices) {
+    for (j in this[i].indices) {
+      val matrix = this[i][j]
+      for (k in 0 until d3) {
+        padded[i, j, k] = matrix[k]
       }
     }
   }
@@ -323,6 +382,38 @@ fun padActions(
   for (t in 0 until targetLength) {
     if (t < actions.size) {
       val action = actions[t]
+      require(action.shape[0] == actionDim) {
+        "All actions must share the same dim; expected $actionDim but got " +
+            "${action.shape[0]} at index $t"
+      }
+      for (a in 0 until actionDim) {
+        flat[idx++] = action[a]
+      }
+    } else {
+      idx += actionDim
+    }
+  }
+
+  return mk.ndarray(flat, targetLength, actionDim)
+}
+
+fun padGlobalStates(
+  globalStates: List<D1Array<Float>>,
+  targetLength: Int,
+  padValue: Float = 0.0f,
+): D2Array<Float> {
+  require(globalStates.isNotEmpty()) { "actions must not be empty to infer action dim" }
+  require(targetLength >= globalStates.size) {
+    "targetLength ($targetLength) must be >= actions.size (${globalStates.size})"
+  }
+
+  val actionDim = globalStates.first().shape[0]
+  val flat = FloatArray(targetLength * actionDim) { padValue }
+
+  var idx = 0
+  for (t in 0 until targetLength) {
+    if (t < globalStates.size) {
+      val action = globalStates[t]
       require(action.shape[0] == actionDim) {
         "All actions must share the same dim; expected $actionDim but got " +
             "${action.shape[0]} at index $t"
