@@ -403,8 +403,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     Piece(
                         abbreviation = "WZ",
@@ -468,8 +467,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     Piece(
                         abbreviation = "BT",
@@ -598,8 +596,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     Piece(
                         abbreviation = "BG",
@@ -694,8 +691,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     Piece(
                         abbreviation = "WT",
@@ -1591,9 +1587,9 @@ class BitboardTest {
         )
 
     val nextPlayer =
-        Player(name = PlayerName.BLACK, abbreviation = "B", piecesInReserve = blackReserve)
+        Player(name = PlayerName.BLACK, piecesInReserve = blackReserve)
     val currentPlayer =
-        Player(name = PlayerName.WHITE, abbreviation = "W", piecesInReserve = whiteReserve)
+        Player(name = PlayerName.WHITE, piecesInReserve = whiteReserve)
 
     // 4. Initialize Bitboard
     val finalBitboard =
@@ -1722,8 +1718,7 @@ class BitboardTest {
     val whitePlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     Piece(
                         abbreviation = "WT",
@@ -1817,8 +1812,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -1835,8 +1829,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("WY", potential = false).pack(),
                     piece("WP", potential = false).pack(),
@@ -1976,8 +1969,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -1993,8 +1985,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("WZ", potential = false).pack(),
                     piece("WD", potential = true).pack(),
@@ -2102,8 +2093,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BG", potential = false).pack(),
@@ -2119,8 +2109,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(),
+          piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WT", potential = true).pack(),
@@ -2268,15 +2257,13 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(),
+          piecesInReserve = mutableListOf(),
         )
 
     val dvonnMoves = mutableListOf<PossibleBitMove>()
@@ -2338,15 +2325,13 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(),
+          piecesInReserve = mutableListOf(),
         )
 
     val dvonnMoves = mutableListOf<PossibleBitMove>()
@@ -2892,8 +2877,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -2906,8 +2890,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(),
+          piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WG", potential = false).pack(),
@@ -3487,8 +3470,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -3501,8 +3483,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(),
+          piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WG", potential = false).pack(),
@@ -4097,8 +4078,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -4112,8 +4092,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve = mutableListOf(piece("BY", potential = false).pack()),
+          piecesInReserve = mutableListOf(piece("BY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("WD", potential = true).pack(),
@@ -4249,8 +4228,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -4266,8 +4244,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
-            piecesInReserve =
+          piecesInReserve =
                 mutableListOf(
                     piece("WZ", potential = false).pack(),
                     piece("WD", potential = true).pack(),

@@ -1,5 +1,9 @@
 package org.example.model
 
+import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
@@ -8,10 +12,6 @@ import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
-import kotlin.random.Random
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -20,16 +20,79 @@ enum class PlayerName {
   BLACK,
 }
 
+enum class Model {
+  MINIMAX,
+  MCTS,
+  NEURAL_NETWORK,
+}
+
+fun getModel(model: String): Model {
+  return when (model) {
+    "MCTS", "mcts" -> return Model.MCTS
+    "MINIMAX", "minimax" -> return Model.MINIMAX
+    "nn", "NN", "NEURAL_NETWORK", "neural_network" -> return Model.NEURAL_NETWORK
+	  else -> Model.MCTS
+  }
+}
+
+enum class Strength(
+  val difficulty: Int,
+  val minimaxDepth: Int,
+  val mctsRounds: IntRange,
+  val duration: Duration,
+) {
+  RANDOM(
+    difficulty = 0,
+    minimaxDepth = 1,
+    mctsRounds = 0..0,
+    duration = 1.5.toDuration(DurationUnit.SECONDS),
+  ),
+  GREEDY(
+    difficulty = 1,
+    minimaxDepth = 1,
+    mctsRounds = 0..0,
+    duration = 1.5.toDuration(DurationUnit.SECONDS),
+  ),
+  EASY(
+    difficulty = 2,
+    minimaxDepth = 3,
+    mctsRounds = 0..999,
+    duration = 1.5.toDuration(DurationUnit.SECONDS),
+  ),
+  MEDIUM(
+    difficulty = 3,
+    minimaxDepth = 5,
+    mctsRounds = 0..2499,
+    duration = 5.toDuration(DurationUnit.SECONDS),
+  ),
+  HARD(
+    difficulty = 4,
+    minimaxDepth = 7,
+    mctsRounds = 0..4999,
+    duration = 10.toDuration(DurationUnit.SECONDS),
+  ),
+}
+
+fun getStrength(strength: String): Strength {
+  return when (strength) {
+    "random", "RANDOM" -> Strength.RANDOM
+    "greedy", "GREEDY" -> Strength.GREEDY
+    "easy", "EASY" -> Strength.EASY
+    "med", "medium", "MEDIUM" -> Strength.MEDIUM
+    "hard", "HARD" -> Strength.HARD
+    else -> Strength.EASY
+  }
+}
+
 @Serializable
 data class Player(
-  val name: PlayerName,
-  val model: Model = Model.MCTS,
-  val strength: Strength = Strength.RANDOM,
-  val abbreviation: String,
+    val name: PlayerName,
+    val model: Model = Model.MCTS,
+    val strength: Strength = Strength.RANDOM,
     //    val color: Color,
-  val piecesInReserve: MutableList<UInt> = mutableListOf(),
-  val capturedPieces: MutableList<UInt> = mutableListOf(),
-  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+    val piecesInReserve: MutableList<UInt> = mutableListOf(),
+    val capturedPieces: MutableList<UInt> = mutableListOf(),
+    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): Player {
     //    val string = Json.encodeToString(serializer(), this)
@@ -39,7 +102,6 @@ data class Player(
         name = this.name,
         model = this.model,
         strength = this.strength,
-        abbreviation = this.abbreviation,
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
         collector = if (copyCollector) this.collector else null,
@@ -83,9 +145,10 @@ data class Player(
 
     val pieceCountDifference = initialSize - piecesInReserve.size
 
-    //    logger.info { "" + (//        "the delta was $pieceCountDifference (Initial: $initialSize, Current:
+    //    logger.info { "" + (//        "the delta was $pieceCountDifference (Initial: $initialSize,
+    // Current:
     // ${piecesInReserve.size})"
-    //) }
+    // ) }
 
     check(pieceCountDifference == 1) {
       "Reserve decrement failure! Expected exactly 1 piece to be removed from the reserve, " +
@@ -116,7 +179,7 @@ data class Player(
         }
 
     if (piecesToCombine.isEmpty()) {
-                                   logger.debug { "" + ("No combinable pieces found. Exiting.") }
+      logger.debug { "" + ("No combinable pieces found. Exiting.") }
       return emptyList()
     }
 
@@ -133,7 +196,10 @@ data class Player(
       val remainder = count % 2
 
       if (logger.isDebugEnabled()) {
-        logger.info { "" + ("  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover.") }
+        logger.info {
+          "" +
+              ("  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover.")
+        }
       }
 
       // Create the newly stacked (Potential) pieces
@@ -185,7 +251,9 @@ data class Player(
     this.piecesInReserve.addAll(newlyStackedPotentials)
 
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("Successfully generated ${newlyStackedPotentials.size} new potential pieces.") }
+      logger.info {
+        "" + ("Successfully generated ${newlyStackedPotentials.size} new potential pieces.")
+      }
       logger.info { "" + ("Reserve size after combining: ${this.piecesInReserve.size}") }
       logger.info { "" + ("--- COMBINE PIECES COMPLETED ---") }
     }
@@ -209,16 +277,16 @@ data class Player(
 
     // Early exit for cleaner control flow
     if (newlyStackedPieces.isEmpty()) {
-                                   logger.debug { "" + ("No newly stacked pieces to process. Exiting.") }
+      logger.debug { "" + ("No newly stacked pieces to process. Exiting.") }
       return
     }
 
     // --- 1. FILTER & VALIDATE ---
     // Extract only the pieces that are currently marked as potentials
-//    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
+    //    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
 
     if (newlyStackedPieces.isEmpty()) {
-                                   logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
+      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
       return
     }
 
@@ -232,25 +300,25 @@ data class Player(
     val unstackedPieces: List<UInt> = newlyStackedPieces.flatMap { piece ->
       requireNotNull(piece.extractPieceType()) { "Piece Type cannot be null. $piece." }
       listOf(
-        piece.extractPieceType()?.let {
-          0u.createPiece(it, piece.extractPieceColor(), potential = false)
-        },
-        piece.extractPieceType()?.let {
-          0u.createPiece(it, piece.extractPieceColor(), potential = false)
-        },
-      )
-        .filterNotNull()
+              piece.extractPieceType()?.let {
+                0u.createPiece(it, piece.extractPieceColor(), potential = false)
+              },
+              piece.extractPieceType()?.let {
+                0u.createPiece(it, piece.extractPieceColor(), potential = false)
+              },
+          )
+          .filterNotNull()
     }
 
     // --- 3. MUTATE STATE (With Post-Condition Checks) ---
 
     // Safely remove the combined potentials
-	  for (piece in newlyStackedPieces) {
-		  val wasRemoved = this.piecesInReserve.remove(piece)
-		  check(wasRemoved) {
-			  "STATE ERROR: Cannot uncombine piece; ${piece.extractPieceColor()} ${piece.extractPieceType()} (Potential) was not found in the reserve."
-		  }
-	  }
+    for (piece in newlyStackedPieces) {
+      val wasRemoved = this.piecesInReserve.remove(piece)
+      check(wasRemoved) {
+        "STATE ERROR: Cannot uncombine piece; ${piece.extractPieceColor()} ${piece.extractPieceType()} (Potential) was not found in the reserve."
+      }
+    }
 
     // Safely add the unstacked pieces back
     val wereAdded = this.piecesInReserve.addAll(unstackedPieces)
@@ -265,7 +333,9 @@ data class Player(
     val postReserveBasics = piecesInReserve.count { !it.extractPotential() }
 
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("Successfully generated and added ${unstackedPieces.size} regular pieces.") }
+      logger.info {
+        "" + ("Successfully generated and added ${unstackedPieces.size} regular pieces.")
+      }
       logger.info { "" + ("Reserve size after uncombining: ${this.piecesInReserve.size}") }
       logger.info { "" + ("Pre Uncombine Potential Pieces: $preReservePotentials") }
       logger.info { "" + ("Pre Uncombine Basic Pieces: $preReserveBasics") }
@@ -276,59 +346,52 @@ data class Player(
   }
 }
 
-enum class Model {
-  MINIMAX,
-  MCTS,
-  NEURAL_NETWORK
-}
 
-enum class Strength(val difficulty: Int, val minimaxDepth: Int, val mctsRounds: IntRange, val duration: Duration) {
-  RANDOM(difficulty = 0, minimaxDepth = 1, mctsRounds = 0..0, duration = 1.5.toDuration(DurationUnit.SECONDS)),
-  GREEDY(difficulty = 1, minimaxDepth = 1, mctsRounds = 0..0, duration = 1.5.toDuration(DurationUnit.SECONDS)),
-  EASY(difficulty = 1, minimaxDepth = 3, mctsRounds = 0..999, duration = 1.5.toDuration(DurationUnit.SECONDS)),
-  MEDIUM(difficulty = 1, minimaxDepth = 5, mctsRounds = 0..2499, duration = 5.toDuration(DurationUnit.SECONDS)),
-  HARD(difficulty = 1, minimaxDepth = 7, mctsRounds = 0..4999, duration = 10.toDuration(DurationUnit.SECONDS))
-}
-
-
-fun Player.selectMove(turnPhase: TurnPhase, bitboard: Bitboard, opponent: Player, rng: Random, ): PackedMove? {
-   return when (model) {
-	  Model.MINIMAX -> {
+fun Player.selectMove(
+    turnPhase: TurnPhase,
+    bitboard: Bitboard,
+    opponent: Player,
+    rng: Random,
+): PackedMove? {
+  return when (model) {
+    Model.MINIMAX -> {
       when (turnPhase) {
-        TurnPhase.PlayerInputWindow, TurnPhase.ExtraMove -> {
+        TurnPhase.PlayerInputWindow,
+        TurnPhase.ExtraMove -> {
           alphaBetaPackedMove(
-            bitboard = bitboard.deepCopy(),
-            currentPlayer = this.deepCopy(),
-            opponentPlayer = opponent.deepCopy(),
-            alphaBetaScore = AlphaBetaScoreBitPacked(),
-            rng = rng,
-            depth = strength.minimaxDepth,
-          )
-            .move
+                  bitboard = bitboard.deepCopy(),
+                  currentPlayer = this.deepCopy(),
+                  opponentPlayer = opponent.deepCopy(),
+                  alphaBetaScore = AlphaBetaScoreBitPacked(),
+                  rng = rng,
+                  depth = strength.minimaxDepth,
+              )
+              .move
         }
         TurnPhase.PieceRemoval -> {
           resolveBoardRemovals(
-            currentPlayer = this.deepCopy(),
-            opponentPlayer = opponent.deepCopy(),
-            bitboard = bitboard.deepCopy(),
-            alphaBetaScore = AlphaBetaScoreBitPacked(),
-            rng = rng,
-            depth = strength.minimaxDepth,
-          ).move
+                  currentPlayer = this.deepCopy(),
+                  opponentPlayer = opponent.deepCopy(),
+                  bitboard = bitboard.deepCopy(),
+                  alphaBetaScore = AlphaBetaScoreBitPacked(),
+                  rng = rng,
+                  depth = strength.minimaxDepth,
+              )
+              .move
         }
       }
     }
-	  Model.MCTS -> {
+    Model.MCTS -> {
       selectMoveMCTS(
-        bitboard = bitboard.deepCopy(),
-        currentPlayer = this.deepCopy(),
-        nextPlayer = opponent.deepCopy(),
-        turnPhase = turnPhase,
-        rounds = strength.mctsRounds,
-        rng = rng,
+          bitboard = bitboard.deepCopy(),
+          currentPlayer = this.deepCopy(),
+          nextPlayer = opponent.deepCopy(),
+          turnPhase = turnPhase,
+          rounds = strength.mctsRounds,
+          rng = rng,
       )
     }
-	  Model.NEURAL_NETWORK -> {
+    Model.NEURAL_NETWORK -> {
       TODO("Implement")
     }
   }

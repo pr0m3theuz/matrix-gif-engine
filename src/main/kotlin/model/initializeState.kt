@@ -2,26 +2,27 @@
 
 package org.example.model
 
-fun initializeState(): State {
+fun initializeState(
+  playerOneModel: Model = Model.MINIMAX,
+  playerOneStrength: Strength = Strength.EASY,
+  playerTwoModel: Model = Model.MINIMAX,
+  playerTwoStrength: Strength = Strength.EASY,
+): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
   // Create players
   val whitePlayer =
       Player(
           name = PlayerName.WHITE,
-          abbreviation = "W",
-          model = Model.MINIMAX,
-          strength = Strength.EASY
-          //          color = Color.WHITE,
+          model = playerOneModel,
+          strength = playerOneStrength,
       )
 
   val blackPlayer =
       Player(
           name = PlayerName.BLACK,
-          abbreviation = "B",
-          model = Model.MINIMAX,
-          strength = Strength.EASY
-          //          color = Color.BLACK,
+          model = playerTwoModel,
+          strength = playerTwoStrength,
       )
 
   // Create pieces

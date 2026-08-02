@@ -35,7 +35,6 @@ class GetMovesOptimizedTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
         )
     val movesBuffer: MutableList<PackedMove> = mutableListOf()
     bitboard.getTamskMoves(currentPlayer, movesBuffer)
@@ -63,7 +62,7 @@ class GetMovesOptimizedTest {
             blackPotentials = 318541758525UL,
         )
 
-    val currrentPlayer = Player(name = PlayerName.BLACK, abbreviation = "B")
+    val currrentPlayer = Player(name = PlayerName.BLACK)
 
     val movesBuffer = mutableListOf<PackedMove>()
     bitboard.getZertzMoves(
@@ -172,14 +171,12 @@ class GetMovesOptimizedTest {
     val currentPlayer =
       Player(
         name = PlayerName.WHITE,
-        abbreviation = "W",
         piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
       )
 
     val opponentPlayer =
       Player(
         name = PlayerName.BLACK,
-        abbreviation = "B",
         piecesInReserve = mutableListOf(),
       )
 

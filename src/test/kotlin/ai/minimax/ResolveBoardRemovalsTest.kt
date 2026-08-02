@@ -31,7 +31,6 @@ class ResolveBoardRemovalsTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
             piecesInReserve =
                 mutableListOf(
                     234881024u,
@@ -50,7 +49,6 @@ class ResolveBoardRemovalsTest {
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
             piecesInReserve =
                 mutableListOf(
                     452984832u,
@@ -208,7 +206,6 @@ class ResolveBoardRemovalsTest {
             name = PlayerName.BLACK, // adjust enum class name if needed
             model = Model.MINIMAX,
             strength = Strength.EASY,
-            abbreviation = "B",
             piecesInReserve = mutableListOf(
                 771751936u, 771751936u, 771751936u, 838860800u, 838860800u,
                 838860800u, 973078528u, 973078528u, 973078528u, 905969664u,
@@ -220,7 +217,6 @@ class ResolveBoardRemovalsTest {
             name = PlayerName.WHITE, // adjust enum class name if needed
             model = Model.MINIMAX,
             strength = Strength.EASY,
-            abbreviation = "W",
             piecesInReserve = mutableListOf(
                 436207616u, 436207616u, 436207616u, 234881024u, 234881024u,
                 234881024u, 167772160u, 301989888u, 301989888u, 301989888u,

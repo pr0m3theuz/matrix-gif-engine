@@ -8,7 +8,6 @@ import org.example.model.PlayerName
 import org.example.model.undoUsePiecePotential
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
 
 class UndoUsePiecePotentialTest {
 
@@ -34,7 +33,6 @@ class UndoUsePiecePotentialTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-            abbreviation = "W",
             piecesInReserve =
                 mutableListOf(
                     201326592u,
@@ -57,7 +55,6 @@ class UndoUsePiecePotentialTest {
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-            abbreviation = "B",
             piecesInReserve =
                 mutableListOf(
                     436207616u,
