@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
 	implementation("io.github.oshai:kotlin-logging:7.0.7")
-	implementation("ch.qos.logback:logback-classic:1.5.13")
+	implementation("ch.qos.logback:logback-classic:1.5.38")
 	testImplementation(kotlin("test"))
 	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 	testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
@@ -22,6 +22,9 @@ dependencies {
 	implementation("org.jetbrains.kotlinx:multik-default:0.3.1")
 	// Source: https://mvnrepository.com/artifact/org.hdfgroup/hdf-java
 	implementation("org.hdfgroup:hdf-java:2.6.1")
+
+	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
+	implementation("commons-cli:commons-cli:1.11.0")
 }
 
 tasks.test {

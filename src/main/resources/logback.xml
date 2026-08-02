@@ -1,5 +1,46 @@
 <configuration>
-    <root level="OFF">
-        <!-- Logs will be completely disabled -->
+
+    <!-- 1. Rolling File Appender (Handles file size limits and rotation) -->
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/app.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Daily rollover with size capping per file -->
+            <fileNamePattern>logs/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- Max size per log file before rotating -->
+<!--            <maxFileSize>10MB</maxFileSize>-->
+            <!-- Retain max 7 days or up to 100MB total log size -->
+            <maxHistory>7</maxHistory>
+<!--            <totalSizeCap>100MB</totalSizeCap>-->
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 2. Async Appender (Prevents main/UI thread blocking on disk I/O) -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ROLLING_FILE" />
+        <!-- Queue size before dropping TRACE/DEBUG/INFO logs if disk is overwhelmed -->
+        <queueSize>512</queueSize>
+        <!-- Set to 0 so TRACE/DEBUG logs are not dropped when queue is 80% full -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- Non-blocking: drop messages if queue is totally full instead of freezing app -->
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- Console Appender for IntelliJ Run window during dev -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root Logger Routing -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ASYNC_FILE" />
     </root>
+
 </configuration>
