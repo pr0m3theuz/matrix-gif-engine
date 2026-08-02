@@ -20,7 +20,6 @@ import org.jetbrains.kotlinx.multik.ndarray.data.D4Array
 import org.jetbrains.kotlinx.multik.ndarray.data.get
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.jetbrains.kotlinx.multik.ndarray.operations.plus
-import kotlin.time.times
 
 
 data class ExperienceCollector(
@@ -76,7 +75,7 @@ data class ExperienceCollector(
     return ExperienceBuffer(
         states.toPaddedD4Array(),
         actions.toPaddedD3Array(),
-        globalStates.toPaddedD3Array(),
+        globalStates.toPaddedFloatD3Array(),
         rewards.toPaddedD2Array(),
     )
   }
@@ -298,7 +297,7 @@ fun List<List<D1Array<Int>>>.toPaddedD3Array(paddingValue: Int = 0): D3Array<Int
   return padded
 }
 
-fun List<List<D1Array<Float>>>.toPaddedD3Array(paddingValue: Int = 0): D3Array<Float> {
+fun List<List<D1Array<Float>>>.toPaddedFloatD3Array(paddingValue: Int = 0): D3Array<Float> {
   val d1 = this.size
   val maxD2 = this.maxOf { it.size } // Find max variable length
   val d3 = this[0][0].shape[0]

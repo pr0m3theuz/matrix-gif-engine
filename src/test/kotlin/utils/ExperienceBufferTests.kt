@@ -51,13 +51,15 @@ class ExperienceBufferTest {
 	): ExperienceBuffer {
 		val statesFlat = IntArray(episodes * steps * rows * cols) { it }
 		val actionsFlat = IntArray(episodes * steps * rows) { it * 2 }
+		val globalStatesFlat = FloatArray(episodes * steps * rows) { it * 2.0f }
 		val rewardsFlat = IntArray(episodes * steps) { it - 10 }
 
 		val states: D4Array<Int> = mk.ndarray(statesFlat, episodes, steps, rows, cols)
 		val actions: D3Array<Int> = mk.ndarray(actionsFlat, episodes, steps, rows)
+		val globalStates: D3Array<Float> = mk.ndarray(globalStatesFlat, episodes, steps, rows)
 		val rewards: D2Array<Int> = mk.ndarray(rewardsFlat, episodes, steps)
 
-		return ExperienceBuffer(states = states, actions = actions, rewards = rewards)
+		return ExperienceBuffer(states = states, actions = actions, globalStates = globalStates, rewards = rewards)
 	}
 
 	@Test
