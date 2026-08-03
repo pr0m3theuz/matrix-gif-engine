@@ -1,0 +1,20 @@
+gameId: 392
+seed: 4968145030332927181
+timestamp: 1785760225309
+exception: java.lang.IllegalStateException: 771751936 was not found!
+
+java.lang.IllegalStateException: 771751936 was not found!
+	at org.example.model.Player.selectPiece-IKrLr70(Player.kt:141)
+	at org.example.engine.GameLogicKt.playerMove(GameLogic.kt:194)
+	at org.example.engine.GameLogicKt.playerTurn(GameLogic.kt:61)
+	at org.example.GenerateReproducibleGamesKt.playOneGame(generateReproducibleGames.kt:431)
+	at org.example.GenerateReproducibleGamesKt$runBatch$2$elapsedMs$1$jobs$1$1.invokeSuspend(generateReproducibleGames.kt:288)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:807)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+

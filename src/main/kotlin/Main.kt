@@ -14,12 +14,12 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(-8916641466209959215)
+  val rng = Random(4968145030332927181)
   var gameState: State = initializeState(
+      Model.MCTS,
+      Strength.EASY,
       Model.MINIMAX,
       Strength.GREEDY,
-      Model.MCTS,
-      Strength.RANDOM,
   )
 
   var turn = 0
