@@ -216,7 +216,6 @@ fun alphaBetaPackedMove(
             nextPlayer = opponentPlayer,
         )
 
-          // TODO Should move to after move
         var tamskMoveScore = 0f
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)

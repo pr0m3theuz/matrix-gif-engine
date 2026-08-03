@@ -1,20 +1,17 @@
 package org.example
 
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import ncsa.hdf.hdf5lib.HDF5Constants
-import ncsa.hdf.`object`.h5.H5File
 import org.example.engine.ExperienceCollector
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
 import org.example.model.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.Path
-import kotlin.io.path.absolutePathString
+import kotlin.random.Random
 import kotlin.time.Clock.System.now
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -53,7 +50,7 @@ suspend fun main() = coroutineScope {
   // .reduce { acc, buffer -> acc + buffer }
   //
     stateBuffer.serialize(
-      H5File(
+      (
         Path(
           "/training_data",
           "state_experience_mcts_${totalGames}_games_${
@@ -63,8 +60,6 @@ suspend fun main() = coroutineScope {
             )
           }.h5",
         )
-          .absolutePathString(),
-        HDF5Constants.H5F_ACC_TRUNC,
       )
     )
 

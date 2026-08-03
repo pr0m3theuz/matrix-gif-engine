@@ -21,8 +21,8 @@ dependencies {
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
 	implementation("org.jetbrains.kotlinx:multik-default:0.3.1")
-	// Source: https://mvnrepository.com/artifact/org.hdfgroup/hdf-java
-	implementation("org.hdfgroup:hdf-java:2.6.1")
+	// https://central.sonatype.com/artifact/io.jhdf/jhdf
+	implementation("io.jhdf:jhdf:0.13.0")
 
 	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
 	implementation("commons-cli:commons-cli:1.11.0")
