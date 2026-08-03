@@ -373,6 +373,10 @@ fun selectMoveMCTS(
 
   if (availableMoves.isEmpty()) return null
 
+    if (rounds.last() == 0) {
+        return availableMoves.random(rng)
+    }
+
   val rootMCTSNode =
       MCTSNode(
           bitboard = bitboard,

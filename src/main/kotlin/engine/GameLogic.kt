@@ -1,6 +1,7 @@
 package org.example.engine
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jdk.internal.foreign.abi.Binding
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
@@ -52,9 +53,16 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
 
   newState.assertPieceCount()
 
-  newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
 
-  newState.assertPieceCount()
+    val availableMoves = mutableListOf<PackedMove>()
+    newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
+
+    if (availableMoves.isNotEmpty()) {
+        newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+
+        newState.assertPieceCount()
+    }
+
 
   // Handle Tamsk Potential
   while (

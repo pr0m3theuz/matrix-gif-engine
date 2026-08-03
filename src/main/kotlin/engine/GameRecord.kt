@@ -20,17 +20,10 @@ data class GameResult(
 	val gameState: State,
 )
 
-fun recordGameResult(gameId: Int, seed: Long, timestamp: Long, state: State, winner: Player?, turn: Int) {
+val RESULTS_DIR = "output/results"
+
+fun recordGameResult(file: File, lock: String, gameId: Int, seed: Long, timestamp: Long, state: State, winner: Player?, turn: Int) {
 	requireNotNull(winner)
-
-	val RESULTS_DIR = "output/results"
-
-	val whitePlayer = if (state.currentPlayer.name == PlayerName.WHITE) state.currentPlayer else state.nextPlayer
-	val blackPlayer = if (state.currentPlayer.name == PlayerName.BLACK) state.currentPlayer else state.nextPlayer
-
-	val filePrefix = "agent-1_${whitePlayer.model}_${whitePlayer.strength}_agent-2_${blackPlayer.model}_${blackPlayer.strength}"
-
-
 
 	val gameResult = GameResult(
 		gameId,
@@ -41,12 +34,13 @@ fun recordGameResult(gameId: Int, seed: Long, timestamp: Long, state: State, win
 		state,
 	)
 
-	val file = File(RESULTS_DIR, "${filePrefix}_games_record.json")
 	try {
-		file.appendText(Json.encodeToString(gameResult))
+		synchronized(lock) {
+			file.appendText(Json.encodeToString(gameResult) + "\n")
+		}
 	} catch (serializationFailure: Exception) {
 		// If the state itself can't serialize (e.g. mid-mutation), at least note that.
 		file.appendText("Could not serialize gameState: ${serializationFailure.message}")
+		logger.error { "Crash at turn $turn in game $gameId — state dumped to $file" }
 	}
-	logger.error { "Crash at turn $turn in game $gameId — state dumped to $file" }
 }

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example.model
 
 fun convertBoardToBitboard(board: Board): Bitboard {

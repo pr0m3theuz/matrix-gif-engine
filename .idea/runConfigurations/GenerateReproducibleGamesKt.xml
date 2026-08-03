@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="GenerateReproducibleGamesKt" type="JetRunConfigurationType" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="org.example.GenerateReproducibleGamesKt" />
+    <module name="code.main" />
+    <option name="PROGRAM_PARAMETERS" value="b -g 500 -m minimax -ms greedy -M mcts -MS random" />
+    <shortenClasspath name="MANIFEST" />
+    <option name="VM_PARAMETERS" value="-Xmx20g" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

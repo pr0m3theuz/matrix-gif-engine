@@ -6,14 +6,13 @@ import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.ai.scoreBitboardState
 import org.example.model.*
-import kotlin.math.sin
 import kotlin.random.Random
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 data class BestPackedMove(
     val move: PackedMove? = null,
-    val score: Float = 0f,
+    var score: Float = 0f,
 )
 
 data class AlphaBetaScoreBitPacked(
@@ -36,6 +35,7 @@ fun alphaBetaPackedMove(
     opponentPlayer: Player,
     alphaBetaScore: AlphaBetaScoreBitPacked,
     rng: Random,
+    turnPhase: TurnPhase? = null,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
@@ -71,17 +71,17 @@ fun alphaBetaPackedMove(
    * regular move and the extra move. The same goes for situations where you succeed in pushing a
    * second or third TAMSK-stack onto the central spot during one and the same turn.
    */
-  val isTamskPieceAtCenter = mutableListOf<PackedMove>()
-  bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
+  val tamskPieceAtCenter = mutableListOf<PackedMove>()
+  bitboard.getTamskMoves(currentPlayer, tamskPieceAtCenter)
 
-  val (bestPiecesToRetrieveCapture1, bestPiecesToRetrieveCapture1Score, preMoveNewlyStackedPieces) =
-      if (isTamskPieceAtCenter.isEmpty()) {
+  val (bestPiecesToRetrieveCapture1: List<UInt>, bestPiecesToRetrieveCapture1Score: Float, preMoveNewlyStackedPieces: List<UInt>) =
+      if (tamskPieceAtCenter.isEmpty()) {
         bestPiecesToRemove(
             currentPlayer,
             opponentPlayer,
             bitboard,
             depth,
-            alphaBetaScore,
+            AlphaBetaScoreBitPacked(),
             initBitboard,
             logger.isDebugEnabled(),
             rng,
@@ -91,9 +91,13 @@ fun alphaBetaPackedMove(
       }
 
   val availableMoves = mutableListOf<PackedMove>()
-  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, availableMoves)
+    if (turnPhase != TurnPhase.ExtraMove) {
+        bitboard.identifyAvailableMoves(currentPlayer, columnInfos, availableMoves)
+    } else {
+        availableMoves.addAll(tamskPieceAtCenter)
+    }
 
-  if (availableMoves.isEmpty() || depth <= 0) {
+    if ((availableMoves.isEmpty()) || depth <= 0) {
     // score = evaluate s for original player
     // return [null, score]
 
@@ -211,7 +215,8 @@ fun alphaBetaPackedMove(
             nextPlayer = opponentPlayer,
         )
 
-        var tamskMoveScore: Float = 0f
+          // TODO Should move to after move
+        var tamskMoveScore = 0f
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
@@ -229,7 +234,7 @@ fun alphaBetaPackedMove(
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
                       // gameTree = gameTree,
-                      alphaBetaScore = alphaBetaScore.copy(move = null),
+                      alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
                   )
                   .score
@@ -254,7 +259,7 @@ fun alphaBetaPackedMove(
                 opponentPlayer,
                 bitboard,
                 depth,
-                alphaBetaScore,
+                AlphaBetaScoreBitPacked(),
                 postMoveBitboardState,
                 logger.isDebugEnabled(),
                 rng,
@@ -279,6 +284,8 @@ fun alphaBetaPackedMove(
                             bestPiecesToRetrieveCapture2Score
                         else 0f,
             )
+
+
 
         if (logger.isDebugEnabled()) {
           logger.info { "" + ("--- ALPHA-BETA COMPLETED ---") }
@@ -380,7 +387,7 @@ fun alphaBetaPackedMove(
 
         // TODO Handle TAMSK Potential
         // TODO Check if there is Tamsk Potential Move
-        var tamskMoveScore: Float = 0f
+        var tamskMoveScore = 0f
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
@@ -398,7 +405,7 @@ fun alphaBetaPackedMove(
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
                       //					              gameTree = gameTree,
-                      alphaBetaScore = alphaBetaScore.copy(move = null),
+                      alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
                   )
                   .score
@@ -424,7 +431,7 @@ fun alphaBetaPackedMove(
                 opponentPlayer,
                 bitboard,
                 depth,
-                alphaBetaScore,
+                AlphaBetaScoreBitPacked(),
                 postUsePotentialBitboardState,
                 logger.isDebugEnabled(),
                 rng = rng,

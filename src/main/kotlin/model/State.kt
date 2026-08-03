@@ -24,7 +24,7 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 data class State(
     val currentPlayer: Player,
     val nextPlayer: Player,
-    val board: Board,
+    @Transient val board: Board = Board(emptySet()),
     val bitboard: Bitboard,
     @Transient val lines: Lines? = null,
     @Transient
@@ -177,8 +177,9 @@ fun State.encodeState(): D2Array<Int> {
   // empty spots
   ndArray.set(
       EMPTY,
-      if (bitboard.globalOccupancy != 0UL) bitboard.globalOccupancy.inv().toBitList()
-      else bitboard.globalOccupancy.toBitList(),
+      if (bitboard.globalOccupancy != 0UL && bitboard.globalOccupancy != 1099511627775UL) bitboard.globalOccupancy.inv().toBitList()
+      else if (bitboard.globalOccupancy == 0UL) 1099511627775UL.toBitList()
+      else 0UL.toBitList()
   )
 
   // ones

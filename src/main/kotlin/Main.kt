@@ -14,8 +14,13 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(1)
-  var gameState: State = initializeState()
+  val rng = Random(-8916641466209959215)
+  var gameState: State = initializeState(
+      Model.MINIMAX,
+      Strength.GREEDY,
+      Model.MCTS,
+      Strength.RANDOM,
+  )
 
   var turn = 0
 
@@ -27,7 +32,7 @@ fun main() {
   //          gameState.bitboard.identifyAvailableMoves(gameState.currentPlayer).isNotEmpty()
   ) {
     turn = turn.plus(1)
-    logger.info { "" + ("Turn: $turn") }
+    logger.info { "Turn: $turn" }
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
 
@@ -76,17 +81,17 @@ fun main() {
           printStatement = true,
       )
 
-  when (winner?.name) {
-    gameState.currentPlayer.name -> {
-      gameState.currentPlayer.collector?.endEpisode(1)
-      gameState.nextPlayer.collector?.endEpisode(-1)
-    }
-    gameState.nextPlayer.name -> {
-      gameState.nextPlayer.collector?.endEpisode(1)
-      gameState.currentPlayer.collector?.endEpisode(-1)
-    }
-    else -> {}
-  }
+//  when (winner?.name) {
+//    gameState.currentPlayer.name -> {
+//      gameState.currentPlayer.collector?.endEpisode(1)
+//      gameState.nextPlayer.collector?.endEpisode(-1)
+//    }
+//    gameState.nextPlayer.name -> {
+//      gameState.nextPlayer.collector?.endEpisode(1)
+//      gameState.currentPlayer.collector?.endEpisode(-1)
+//    }
+//    else -> {}
+//  }
 
   logger.info { "" + ("Player: ${winner?.name} won") }
   gameState.turnMoves.keys.toList().takeLast(3).forEach { turns ->
@@ -111,7 +116,7 @@ fun main() {
         "does not match the player who executed the winning turn ('$lastTurnPlayer')."
   }
 
-  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = 1.toString())
+//  gameState.collector?.saveCurrentEpisodes(agent = "mcts"/, games = 1.toString())
 
   // TODO
   // val combinedExperiences = gameState.currentPlayer.collector.toBuffer() +

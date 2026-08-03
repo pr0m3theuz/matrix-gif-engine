@@ -365,6 +365,7 @@ fun Player.selectMove(
                   alphaBetaScore = AlphaBetaScoreBitPacked(),
                   rng = rng,
                   depth = strength.minimaxDepth,
+              turnPhase = turnPhase,
               )
               .move
         }
