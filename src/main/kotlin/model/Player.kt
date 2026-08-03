@@ -87,7 +87,7 @@ fun getStrength(strength: String): Strength {
 @Serializable
 data class Player(
     val name: PlayerName,
-    val model: Model = Model.MCTS,
+    val model: Model = Model.NEURAL_NETWORK,
     val strength: Strength = Strength.RANDOM,
     //    val color: Color,
     val piecesInReserve: MutableList<UInt> = mutableListOf(),

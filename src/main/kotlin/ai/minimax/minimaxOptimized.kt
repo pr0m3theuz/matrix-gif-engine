@@ -71,11 +71,12 @@ fun alphaBetaPackedMove(
    * regular move and the extra move. The same goes for situations where you succeed in pushing a
    * second or third TAMSK-stack onto the central spot during one and the same turn.
    */
+
   val tamskPieceAtCenter = mutableListOf<PackedMove>()
   bitboard.getTamskMoves(currentPlayer, tamskPieceAtCenter)
 
   val (bestPiecesToRetrieveCapture1: List<UInt>, bestPiecesToRetrieveCapture1Score: Float, preMoveNewlyStackedPieces: List<UInt>) =
-      if (tamskPieceAtCenter.isEmpty()) {
+      if (tamskPieceAtCenter.isEmpty() && turnPhase == null) {
         bestPiecesToRemove(
             currentPlayer,
             opponentPlayer,
