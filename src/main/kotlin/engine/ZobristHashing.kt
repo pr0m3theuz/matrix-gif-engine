@@ -1,0 +1,230 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
+package org.example.engine
+
+import org.example.ai.mcts.PackedMove
+import kotlin.random.Random
+import org.example.model.Bitboard
+import org.example.model.Player
+import org.example.model.PlayerName
+
+// https://web.archive.org/web/20071031100051/http://www.brucemo.com/compchess/programming/hashing.htm
+
+//https://github.com/lichess-org/stockfish.wasm/blob/master/src/search.cpp
+//https://github.com/lichess-org/stockfish.wasm/blob/051d2b82/src/tt.cpp
+//https://github.com/lichess-org/stockfish.wasm/blob/051d2b8268a5df1fcd8eb1eab26918729498b239/src/tt.h
+
+enum class Bound{
+  NONE,
+  EXACT,  //  Exact result: reuse the stored score immediately.
+  ALPHA,  // Upper bound (from a fail-low/α result): if it’s ≤ α, prune without further search.
+  BETA    // Lower bound (from a fail-high/β cutoff): if it’s ≥ β, prune without further search.
+}
+
+data class TransitionTableEntry(
+	var key: Long = 0,
+  var move: UInt = 0u,
+	var score: Int = 0,
+	var depth: Int = 0,
+	var bound: Bound = Bound.NONE,
+	var generation: Int = 0,
+)
+
+class TranspositionTable() {
+  private val sizePowerOfTwo: Int = 1 shl 20
+
+  private val table = List(sizePowerOfTwo) { TransitionTableEntry() }
+  private val mask = sizePowerOfTwo - 1
+
+  private var generation: Int = 0
+
+  // Pack data into primitive arrays to prevent GC pressure
+  private val keys = LongArray(sizePowerOfTwo)
+  private val values = IntArray(sizePowerOfTwo)
+  private val depths = ByteArray(sizePowerOfTwo)
+
+  private val age = ByteArray(sizePowerOfTwo)
+
+  private val bestMoves = UIntArray(sizePowerOfTwo)
+  private val primaryVariations = BooleanArray(sizePowerOfTwo)
+  private val bounds = ByteArray(sizePowerOfTwo)
+
+  fun newSearch() {
+    this.generation += 1
+  }
+
+  fun save(entry: TransitionTableEntry, hash: Long, value: Int, bound: Bound, depth: Int, move: PackedMove) {
+    val index = (hash.toInt()) and mask
+
+    if (entry.key == hash && entry.depth > depth && bound != Bound.EXACT) return
+
+    entry.key = hash
+    entry.score = value
+    entry.bound = bound
+    entry.depth = depth
+    entry.move = (move as PackedMove.Single).value
+    entry.generation = this.generation
+  }
+
+  //
+  fun probe(hash: Long): Pair<Boolean, TransitionTableEntry> {
+//    val index = (hash.toInt()) and mask
+
+    for (i in 0 until sizePowerOfTwo) {
+      if (table[i].key == 0L || table[i].key == hash) {
+        if (table[i].key == hash) {
+          table[i].generation = this.generation
+          return Pair(true, table[i])
+        } else return Pair(false, table[i])
+      }
+    }
+
+    var replace = table[0]
+
+    for (i in 0 until sizePowerOfTwo) {
+      val replaceScore = (this.generation - replace.generation) - replace.depth
+      val currentScore = (this.generation - table[i].generation) - table[i].depth
+
+      if (replaceScore < currentScore) {
+        replace = table[i]
+      }
+    }
+
+    return Pair(false, replace)
+
+//    if (keys[index] == hash && depths[index] >= depth) {
+//      val score = values[index]
+//      val bound = bounds[index].toInt()
+//      if (bound == Bound.EXACT.ordinal) return score
+//      if (bound == Bound.ALPHA.ordinal && score <= alpha) {
+//	      return alpha
+//      }
+//      if (bound == Bound.BETA.ordinal && score <= beta) {
+//        return beta
+//      }
+//    }
+//    return null
+  }
+}
+
+val transpositionTable = TranspositionTable()
+
+// two players: white and black
+// should layers be included
+// piece variants: GIPF, (TAMSK, ZERTZ, YINSH, DVONN, PUNCT) + 1 potentials + 1 neutralized
+val zBlackTurn: Long = Random(1).nextLong()
+val zArray: List<List<LongArray>> = List(2) { List(22) { LongArray(40) } }
+
+fun constructZobristHashKeysTable(rng: Random = Random(1)) {
+//  val pieces =
+//      listOf(
+//          PieceType.GIPF.name,
+//          PieceType.TAMSK.name,
+//          PieceType.ZERTZ.name,
+//          PieceType.YINSH.name,
+//          PieceType.DVONN.name,
+//          PieceType.PUNCT.name,
+//          // TODO layers
+//          "potential",
+//          "neutralized",
+//      )
+
+  for (player in 0..1) {
+    for (piece in 0..21) {
+      for (spot in 0..39) {
+        zArray[player][piece][spot] = rng.nextLong()
+      }
+    }
+  }
+}
+
+fun Bitboard.getZobristHash(
+    currentPlayer: Player,
+    zArray: List<List<LongArray>> = org.example.engine.zArray,
+    zBlackTurn: Long = org.example.engine.zBlackTurn,
+): Long {
+  var zobristKey: Long = 0L
+
+  for (spot in 0..39) {
+    if ((globalOccupancy shr spot and 1UL) == 0UL) continue
+
+    if ((whiteGIPF shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][0][spot]
+    }
+
+    if ((whiteTAMSK shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][1][spot]
+    }
+
+    if ((whiteZERTZ shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][2][spot]
+    }
+
+    if ((whiteYINSH shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][3][spot]
+    }
+
+    for (layer in 0..7) {
+      if (whiteDVONNLayer[layer] == 0UL) break
+      if ((whiteDVONNLayer[layer] shr spot and 1UL) == 1UL) {
+        zobristKey = zobristKey xor zArray[0][4 + layer][spot]
+      }
+    }
+    for (layer in 0..7) {
+      if (whitePUNCTLayer[layer] == 0UL) break
+      if ((whitePUNCTLayer[layer] shr spot and 1UL) == 1UL) {
+        zobristKey = zobristKey xor zArray[0][12 + layer][spot]
+      }
+    }
+    for (layer in 0..7) {
+      if (blackDVONNLayer[layer] == 0UL) break
+      if ((blackDVONNLayer[layer] shr spot and 1UL) == 1UL) {
+        zobristKey = zobristKey xor zArray[1][4 + layer][spot]
+      }
+    }
+    for (layer in 0..7) {
+      if (blackPUNCTLayer[layer] == 0UL) break
+      if ((blackPUNCTLayer[layer] shr spot and 1UL) == 1UL) {
+        zobristKey = zobristKey xor zArray[1][12 + layer][spot]
+      }
+    }
+
+    if ((whitePotentials shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][20][spot]
+    }
+
+    if ((whiteNeutralized shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[0][21][spot]
+    }
+
+    if ((blackGIPF shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][0][spot]
+    }
+
+    if ((blackTAMSK shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][1][spot]
+    }
+
+    if ((blackZERTZ shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][2][spot]
+    }
+
+    if ((blackYINSH shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][3][spot]
+    }
+
+    if ((blackPotentials shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][6][spot]
+    }
+
+    if ((blackNeutralized shr spot and 1UL) == 1UL) {
+      zobristKey = zobristKey xor zArray[1][7][spot]
+    }
+  }
+
+  if (currentPlayer.name == PlayerName.BLACK) {
+    zobristKey = zobristKey xor zBlackTurn
+  }
+
+  return zobristKey
+}
