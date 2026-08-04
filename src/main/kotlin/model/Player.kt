@@ -12,6 +12,7 @@ import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
+import org.example.engine.transpositionTable
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -102,31 +103,61 @@ data class Player(
         name = this.name,
         model = this.model,
         strength = this.strength,
-        piecesInReserve = this.piecesInReserve.toMutableList(),
-        capturedPieces = this.capturedPieces.toMutableList(),
+        piecesInReserve = this.piecesInReserve.toList().toMutableList(),
+        capturedPieces = this.capturedPieces.toList().toMutableList(),
         collector = if (copyCollector) this.collector else null,
     )
   }
 
   fun addRetrievedCapturedPieces(pieces: List<UInt>) {
+    val preRemovalReserve = piecesInReserve.toList()
+    val preCapturedPieces = capturedPieces.toList()
+
+    var removedReserve = 0
+    var removedCapturedPiece = 0
+
     for (piece in pieces) {
       if (piece.extractPieceColor() == this.name) {
         this.piecesInReserve.add(piece.onlyPiece())
+        removedReserve++
       }
       if (piece.extractPieceColor() != this.name) {
         this.capturedPieces.add(piece.onlyPiece())
+        removedReserve++
       }
+    }
+
+    val capturedSum = removedReserve + removedCapturedPiece
+
+    check(capturedSum == pieces.size) {
+      "Piece Accounting Mismatch: Sum of captured piece counters ($capturedSum) does not match actual active piece list size (${pieces.size}). " +
+          "Tracked pieces count: $capturedSum | Actual remaining pieces in list: ${pieces.size}."
     }
   }
 
   fun removeRetrievedCapturedPieces(pieces: List<UInt>) {
+    val preRemovalReserve = piecesInReserve.toList()
+    val preCapturedPieces = capturedPieces.toList()
+
+    var removedReserve = 0
+    var removedCapturedPiece = 0
+
     for (piece in pieces) {
       if (piece.extractPieceColor() == this.name) {
         this.piecesInReserve.remove(piece.onlyPiece())
+        removedReserve++
       }
       if (piece.extractPieceColor() != this.name) {
         this.capturedPieces.remove(piece.onlyPiece())
+        removedReserve++
       }
+    }
+
+    val capturedSum = removedReserve + removedCapturedPiece
+
+    check(capturedSum == pieces.size) {
+      "Piece Accounting Mismatch: Sum of captured piece counters ($capturedSum) does not match actual active piece list size (${pieces.size}). " +
+          "Tracked pieces count: $capturedSum | Actual remaining pieces in list: ${pieces.size}."
     }
   }
 
@@ -285,10 +316,10 @@ data class Player(
     // Extract only the pieces that are currently marked as potentials
     //    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
 
-    if (newlyStackedPieces.isEmpty()) {
-      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
-      return
-    }
+//    if (newlyStackedPieces.isEmpty()) {
+//      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
+//      return
+//    }
 
     if (logger.isDebugEnabled()) {
       logger.info { "" + ("Found ${newlyStackedPieces.size} potential piece(s) to uncombine.") }
@@ -334,14 +365,14 @@ data class Player(
 
     if (logger.isDebugEnabled()) {
       logger.info {
-        "" + ("Successfully generated and added ${unstackedPieces.size} regular pieces.")
+	      "Successfully generated and added ${unstackedPieces.size} regular pieces."
       }
-      logger.info { "" + ("Reserve size after uncombining: ${this.piecesInReserve.size}") }
-      logger.info { "" + ("Pre Uncombine Potential Pieces: $preReservePotentials") }
-      logger.info { "" + ("Pre Uncombine Basic Pieces: $preReserveBasics") }
-      logger.info { "" + ("Post Uncombine Potential Pieces: $postReservePotentials") }
-      logger.info { "" + ("Post Uncombine Basic Pieces: $postReserveBasics") }
-      logger.info { "" + ("--- UNCOMBINE PIECES COMPLETED ---") }
+      logger.info { "Reserve size after uncombining: ${this.piecesInReserve.size}" }
+      logger.info { "Pre Uncombine Potential Pieces: $preReservePotentials" }
+      logger.info { "Pre Uncombine Basic Pieces: $preReserveBasics" }
+      logger.info { "Post Uncombine Potential Pieces: $postReservePotentials" }
+      logger.info { "Post Uncombine Basic Pieces: $postReserveBasics" }
+      logger.info { "--- UNCOMBINE PIECES COMPLETED ---" }
     }
   }
 }
@@ -352,12 +383,15 @@ fun Player.selectMove(
     bitboard: Bitboard,
     opponent: Player,
     rng: Random,
+    useDuration: Boolean = false
 ): PackedMove? {
   return when (model) {
     Model.MINIMAX -> {
       when (turnPhase) {
         TurnPhase.PlayerInputWindow,
         TurnPhase.ExtraMove -> {
+          transpositionTable.newSearch()
+
           alphaBetaPackedMove(
                   bitboard = bitboard.deepCopy(),
                   currentPlayer = this.deepCopy(),
