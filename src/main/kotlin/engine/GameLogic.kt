@@ -31,7 +31,12 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
 
     // recombine player pieces
     newState.currentPlayer.combinePieces()
+
+    // return early if the current player captured 3 GIPF Pieces
+    if (evaluateCapturedPieces(newState)) return newState
   }
+
+
 
   newState.assertPieceCount()
 
