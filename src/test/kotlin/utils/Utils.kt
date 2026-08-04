@@ -2,6 +2,8 @@ package utils
 
 import kotlinx.serialization.json.Json
 import org.example.model.columnInfos
+import org.example.model.openningSpotsLineMask
+import org.example.model.threeRunSubmasks
 import org.junit.jupiter.api.Test
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -64,6 +66,16 @@ class Utils {
 
 		logger.info { "" + (features) }
 		logger.info { "" }
+	}
+
+	@Test
+	fun `run of three on the edge`() {
+		val filteredList = threeRunSubmasks.filter { (it and openningSpotsLineMask) != 0UL }
+		println(threeRunSubmasks.size)
+		println()
+		println(filteredList)
+		println(filteredList.size)
+		println(filteredList.fold(0UL) { a, b -> a or b })
 	}
 
 }

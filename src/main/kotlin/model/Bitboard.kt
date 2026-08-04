@@ -294,6 +294,50 @@ val threeRunSubmasks: List<ULong> = columnInfos.flatMap { (_, positions, _, _, _
   }
 }
 
+val reducedThreeRunSubmasks: List<ULong> =
+    listOf(
+        112UL,
+        448UL,
+        3584UL,
+        28672UL,
+        229376UL,
+        3670016UL,
+        29360128UL,
+        234881024UL,
+        1879048192UL,
+        7516192768UL,
+        60129542144UL,
+        120259084288UL,
+        2081UL,
+        70900514816UL,
+        4162UL,
+        4362600448UL,
+        8324UL,
+        135274496UL,
+        16648UL,
+        2113792UL,
+        132112UL,
+        585189294080UL,
+        8454656UL,
+        292594647040UL,
+        272662528UL,
+        146297323520UL,
+        529UL,
+        33296UL,
+        1058UL,
+        4260864UL,
+        2116UL,
+        276955136UL,
+        4232UL,
+        9143582720UL,
+        532736UL,
+        155692564480UL,
+        68173824UL,
+        311385128960UL,
+        4431282176UL,
+        622770257920UL,
+    )
+
 @OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
 data class Bitboard(
@@ -472,14 +516,14 @@ data class Bitboard(
           whiteTAMSK or
           whiteYINSH or
           whiteZERTZ or
-//          whitePotentials or
-//          whiteNeutralized or
+          //          whitePotentials or
+          //          whiteNeutralized or
           blackGIPF or
           blackTAMSK or
           blackYINSH or
           blackZERTZ or
-//          blackPotentials or
-//          blackNeutralized or
+          //          blackPotentials or
+          //          blackNeutralized or
           // pieces can only be stacked on pieces in first layer. no need to check the rest as that
           // would be an invalid state
           whiteDVONNLayer[0] or
@@ -544,12 +588,12 @@ data class Bitboard(
     get() {
       var neutralized = 0UL
 
-	    for (i in 1..7) {
-		    neutralized = neutralized or whiteDVONNLayer[i]
-	    }
       for (i in 1..7) {
-		    neutralized = neutralized or whitePUNCTLayer[i]
-	    }
+        neutralized = neutralized or whiteDVONNLayer[i]
+      }
+      for (i in 1..7) {
+        neutralized = neutralized or whitePUNCTLayer[i]
+      }
       whitePUNCTLayer.slice(1..7).forEach { neutralized = neutralized or it }
 
       return neutralized
@@ -559,12 +603,12 @@ data class Bitboard(
     get() {
       var neutralized = 0UL
 
-	    for (i in 1..7) {
-		    neutralized = neutralized or blackDVONNLayer[i]
-	    }
-	    for (i in 1..7) {
-		    neutralized = neutralized or blackPUNCTLayer[i]
-	    }
+      for (i in 1..7) {
+        neutralized = neutralized or blackDVONNLayer[i]
+      }
+      for (i in 1..7) {
+        neutralized = neutralized or blackPUNCTLayer[i]
+      }
 
       return neutralized
     }
@@ -3037,11 +3081,11 @@ fun Bitboard.getPunctMoves(
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   // --- 0. CONFIGURABLE DEBUGGING ---
-//  if (logger.isDebugEnabled()) {
-//    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---") }
-//    logger.info { "" + ("Player: ${player.name}") }
-//    logger.info { "" + ("Bitboard State: ${Json.encodeToString<Bitboard>(this)}") }
-//  }
+  //  if (logger.isDebugEnabled()) {
+  //    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---") }
+  //    logger.info { "" + ("Player: ${player.name}") }
+  //    logger.info { "" + ("Bitboard State: ${Json.encodeToString<Bitboard>(this)}") }
+  //  }
 
   val playerPieces =
       when (player.name) {
@@ -3049,61 +3093,60 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
         PlayerName.BLACK -> blackPieces
       }
 
-  val columns =
-      columnInfos
-          .filterIndexed { index, column ->
-            if (logger.isDebugEnabled()) {
-              logger.info {
-                "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-              }
-              logger.info {
-                "" +
-                    ("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
-              }
-            }
+  val columns = columnInfos.filterIndexed { index, column ->
+    if (logger.isDebugEnabled()) {
+      logger.info {
+        "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
+      }
+      logger.info {
+        "" + ("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
+      }
+    }
 
-            val result =
-                column.submasks.any { submask ->
-                  val fourInARow = (submask and playerPieces) == submask
-//                  if (logger.isDebugEnabled() && fourInARow) {
-//                    logger.info {
-//                      "" + ("Sublist:              0b${submask.toString(2).padStart(40, '0')}")
-//                    }
-//                    logger.info {
-//                      "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
-//                    }
-//                    logger.info { "" + ("Result: $fourInARow") }
-//                  }
-                  fourInARow
-                }
+    val result =
+        column.submasks.any { submask ->
+          val fourInARow = (submask and playerPieces) == submask
+          //                  if (logger.isDebugEnabled() && fourInARow) {
+          //                    logger.info {
+          //                      "" + ("Sublist:              0b${submask.toString(2).padStart(40,
+          // '0')}")
+          //                    }
+          //                    logger.info {
+          //                      "" + ("player Active Pieces:
+          // 0b${playerPieces.toString(2).padStart(40, '0')}")
+          //                    }
+          //                    logger.info { "" + ("Result: $fourInARow") }
+          //                  }
+          fourInARow
+        }
 
-            if (logger.isDebugEnabled()) {
-              if (result) logger.info { "" + ("--- FOUND FOUR IN A ROW IN LINE $index ---") }
-              else logger.info { "" + ("--- NO 4 IN A ROW IN LINE $index ---") }
-            }
+    if (logger.isDebugEnabled()) {
+      if (result) logger.info { "" + ("--- FOUND FOUR IN A ROW IN LINE $index ---") }
+      else logger.info { "" + ("--- NO 4 IN A ROW IN LINE $index ---") }
+    }
 
-            //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
-            //      if (logger.isDebugEnabled()) {
-            //        logger.info { "" + ("--- NO 4 IN A LINE $index ---") }
-            //      }
-            //      false
-            //    } else {
-            //      if (logger.isDebugEnabled()) {
-            //        logger.info { "" + (//            "--- FOUND FOUR IN A LINE $index ---"
-            // ) } // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
-            //      }
-            //
-            //	    logger.info { "" + ("column.positions.windowed(4).any: ${
-            //		    column.positions.windowed(4).any { sublist ->
-            //			    val sum = sublist.fold(0UL) { acc, lng ->
-            //				    acc or lng
-            //			    }
-            //			    (sum and playerPieces) == sum
-            //		    }
-            //			}") }
+    //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
+    //      if (logger.isDebugEnabled()) {
+    //        logger.info { "" + ("--- NO 4 IN A LINE $index ---") }
+    //      }
+    //      false
+    //    } else {
+    //      if (logger.isDebugEnabled()) {
+    //        logger.info { "" + (//            "--- FOUND FOUR IN A LINE $index ---"
+    // ) } // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
+    //      }
+    //
+    //	    logger.info { "" + ("column.positions.windowed(4).any: ${
+    //		    column.positions.windowed(4).any { sublist ->
+    //			    val sum = sublist.fold(0UL) { acc, lng ->
+    //				    acc or lng
+    //			    }
+    //			    (sum and playerPieces) == sum
+    //		    }
+    //			}") }
 
-            result && column.positions.size >= 4
-          }
+    result && column.positions.size >= 4
+  }
 
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---") }
@@ -3125,34 +3168,34 @@ fun Bitboard.createPlayerPiecesWithPotentialPowerset(
       if (columnInfos.isNotEmpty()) {
         columnInfos.flatMap { column ->
           column.positions.filter { bitmask ->
-                when (player.name) {
-                  PlayerName.WHITE -> {
-                    // pieces with potential and not neutralized
-                    (whitePotentials and bitmask) == bitmask &&
-                        (whiteNeutralized.inv() and bitmask) == bitmask
-                  }
+            when (player.name) {
+              PlayerName.WHITE -> {
+                // pieces with potential and not neutralized
+                (whitePotentials and bitmask) == bitmask &&
+                    (whiteNeutralized.inv() and bitmask) == bitmask
+              }
 
-                  PlayerName.BLACK -> {
-                    (blackPotentials and bitmask) == bitmask &&
-                        (blackNeutralized.inv() and bitmask) == bitmask
-                  }
-                }
+              PlayerName.BLACK -> {
+                (blackPotentials and bitmask) == bitmask &&
+                    (blackNeutralized.inv() and bitmask) == bitmask
+              }
+            }
           }
         }
       } else {
         positions.filter { bitmask ->
-              when (player.name) {
-                PlayerName.WHITE -> {
-                  // pieces with potential and not neutralized
-                  (whitePotentials and bitmask) == bitmask &&
-                      (whiteNeutralized.inv() and bitmask) == bitmask
-                }
+          when (player.name) {
+            PlayerName.WHITE -> {
+              // pieces with potential and not neutralized
+              (whitePotentials and bitmask) == bitmask &&
+                  (whiteNeutralized.inv() and bitmask) == bitmask
+            }
 
-                PlayerName.BLACK -> {
-                  (blackPotentials and bitmask) == bitmask &&
-                      (blackNeutralized.inv() and bitmask) == bitmask
-                }
-              }
+            PlayerName.BLACK -> {
+              (blackPotentials and bitmask) == bitmask &&
+                  (blackNeutralized.inv() and bitmask) == bitmask
+            }
+          }
         }
       }
 

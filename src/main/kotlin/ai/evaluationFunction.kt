@@ -1,21 +1,19 @@
 package org.example.ai
 
-import org.example.ai.mcts.PackedMove
-import org.example.engine.determineWinner
-import org.example.model.Bitboard
-import org.example.model.PieceType
-import org.example.model.Player
-import org.example.model.PlayerName
-import org.example.model.bitDistanceWeights
-import org.example.model.columnInfos
-import org.example.model.extractPieceType
-import org.example.model.extractPotential
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.random.Random
+import org.example.ai.mcts.PackedMove
+import org.example.engine.determineWinner
+import org.example.model.*
 
 // this is slow/get called a lot
-fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer: Player, rng: Random): Double {
+fun scoreBitboardState(
+    bitboard: Bitboard,
+    currentPlayer: Player,
+    opponentPlayer: Player,
+    rng: Random,
+): Double {
   // TODO how to score control over the board/line
   // TODO how to score attacking positions, i.e. 4 in the row
   // TODO how to skip positions that don't improve the current player's position
@@ -87,7 +85,9 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
       currentPlayer.capturedPieces.count { it.extractPieceType() == PieceType.GIPF }.toDouble()
 
   val countCapturedOpponentPieces =
-      currentPlayer.capturedPieces.count { it.extractPieceType() != PieceType.GIPF && it.extractPotential() }.times(2) +
+      currentPlayer.capturedPieces
+          .count { it.extractPieceType() != PieceType.GIPF && it.extractPotential() }
+          .times(2) +
           currentPlayer.capturedPieces
               .count {
                 it.extractPieceType() != PieceType.GIPF && !it.extractPotential()
@@ -98,17 +98,19 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
       opponentPlayer.capturedPieces.count { it.extractPieceType() == PieceType.GIPF }.toDouble()
 
   val countCapturedPieces =
-      opponentPlayer.capturedPieces.count { it.extractPieceType() != PieceType.GIPF && it.extractPotential() }.times(2) +
+      opponentPlayer.capturedPieces
+          .count { it.extractPieceType() != PieceType.GIPF && it.extractPotential() }
+          .times(2) +
           opponentPlayer.capturedPieces
               .count {
                 it.extractPieceType() != PieceType.GIPF && !it.extractPotential()
               }
               .toDouble()
-              .unaryMinus()
+
 
   // current player'S available moves
-//  val moves = mutableListOf<PossibleBitMove>()
-//  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
+  //  val moves = mutableListOf<PossibleBitMove>()
+  //  bitboard.identifyAvailableMoves(currentPlayer, columnInfos, moves)
 
   val availableMoves = exp(-moves / 4.0)
 
@@ -154,8 +156,56 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
     return (n - opponent) * (n + opponent) * 10.0
   }
 
-  fun clusterValue(n: Double, opponent: Double): Double {
-    return 0.0
+  fun scoreClusters(player: Player): Double {
+    var sum = 0.0
+    for (cluster in neighbouringBitsBitmasks.values) {
+
+      val score =
+          when (player.name) {
+            PlayerName.WHITE -> {
+              exp(
+                  (bitboard.whitePieces and cluster)
+                      .countOneBits()
+                      .toDouble()
+                      .div(cluster.countOneBits())
+              ) - 1.0
+            }
+            PlayerName.BLACK -> {
+              exp(
+                  (bitboard.blackPieces and cluster)
+                      .countOneBits()
+                      .toDouble()
+                      .div(cluster.countOneBits())
+              ) - 1.0
+            }
+          }
+
+      sum += score
+    }
+    return sum
+  }
+
+  fun scoreRunsOfThree(player: Player): Double {
+    var sum = 0.0
+    for (mask in reducedThreeRunSubmasks) {
+
+      val score =
+          when (player.name) {
+            PlayerName.WHITE -> {
+              if ((bitboard.whitePieces and mask) == mask) {
+                exp((bitboard.whitePieces and mask).countOneBits().toDouble()) - 1.0
+              } else 0.0
+            }
+            PlayerName.BLACK -> {
+              if ((bitboard.blackPieces and mask) == mask) {
+                exp((bitboard.blackPieces and mask).countOneBits().toDouble()) - 1.0
+              } else 0.0
+            }
+          }
+
+      sum += score
+    }
+    return sum
   }
 
   // todo use exponential decay function to value bits based on their distance from the centre bit
@@ -235,16 +285,21 @@ fun scoreBitboardState(bitboard: Bitboard, currentPlayer: Player, opponentPlayer
           availableMoves +
           currentPiecesInPlay +
           centreControl(currentPlayer) +
-          tamskDistanceFromCentre(currentPlayer)
+          tamskDistanceFromCentre(currentPlayer) +
+          scoreClusters(currentPlayer) +
+          scoreRunsOfThree(currentPlayer)
 
   val opponentValue =
-      -20 +
+      -(20 +
           countCapturedGIPFPieces.times(exp(countCapturedGIPFPieces)) +
           countCapturedPieces +
           opponentAvailableMoves +
           opponentPiecesInPlay +
           centreControl(opponentPlayer) +
-          tamskDistanceFromCentre(opponentPlayer)
+          tamskDistanceFromCentre(opponentPlayer) +
+          scoreClusters(opponentPlayer) +
+          scoreRunsOfThree(opponentPlayer)
+          )
 
   val noise = rng.nextInt(-10, 10).toDouble()
   return (((currentValue + opponentValue) + noise) * 1000) /
