@@ -2,6 +2,8 @@ package org.example
 
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
+import org.example.engine.TranspositionTable
+import org.example.engine.constructZobristHashKeysTable
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
@@ -14,12 +16,16 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(4968145030332927181)
+  val rng = Random(1)
+
+  constructZobristHashKeysTable(rng)
+  val transpositionTable = TranspositionTable()
+
   var gameState: State = initializeState(
-      Model.MCTS,
+      Model.MINIMAX,
       Strength.EASY,
       Model.MINIMAX,
-      Strength.GREEDY,
+      Strength.EASY,
   )
 
   var turn = 0
