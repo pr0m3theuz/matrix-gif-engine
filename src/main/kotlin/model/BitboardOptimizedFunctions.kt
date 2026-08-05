@@ -1783,7 +1783,7 @@ fun Bitboard.undoTamskPotential(
 fun Bitboard.getTamskMoves(
     player: Player,
     movesBuffer: MutableList<PackedMove>, // Updated to UInt buffer
-    allColumnInfos: List<ColumnInfo> = columnInfos, // Added to resolve the global colIndex
+    sortedColumns: List<ColumnInfo> = columnInfos, // Added to resolve the global colIndex
 ) {
   // --- 0. CONFIGURABLE DEBUGGING ---
   if (logger.isDebugEnabled()) {
@@ -1839,7 +1839,7 @@ fun Bitboard.getTamskMoves(
                     targetBit = startTargetBit,
                     pushDirection = startPushDirection,
                     moveType = MoveType.AddPiece,
-                    columnInfoIndex = colIndex,
+                    columnInfoIndex = columnInfo.index,
                 )
                 .setPieceType(
                     pieceType = PieceType.TAMSK,
@@ -1863,7 +1863,7 @@ fun Bitboard.getTamskMoves(
                     targetBit = endTargetBit,
                     pushDirection = endPushDirection,
                     moveType = MoveType.AddPiece,
-                    columnInfoIndex = colIndex,
+                    columnInfoIndex = columnInfo.index,
                 )
                 .setPieceType(
                     pieceType = PieceType.TAMSK,
@@ -2406,7 +2406,7 @@ fun Bitboard.identifyAvailableMoves(
           PackedMove.Single(
               0u.packPossibleBitMove(
                   piece = gipfPieceInReserve,
-                  columnInfoIndex = colIndex,
+                  columnInfoIndex = columnInfo.index,
                   targetBit = startTargetBit,
                   pushDirection = startPushDirection,
                   moveType = MoveType.AddPiece,
@@ -2423,7 +2423,7 @@ fun Bitboard.identifyAvailableMoves(
           PackedMove.Single(
               0u.packPossibleBitMove(
                   piece = gipfPieceInReserve,
-                  columnInfoIndex = colIndex,
+                  columnInfoIndex = columnInfo.index,
                   targetBit = endTargetBit,
                   pushDirection = endPushDirection,
                   moveType = MoveType.AddPiece,
@@ -2619,7 +2619,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
 
   // filter for fully occupied submasks and sum extensions
   // fullyPopulatedSubmasksPositions
-  val fullyPopulatedPositions = linesWithFourInARow.flatMap { (_, positions, submasks, _, _, _) ->
+  val fullyPopulatedPositions = linesWithFourInARow.flatMap { (_, _, positions, submasks, _, _, _) ->
     val occupiedBits =
         submasks
             .filter { submask -> (submask and globalOccupancy) == submask }
