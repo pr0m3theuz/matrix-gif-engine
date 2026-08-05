@@ -131,7 +131,7 @@ class UndoUsePiecePotentialTest {
             blackPotentials = 256u,
         )
 
-    val move = BestPackedMove(move = PackedMove.Single(value = 251380616u), score = 55.811718f)
+    val move = BestPackedMove(move = PackedMove.Single(value = 251380616u), score = 0)
 
 	  val modifiedBitboard =
         Bitboard(

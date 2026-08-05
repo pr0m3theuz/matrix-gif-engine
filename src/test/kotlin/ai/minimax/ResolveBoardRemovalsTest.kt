@@ -11,8 +11,6 @@ import kotlin.test.assertEquals
 class ResolveBoardRemovalsTest {
   @Test
   fun resolveBoardRemovals() {
-    val alphaBetaScore =
-        AlphaBetaScoreBitPacked(move = null, alpha = 2.967696f, beta = Float.POSITIVE_INFINITY)
     val bitboard =
         Bitboard(
             whiteGIPF = 0u,

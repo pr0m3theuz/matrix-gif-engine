@@ -87,7 +87,7 @@ fun UInt.packPossibleBitMove(
 
 fun UInt.toPossibleBitMove(): PossibleBitMove {
   // 1. Unpack the piece FIRST so we can harvest its internal data
-  val unpackedPiece = (this and (0b111111.toUInt()) shl 24).extractPiece()
+  val unpackedPiece = this.extractPiece()
 
   val sourceShift = (this shr 7 and 0b1111111.toUInt()).toInt()
   val targetShift = (this and 0b1111111.toUInt()).toInt()
