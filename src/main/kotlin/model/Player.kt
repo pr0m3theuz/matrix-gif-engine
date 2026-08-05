@@ -103,8 +103,8 @@ data class Player(
         name = this.name,
         model = this.model,
         strength = this.strength,
-        piecesInReserve = this.piecesInReserve.toList().toMutableList(),
-        capturedPieces = this.capturedPieces.toList().toMutableList(),
+        piecesInReserve = this.piecesInReserve.toMutableList(),
+        capturedPieces = this.capturedPieces.toMutableList(),
         collector = if (copyCollector) this.collector else null,
     )
   }
