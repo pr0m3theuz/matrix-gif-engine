@@ -39,15 +39,15 @@ class TranspositionTable() {
   private var generation: Int = 0
 
   // Pack data into primitive arrays to prevent GC pressure
-  private val keys = LongArray(sizePowerOfTwo)
-  private val values = IntArray(sizePowerOfTwo)
-  private val depths = ByteArray(sizePowerOfTwo)
-
-  private val age = ByteArray(sizePowerOfTwo)
-
-  private val bestMoves = UIntArray(sizePowerOfTwo)
-  private val primaryVariations = BooleanArray(sizePowerOfTwo)
-  private val bounds = ByteArray(sizePowerOfTwo)
+//  private val keys = LongArray(sizePowerOfTwo)
+//  private val values = IntArray(sizePowerOfTwo)
+//  private val depths = ByteArray(sizePowerOfTwo)
+//
+//  private val age = ByteArray(sizePowerOfTwo)
+//
+//  private val bestMoves = UIntArray(sizePowerOfTwo)
+//  private val primaryVariations = BooleanArray(sizePowerOfTwo)
+//  private val bounds = ByteArray(sizePowerOfTwo)
 
   fun newSearch() {
     this.generation += 1
@@ -82,8 +82,8 @@ class TranspositionTable() {
     var replace = table[0]
 
     for (i in 0 until sizePowerOfTwo) {
-      val replaceScore = (this.generation - replace.generation) - replace.depth
-      val currentScore = (this.generation - table[i].generation) - table[i].depth
+      val replaceScore = replace.depth - (this.generation - replace.generation)
+      val currentScore = - table[i].depth - (this.generation - table[i].generation)
 
       if (replaceScore < currentScore) {
         replace = table[i]
@@ -214,11 +214,11 @@ fun Bitboard.getZobristHash(
     }
 
     if ((blackPotentials shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][6][spot]
+      zobristKey = zobristKey xor zArray[1][20][spot]
     }
 
     if ((blackNeutralized shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][7][spot]
+      zobristKey = zobristKey xor zArray[1][21][spot]
     }
   }
 
