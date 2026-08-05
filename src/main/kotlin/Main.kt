@@ -19,7 +19,6 @@ fun main() {
   val rng = Random(1)
 
   constructZobristHashKeysTable(rng)
-  val transpositionTable = TranspositionTable()
 
   var gameState: State = initializeState(
       Model.MINIMAX,

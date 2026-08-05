@@ -29,58 +29,69 @@ enum class Model {
 
 fun getModel(model: String): Model {
   return when (model) {
-    "MCTS", "mcts" -> return Model.MCTS
-    "MINIMAX", "minimax" -> return Model.MINIMAX
-    "nn", "NN", "NEURAL_NETWORK", "neural_network" -> return Model.NEURAL_NETWORK
-	  else -> Model.MCTS
+    "MCTS",
+    "mcts" -> return Model.MCTS
+    "MINIMAX",
+    "minimax" -> return Model.MINIMAX
+    "nn",
+    "NN",
+    "NEURAL_NETWORK",
+    "neural_network" -> return Model.NEURAL_NETWORK
+    else -> Model.MCTS
   }
 }
 
 enum class Strength(
-  val difficulty: Int,
-  val minimaxDepth: Int,
-  val mctsRounds: IntRange,
-  val duration: Duration,
+    val difficulty: Int,
+    val minimaxDepth: Int,
+    val mctsRounds: IntRange,
+    val duration: Duration,
 ) {
   RANDOM(
-    difficulty = 0,
-    minimaxDepth = 1,
-    mctsRounds = 0..0,
-    duration = 1.5.toDuration(DurationUnit.SECONDS),
+      difficulty = 0,
+      minimaxDepth = 1,
+      mctsRounds = 0..0,
+      duration = 1.5.toDuration(DurationUnit.SECONDS),
   ),
   GREEDY(
-    difficulty = 1,
-    minimaxDepth = 1,
-    mctsRounds = 0..0,
-    duration = 1.5.toDuration(DurationUnit.SECONDS),
+      difficulty = 1,
+      minimaxDepth = 1,
+      mctsRounds = 0..0,
+      duration = 1.5.toDuration(DurationUnit.SECONDS),
   ),
   EASY(
-    difficulty = 2,
-    minimaxDepth = 3,
-    mctsRounds = 0..999,
-    duration = 1.5.toDuration(DurationUnit.SECONDS),
+      difficulty = 2,
+      minimaxDepth = 3,
+      mctsRounds = 0..999,
+      duration = 1.5.toDuration(DurationUnit.SECONDS),
   ),
   MEDIUM(
-    difficulty = 3,
-    minimaxDepth = 5,
-    mctsRounds = 0..2499,
-    duration = 5.toDuration(DurationUnit.SECONDS),
+      difficulty = 3,
+      minimaxDepth = 5,
+      mctsRounds = 0..2499,
+      duration = 5.toDuration(DurationUnit.SECONDS),
   ),
   HARD(
-    difficulty = 4,
-    minimaxDepth = 7,
-    mctsRounds = 0..4999,
-    duration = 10.toDuration(DurationUnit.SECONDS),
+      difficulty = 4,
+      minimaxDepth = 7,
+      mctsRounds = 0..4999,
+      duration = 10.toDuration(DurationUnit.SECONDS),
   ),
 }
 
 fun getStrength(strength: String): Strength {
   return when (strength) {
-    "random", "RANDOM" -> Strength.RANDOM
-    "greedy", "GREEDY" -> Strength.GREEDY
-    "easy", "EASY" -> Strength.EASY
-    "med", "medium", "MEDIUM" -> Strength.MEDIUM
-    "hard", "HARD" -> Strength.HARD
+    "random",
+    "RANDOM" -> Strength.RANDOM
+    "greedy",
+    "GREEDY" -> Strength.GREEDY
+    "easy",
+    "EASY" -> Strength.EASY
+    "med",
+    "medium",
+    "MEDIUM" -> Strength.MEDIUM
+    "hard",
+    "HARD" -> Strength.HARD
     else -> Strength.EASY
   }
 }
@@ -103,8 +114,8 @@ data class Player(
         name = this.name,
         model = this.model,
         strength = this.strength,
-        piecesInReserve = this.piecesInReserve.toList().toMutableList(),
-        capturedPieces = this.capturedPieces.toList().toMutableList(),
+        piecesInReserve = this.piecesInReserve.toMutableList(),
+        capturedPieces = this.capturedPieces.toMutableList(),
         collector = if (copyCollector) this.collector else null,
     )
   }
@@ -123,7 +134,7 @@ data class Player(
       }
       if (piece.extractPieceColor() != this.name) {
         this.capturedPieces.add(piece.onlyPiece())
-        removedReserve++
+        removedCapturedPiece++
       }
     }
 
@@ -149,7 +160,7 @@ data class Player(
       }
       if (piece.extractPieceColor() != this.name) {
         this.capturedPieces.remove(piece.onlyPiece())
-        removedReserve++
+        removedCapturedPiece++
       }
     }
 
@@ -172,6 +183,7 @@ data class Player(
     check(selectedPiece != null) {
       "$piece was not found!"
     }
+
     this.piecesInReserve.remove(selectedPiece)
 
     val pieceCountDifference = initialSize - piecesInReserve.size
@@ -316,10 +328,10 @@ data class Player(
     // Extract only the pieces that are currently marked as potentials
     //    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
 
-//    if (newlyStackedPieces.isEmpty()) {
-//      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
-//      return
-//    }
+    //    if (newlyStackedPieces.isEmpty()) {
+    //      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
+    //      return
+    //    }
 
     if (logger.isDebugEnabled()) {
       logger.info { "" + ("Found ${newlyStackedPieces.size} potential piece(s) to uncombine.") }
@@ -365,7 +377,7 @@ data class Player(
 
     if (logger.isDebugEnabled()) {
       logger.info {
-	      "Successfully generated and added ${unstackedPieces.size} regular pieces."
+        "Successfully generated and added ${unstackedPieces.size} regular pieces."
       }
       logger.info { "Reserve size after uncombining: ${this.piecesInReserve.size}" }
       logger.info { "Pre Uncombine Potential Pieces: $preReservePotentials" }
@@ -377,13 +389,12 @@ data class Player(
   }
 }
 
-
 fun Player.selectMove(
     turnPhase: TurnPhase,
     bitboard: Bitboard,
     opponent: Player,
     rng: Random,
-    useDuration: Boolean = false
+    useDuration: Boolean = false,
 ): PackedMove? {
   return when (model) {
     Model.MINIMAX -> {
@@ -393,18 +404,20 @@ fun Player.selectMove(
           transpositionTable.newSearch()
 
           alphaBetaPackedMove(
+                  maxDepth = strength.minimaxDepth,
                   bitboard = bitboard.deepCopy(),
                   currentPlayer = this.deepCopy(),
                   opponentPlayer = opponent.deepCopy(),
                   alphaBetaScore = AlphaBetaScoreBitPacked(),
                   rng = rng,
                   depth = strength.minimaxDepth,
-              turnPhase = turnPhase,
+                  turnPhase = turnPhase,
               )
               .move
         }
         TurnPhase.PieceRemoval -> {
           resolveBoardRemovals(
+                  maxDepth = strength.minimaxDepth,
                   currentPlayer = this.deepCopy(),
                   opponentPlayer = opponent.deepCopy(),
                   bitboard = bitboard.deepCopy(),

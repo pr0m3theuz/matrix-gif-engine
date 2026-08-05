@@ -10,18 +10,19 @@ import org.example.engine.Bound
 import org.example.engine.getZobristHash
 import org.example.engine.transpositionTable
 import org.example.model.*
+import kotlin.math.max
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 data class BestPackedMove(
     val move: PackedMove? = null,
-    var score: Float = 0f,
+    var score: Int = 0,
 )
 
 data class AlphaBetaScoreBitPacked(
     var move: PackedMove? = null,
-    var alpha: Float = Float.NEGATIVE_INFINITY,
-    var beta: Float = Float.POSITIVE_INFINITY,
+    var alpha: Int = Int.MIN_VALUE,
+    var beta: Int = Int.MAX_VALUE,
 ) {
   fun swapAlphaBeta(): AlphaBetaScoreBitPacked {
     return AlphaBetaScoreBitPacked(
@@ -33,6 +34,7 @@ data class AlphaBetaScoreBitPacked(
 
 // TODO Implement Move Ordering
 fun alphaBetaPackedMove(
+    maxDepth: Int,
     depth: Int = 3,
     bitboard: Bitboard,
     currentPlayer: Player,
@@ -81,13 +83,14 @@ fun alphaBetaPackedMove(
 
   val (
       bestPiecesToRetrieveCapture1: List<UInt>,
-      bestPiecesToRetrieveCapture1Score: Float,
+      bestPiecesToRetrieveCapture1Score: Int,
       preMoveNewlyStackedPieces: List<UInt>) =
       if (tamskPieceAtCenter.isEmpty() && turnPhase == null) {
         bestPiecesToRemove(
             currentPlayer,
             opponentPlayer,
             bitboard,
+            maxDepth,
             depth,
             AlphaBetaScoreBitPacked(),
             initBitboard,
@@ -95,7 +98,7 @@ fun alphaBetaPackedMove(
             rng,
         )
       } else {
-        Triple(emptyList(), 0f, emptyList())
+        Triple(emptyList(), 0, emptyList())
       }
 
   val availableMoves = mutableListOf<PackedMove>()
@@ -124,7 +127,7 @@ fun alphaBetaPackedMove(
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-    val score = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng).toFloat()
+    val score = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng)
 
     return BestPackedMove(
         score = score,
@@ -138,20 +141,20 @@ fun alphaBetaPackedMove(
           hash = bitboard.getZobristHash(currentPlayer),
       )
 
-  if (!isPVNode && ttFound && ttEntry.depth <= depth) {
+  if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
     if (ttEntry.bound == Bound.EXACT) {
       return BestPackedMove(
-          score = ttEntry.score.toFloat(),
+          score = ttEntry.score,
       )
     }
     if (ttEntry.bound == Bound.BETA && ttEntry.score >= alphaBetaScore.beta.toInt()) {
       return BestPackedMove(
-          score = ttEntry.score.toFloat(), // Fail-high
+          score = ttEntry.score, // Fail-high
       )
     }
     if (ttEntry.bound == Bound.ALPHA && ttEntry.score >= alphaBetaScore.alpha.toInt()) {
       return BestPackedMove(
-          score = ttEntry.score.toFloat(), // Fail-low
+          score = ttEntry.score, // Fail-low
       )
     }
   }
@@ -161,7 +164,7 @@ fun alphaBetaPackedMove(
 
   // how to see which move trigger retrieve and capture
   // how to make a move and then assess the state/
-  availableMoves.shuffle(rng)
+//  availableMoves.shuffle(rng)
 
   if (ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name) {
     availableMoves.sortByDescending {
@@ -271,7 +274,7 @@ fun alphaBetaPackedMove(
             nextPlayer = opponentPlayer,
         )
 
-        var tamskMoveScore = 0f
+        var tamskMoveScore = 0
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
@@ -284,6 +287,7 @@ fun alphaBetaPackedMove(
           }
           tamskMoveScore =
               alphaBetaPackedMove(
+                maxDepth = maxDepth,
                       depth = depth,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
@@ -314,6 +318,7 @@ fun alphaBetaPackedMove(
                 currentPlayer,
                 opponentPlayer,
                 bitboard,
+                maxDepth,
                 depth,
                 AlphaBetaScoreBitPacked(),
                 postMoveBitboardState,
@@ -331,6 +336,7 @@ fun alphaBetaPackedMove(
                 move = packedMove,
                 score =
                     alphaBetaPackedMove(
+                      maxDepth = maxDepth,
                             depth = depth.minus(1),
                             bitboard = bitboard,
                             currentPlayer = opponentPlayer.deepCopy(),
@@ -344,7 +350,7 @@ fun alphaBetaPackedMove(
                         tamskMoveScore +
                         if (bestPiecesToRetrieveCapture2.isNotEmpty())
                             bestPiecesToRetrieveCapture2Score
-                        else 0f,
+                        else 0,
             )
 
         if (logger.isDebugEnabled()) {
@@ -370,11 +376,6 @@ fun alphaBetaPackedMove(
         //            currentPlayer = currentPlayer,
         //            nextPlayer = opponentPlayer,
         //        )
-
-        //	              val gameStateHash =
-        //		              MessageDigest.getInstance("MD5")
-        //			              .digest(state.toString().toByteArray())
-        //			              .toHexString()
 
         // TODO Undo Move - should this be after undoing piece retrieval/capture
 
@@ -453,7 +454,7 @@ fun alphaBetaPackedMove(
 
         // TODO Handle TAMSK Potential
         // TODO Check if there is Tamsk Potential Move
-        var tamskMoveScore = 0f
+        var tamskMoveScore = 0
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
@@ -466,6 +467,7 @@ fun alphaBetaPackedMove(
           }
           tamskMoveScore =
               alphaBetaPackedMove(
+                maxDepth = maxDepth,
                       depth = depth,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
@@ -497,6 +499,7 @@ fun alphaBetaPackedMove(
                 currentPlayer,
                 opponentPlayer,
                 bitboard,
+                maxDepth,
                 depth,
                 AlphaBetaScoreBitPacked(),
                 postUsePotentialBitboardState,
@@ -509,11 +512,11 @@ fun alphaBetaPackedMove(
                 move = packedMove,
                 score =
                     alphaBetaPackedMove(
+                      maxDepth = maxDepth,
                             depth = depth.minus(1),
                             bitboard = bitboard,
                             currentPlayer = opponentPlayer.deepCopy(),
                             opponentPlayer = currentPlayer.deepCopy(),
-                            //					              gameTree = gameTree,
                             alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                             rng = rng,
                             isPVNode = isPVNode && packedMove == availableMoves[0],
@@ -522,14 +525,15 @@ fun alphaBetaPackedMove(
                         tamskMoveScore +
                         if (bestPiecesToRetrieveCapture3.isNotEmpty())
                             bestPiecesToRetrieveCapture3Score
-                        else 0f,
+                        else 0,
             )
 
         if (logger.isDebugEnabled()) {
           logger.info { "" + ("--- ALPHA-BETA COMPLETED (POST USE POTENTIAL) ---") }
         }
 
-//        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+        //        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer =
+        // opponentPlayer)
 
         // d. UNDO the piece removals to evaluate the next choice
         currentPlayer.uncombinePieces(newlyStackedPieces)
@@ -647,14 +651,14 @@ fun alphaBetaPackedMove(
 
   val score =
       alphaBetaScore.alpha +
-          if (bestPiecesToRetrieveCapture1.isNotEmpty()) bestPiecesToRetrieveCapture1Score else 0f
+          if (bestPiecesToRetrieveCapture1.isNotEmpty()) bestPiecesToRetrieveCapture1Score else 0
 
   alphaBetaScore.move?.let {
     transpositionTable.save(
         entry = ttEntry,
         hash = bitboard.getZobristHash(currentPlayer),
         bound = bound,
-        depth = depth,
+        depth = maxDepth - depth,
         move = it,
         value = score.toInt(),
     )
@@ -669,14 +673,16 @@ private fun bestPiecesToRemove(
     currentPlayer: Player,
     opponentPlayer: Player,
     bitboard: Bitboard,
+    maxDepth: Int,
     depth: Int,
     alphaBetaScore: AlphaBetaScoreBitPacked,
     postUsePotentialBitboardState: Bitboard,
     isDebugEnabled: Boolean,
     rng: Random,
-): Triple<List<UInt>, Float, List<UInt>> {
+): Triple<List<UInt>, Int, List<UInt>> {
   val resolveBoardRemovals =
       resolveBoardRemovals(
+        maxDepth = maxDepth,
           currentPlayer = currentPlayer.deepCopy(),
           opponentPlayer = opponentPlayer.deepCopy(),
           bitboard = bitboard.deepCopy(),
@@ -730,6 +736,7 @@ private fun bestPiecesToRemove(
 }
 
 fun resolveBoardRemovals(
+    maxDepth: Int,
     currentPlayer: Player,
     opponentPlayer: Player,
     bitboard: Bitboard,
@@ -821,9 +828,10 @@ fun resolveBoardRemovals(
               move = removePieces,
               score =
                   alphaBetaPackedMove(
+                          maxDepth = maxDepth,
                           depth = depth.minus(1),
                           // state = state,
-                          bitboard = bitboard.deepCopy(),
+                          bitboard = bitboard,
                           currentPlayer = opponentPlayer.deepCopy(),
                           opponentPlayer = currentPlayer.deepCopy(),
                           // gameTree = gameTree,
