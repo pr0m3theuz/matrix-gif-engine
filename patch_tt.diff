@@ -1,0 +1,37 @@
+--- src/main/kotlin/engine/ZobristHashing.kt
++++ src/main/kotlin/engine/ZobristHashing.kt
+@@ -70,25 +70,11 @@
+   //
+   fun probe(hash: Long): Pair<Boolean, TransitionTableEntry> {
+-//    val index = (hash.toInt()) and mask
+-
+-    for (i in 0 until sizePowerOfTwo) {
+-      if (table[i].key == 0L || table[i].key == hash) {
+-        if (table[i].key == hash) {
+-          table[i].generation = this.generation
+-          return Pair(true, table[i])
+-        } else return Pair(false, table[i])
+-      }
+-    }
+-
+-    var replace = table[0]
+-
+-    for (i in 0 until sizePowerOfTwo) {
+-      val replaceScore = (this.generation - replace.generation) - replace.depth
+-      val currentScore = (this.generation - table[i].generation) - table[i].depth
+-
+-      if (replaceScore < currentScore) {
+-        replace = table[i]
+-      }
+-    }
+-
+-    return Pair(false, replace)
++    val index = (hash.toInt()) and mask
++    val entry = table[index]
++
++    if (entry.key == hash) {
++      entry.generation = this.generation
++      return Pair(true, entry)
++    }
++
++    return Pair(false, entry)

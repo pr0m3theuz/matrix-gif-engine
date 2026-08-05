@@ -94,7 +94,7 @@ class UndoUsePiecePotentialTest {
         )
     val availableMoves = 221
     val index = 220
-    val packedMove = PackedMove.Single(value = 251380616u)
+    val packedMove = PackedMove.Single(value = 452707208u)
     val preMoveBitboardState =
         Bitboard(
             whiteGIPF = 97u,
@@ -112,7 +112,7 @@ class UndoUsePiecePotentialTest {
             blackZERTZ = 0u,
             blackPotentials = 256u,
         )
-    val moveValue = 251380616u
+    val moveValue = 452707208u
     val postUsePotentialBitboardState =
         Bitboard(
             whiteGIPF = 97u,
@@ -131,7 +131,7 @@ class UndoUsePiecePotentialTest {
             blackPotentials = 256u,
         )
 
-    val move = BestPackedMove(move = PackedMove.Single(value = 251380616u), score = 55.811718f)
+    val move = BestPackedMove(move = PackedMove.Single(value = 452707208u), score = 55.811718f)
 
 	  val modifiedBitboard =
         Bitboard(

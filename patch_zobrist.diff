@@ -1,0 +1,14 @@
+--- src/main/kotlin/engine/ZobristHashing.kt
++++ src/main/kotlin/engine/ZobristHashing.kt
+@@ -216,11 +216,11 @@
+
+     if ((blackPotentials shr spot and 1UL) == 1UL) {
+-      zobristKey = zobristKey xor zArray[1][6][spot]
++      zobristKey = zobristKey xor zArray[1][20][spot]
+     }
+
+     if ((blackNeutralized shr spot and 1UL) == 1UL) {
+-      zobristKey = zobristKey xor zArray[1][7][spot]
++      zobristKey = zobristKey xor zArray[1][21][spot]
+     }
+   }

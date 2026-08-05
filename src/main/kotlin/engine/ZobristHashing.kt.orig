@@ -200,11 +200,11 @@ fun Bitboard.getZobristHash(
     }
 
     if ((blackPotentials shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][20][spot]
+      zobristKey = zobristKey xor zArray[1][6][spot]
     }
 
     if ((blackNeutralized shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][21][spot]
+      zobristKey = zobristKey xor zArray[1][7][spot]
     }
   }
 

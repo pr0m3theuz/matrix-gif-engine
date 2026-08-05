@@ -1,0 +1,13 @@
+--- src/main/kotlin/model/BitboardOptimizedFunctions.kt
++++ src/main/kotlin/model/BitboardOptimizedFunctions.kt
+@@ -1150,8 +1150,8 @@
+           for (i in 7 downTo 1) {
+             // place white on top of black on top of white
+             if (
+                 i % 2 == 0 &&
+-                    (whiteDVONNLayer[i] and targetBit) == targetBit &&
+-                    (whiteDVONNLayer[i - 1] and targetBit) == targetBit
++                    (whiteDVONNLayer[i] and targetBit) == targetBit //&&
++                    //(blackDVONNLayer[i - 1] and targetBit) == targetBit
+             ) {
+               whiteDVONNLayer[i] =
