@@ -1,0 +1,23 @@
+--- src/main/kotlin/model/BitboardOptimizedFunctions.kt
++++ src/main/kotlin/model/BitboardOptimizedFunctions.kt
+@@ -1136,8 +1136,8 @@
+         }
+
+         PieceType.ZERTZ -> {
+-          whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", targetBit)
+-          whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ", sourceBit)
++          // whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", targetBit)
++          // whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ", sourceBit)
+           whitePotentials = safeAddAndCheck(whitePotentials, "White Potentials", sourceBit)
+         }
+
+@@ -1241,8 +1241,8 @@
+         }
+
+         PieceType.ZERTZ -> {
+-          blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", targetBit)
+-          blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ", sourceBit)
++          // blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", targetBit)
++          // blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ", sourceBit)
+           blackPotentials = safeAddAndCheck(blackPotentials, "Black Potentials", sourceBit)
+         }

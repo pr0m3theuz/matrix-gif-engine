@@ -1216,8 +1216,8 @@ fun Bitboard.undoUsePiecePotential(move: UInt) {
         }
 
         PieceType.ZERTZ -> {
-          // whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", targetBit)
-          // whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ", sourceBit)
+          whiteZERTZ = safeRemoveAndCheck(whiteZERTZ, "White ZERTZ", targetBit)
+          whiteZERTZ = safeAddAndCheck(whiteZERTZ, "White ZERTZ", sourceBit)
           whitePotentials = safeAddAndCheck(whitePotentials, "White Potentials", sourceBit)
         }
 
@@ -1362,8 +1362,8 @@ fun Bitboard.undoUsePiecePotential(move: UInt) {
         }
 
         PieceType.ZERTZ -> {
-          // blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", targetBit)
-          // blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ", sourceBit)
+          blackZERTZ = safeRemoveAndCheck(blackZERTZ, "Black ZERTZ", targetBit)
+          blackZERTZ = safeAddAndCheck(blackZERTZ, "Black ZERTZ", sourceBit)
           blackPotentials = safeAddAndCheck(blackPotentials, "Black Potentials", sourceBit)
         }
 
