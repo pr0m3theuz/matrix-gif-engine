@@ -164,7 +164,7 @@ fun alphaBetaPackedMove(
 
   // how to see which move trigger retrieve and capture
   // how to make a move and then assess the state/
-//  availableMoves.shuffle(rng)
+  availableMoves.shuffle(rng)
 
   if (ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name) {
     availableMoves.sortByDescending {
