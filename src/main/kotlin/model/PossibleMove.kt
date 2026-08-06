@@ -151,7 +151,7 @@ fun UInt.onlyPiece(): UInt {
 fun UInt.extractSourceBit(): ULong {
   // Source is at bit 7, taking 7 bits to safely handle 64 (empty)
   val shift = (this shr 7) and 0b1111111u
-  return if (shift == 64u) 0uL else 1uL shl shift.toInt()
+  return if (shift == 127u) ULong.MAX_VALUE else 1uL shl shift.toInt()
 }
 
 fun UInt.extractTargetBit(): ULong {
