@@ -2,137 +2,17 @@
 
 package org.example.model
 
-import kotlin.math.abs
-import kotlin.math.exp
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 // a line is full if it is equal to all bits being 1 else it is has at least 1 0 bit
 
-val boardCenterSpotMask = 0b0000000000000000000001000000000000000000.toULong()
 // val centralAreaBoardMask = 0b0000000001000011000011100001100000000000.toULong()
 
-val bitDistanceWeights =
-    0.rangeTo(39).associateWith { k ->
-      when (abs(k - 18)) {
-        0 -> 0
-        1,
-        6,
-        7 -> 2
-        2,
-        5,
-        8,
-        11,
-        12,
-        13 -> 2
-        3,
-        4,
-        9,
-        10,
-        14,
-        15,
-        16,
-        17,
-        18 -> 3
-        19,
-        20,
-        21 -> 4
-        else -> error("Unknown node $k")
-      }
-    }.values.toIntArray()
-
-val verticalLineIndexArray =
-    listOf(
-        listOf(0, 1, 2, 3), // 0b0000000000000000000000000000000000001111
-        listOf(4, 5, 6, 7, 8), // 0b0000000000000000000000000000000111110000
-        listOf(9, 10, 11, 12, 13, 14), // 0b0000000000000000000000000111111000000000
-        listOf(15, 16, 17, 18, 19, 20, 21), // 0b0000000000000000001111111000000000000000
-        listOf(22, 23, 24, 25, 26, 27), // 0b0000000000001111110000000000000000000000
-        listOf(28, 29, 30, 31, 32), // 0b0000000111110000000000000000000000000000
-        listOf(33, 34, 35, 36), // 0b0001111000000000000000000000000000000000
-        listOf(37, 38, 39), // 0b1110000000000000000000000000000000000000
-    )
-
-val upwardRightLineIndexArray =
-    listOf(
-        listOf(0, 5, 11, 18, 25, 31, 36), // 0b0001000010000010000001000000100000100001
-        listOf(1, 6, 12, 19, 26, 32), // 0b0000000100000100000010000001000001000010
-        listOf(2, 7, 13, 20, 27), // 0b0000000000001000000100000010000010000100
-        listOf(3, 8, 14, 21), // 0b0000000000000000001000000100000100001000
-        listOf(4, 10, 17, 24, 30, 35, 39), // 0b1000100001000001000000100000010000010000
-        listOf(9, 16, 23, 29, 34, 38), // 0b0100010000100000100000010000001000000000
-        listOf(15, 22, 28, 33, 37), // 0b0010001000010000010000001000000000000000
-    )
-
-val downwardRightLineIndexArray =
-    listOf(
-        listOf(0, 4, 9, 15), // 0b0000000000000000000000001000001000010001
-        listOf(1, 5, 10, 16, 22), // 0b0000000000000000010000010000010000100010
-        listOf(2, 6, 11, 17, 23, 28), // 0b0000000000010000100000100000100001000100
-        listOf(3, 7, 12, 18, 24, 29, 33), // 0b0000001000100001000001000001000010001000
-        listOf(8, 13, 19, 25, 30, 34, 37), // 0b0010010001000010000010000010000100000000
-        listOf(14, 20, 26, 31, 35, 38), // 0b0100100010000100000100000100000000000000
-        listOf(21, 27, 32, 36, 39), // 0b1001000100001000001000000000000000000000
-    )
-
-val lineMasks =
-    listOf(
-        // verticalLineMasks
-        0b0000000000000000000000000000000000001111
-            .toULong(), // listOf(0, 1, 2, 3),                    //
-        0b0000000000000000000000000000000111110000
-            .toULong(), // listOf(4, 5, 6, 7, 8),                 //
-        0b0000000000000000000000000111111000000000
-            .toULong(), // listOf(9, 10, 11, 12, 13, 14),         //
-        0b0000000000000000001111111000000000000000
-            .toULong(), // listOf(15, 16, 17, 18, 19, 20, 21),    //
-        0b0000000000001111110000000000000000000000
-            .toULong(), // listOf(22, 23, 24, 25, 26, 27),        //
-        0b0000000111110000000000000000000000000000
-            .toULong(), // listOf(28, 29, 30, 31, 32),            //
-        0b0001111000000000000000000000000000000000
-            .toULong(), // listOf(33, 34, 35, 36),                //
-        0b1110000000000000000000000000000000000000
-            .toULong(), // listOf(37, 38, 39),                    //
-        /// val upwardRightLineMasks =
-        //	listOf(
-        0b0001000010000010000001000000100000100001
-            .toULong(), // listOf(0, 5, 11, 18, 25, 31, 36),      //
-        0b0000000100000100000010000001000001000010
-            .toULong(), // listOf(1, 6, 12, 19, 26, 32),          //
-        0b0000000000001000000100000010000010000100
-            .toULong(), // listOf(2, 7, 13, 20, 27),              //
-        0b0000000000000000001000000100000100001000
-            .toULong(), // listOf(3, 8, 14, 21),                  //
-        0b1000100001000001000000100000010000010000
-            .toULong(), // listOf(4, 10, 17, 24, 30, 35, 39),     //
-        0b0100010000100000100000010000001000000000
-            .toULong(), // listOf(9, 16, 23, 29, 34, 38),         //
-        0b0010001000010000010000001000000000000000
-            .toULong(), // listOf(15, 22, 28, 33, 37),            //
-        // val downwardRightLineMasks =
-        //	listOf(
-        0b0000000000000000000000001000001000010001
-            .toULong(), // listOf(0, 4, 9, 15),                   //
-        0b0000000000000000010000010000010000100010
-            .toULong(), // listOf(1, 5, 10, 16, 22),              //
-        0b0000000000010000100000100000100001000100
-            .toULong(), // listOf(2, 6, 11, 17, 23, 28),          //
-        0b0000001000100001000001000001000010001000
-            .toULong(), // listOf(3, 7, 12, 18, 24, 29, 33),      //
-        0b0010010001000010000010000010000100000000
-            .toULong(), // listOf(8, 13, 19, 25, 30, 34, 37),     //
-        0b0100100010000100000100000100000000000000
-            .toULong(), // listOf(14, 20, 26, 31, 35, 38),        //
-        0b1001000100001000001000000000000000000000
-            .toULong(), // listOf(21, 27, 32, 36, 39),            //
-    )
-
-val openningSpotsLineMask = 0b1111001100011000011000001100001100011111.toULong()
-
-// val openningLineIndexArray =
+// val openingLineIndexArray =
 //    listOf(
 //        0,
 //        1,
@@ -155,191 +35,98 @@ val openningSpotsLineMask = 0b1111001100011000011000001100001100011111.toULong()
 //        39,
 //    )
 
-@Serializable
-data class ColumnInfo(
-    var index: Int = 0,
-    val columnMask: ULong,
-    //	val destinationMask: ULong,
-    val positions: List<ULong>,
-    val submasks: List<ULong>,
-    val shiftPairs: List<Pair<ULong, ULong>>, // (fromMask, toMask)
-    val lineOrientation: LineOrientation,
-    val pushDirections: Pair<PushDirection, PushDirection>,
-) {
-  // Helper to format as binary with a prefix.
-  private fun ULong.toBin() = "0b" + this.toString(radix = 2)
+// TODO
+// region From Gemini
 
-  override fun toString(): String {
-    // Format the list of pairs customly
-    val formattedPairs =
-        shiftPairs.joinToString(prefix = "[", postfix = "]") { (from, to) ->
-          "(${from.toBin()} -> ${to.toBin()})"
-        }
+// endregion
 
-    // destinationMask = ${destinationMask.toBin()},
-    return """
-            ColumnInfo(
-                columnMask = ${columnMask.toBin()},
-                shiftPairs = $formattedPairs
-            )
-        """
-        .trimIndent()
+/*fun Bitboard.shiftPieces(index: Int, pushDirection: PushDirection) {
+  require(index in openningLineIndexArray) {
+    "Invalid opening line placement! Index $index is not a valid selection. " +
+        "Eligible indices: ${openingLineIndexArray.joinToString()}"
   }
-}
 
-val columnInfos: List<ColumnInfo> =
-  (verticalLineIndexArray.map { arr ->
-      ColumnInfo(
-          columnMask = arr.fold(0UL) { acc, i -> acc or (1UL shl i) },
-          //		destinationMask = 1UL shl arr.last(),
-          positions =
-              arr.indices.map { k ->
-                1UL shl arr[k]
-              },
-          submasks =
-              arr.indices
-                  .map { k ->
-                    1UL shl arr[k]
-                  }
-                  .windowed(4)
-                  .map { sublist ->
-                    sublist.fold(0UL) { acc, lng ->
-                      acc or lng
-                    }
-                  },
-          shiftPairs =
-              (0 until arr.size - 1).map { k ->
-                (1UL shl arr[k]) to (1UL shl arr[k + 1])
-              },
-          lineOrientation = LineOrientation.VERTICAL,
-          pushDirections = Pair(PushDirection.UP, PushDirection.DOWN),
-      )
-    } +
-        upwardRightLineIndexArray.map { arr ->
-          ColumnInfo(
-              columnMask = arr.fold(0UL) { acc, i -> acc or (1UL shl i) },
-              //		destinationMask = 1UL shl arr.last(),
+  // TODO check if line has empty spots
 
-              positions =
-                  arr.indices.map { k ->
-                    1UL shl arr[k]
-                  },
-              submasks =
-                  arr.indices
-                      .map { k ->
-                        1UL shl arr[k]
-                      }
-                      .windowed(4)
-                      .map { sublist ->
-                        sublist.fold(0UL) { acc, lng ->
-                          acc or lng
-                        }
-                      },
-              shiftPairs =
-                  (0 until arr.size - 1).map { k ->
-                    (1UL shl arr[k]) to (1UL shl arr[k + 1])
-                  },
-              lineOrientation = LineOrientation.UPWARD_RIGHT,
-              pushDirections = Pair(PushDirection.UPPER_RIGHT, PushDirection.LOWER_LEFT),
-          )
-        } +
-        downwardRightLineIndexArray.map { arr ->
-          ColumnInfo(
-              columnMask = arr.fold(0UL) { acc, i -> acc or (1UL shl i) },
-              //		destinationMask = 1UL shl arr.last(),
-              positions =
-                  arr.indices.map { k ->
-                    1UL shl arr[k]
-                  },
-              submasks =
-                  arr.indices
-                      .map { k ->
-                        1UL shl arr[k]
-                      }
-                      .windowed(4)
-                      .map { sublist ->
-                        sublist.fold(0UL) { acc, lng ->
-                          acc or lng
-                        }
-                      },
-              shiftPairs =
-                  (0 until arr.size - 1).map { k ->
-                    (1UL shl arr[k]) to (1UL shl arr[k + 1])
-                  },
-              lineOrientation = LineOrientation.DOWNWARD_RIGHT,
-              pushDirections = Pair(PushDirection.LOWER_RIGHT, PushDirection.UPPER_LEFT),
-          )
-        }).mapIndexed { index, info -> info.copy(index = index) }
+  when (pushDirection) {
+    PushDirection.UP -> {
+      var updatedBitboard = whitePieces
+      var packedLine = 0UL
+      val indexArray = verticalLineIndexArray.first { it.contains(index) }
+      indexArray.forEach { i ->
+        val mask = 1UL shl i
+        val value = if ((whitePieces and mask) > 0UL) 1UL else 0UL
+        packedLine = (packedLine shl 1) + value
 
-val neighbouringBitsBitmasks: Map<ULong, ULong> = calculateNeighbouringBitmasks()
+        // clear bit
+        updatedBitboard = updatedBitboard and (value shl i).inv()
+      }
+      check(packedLine.countTrailingZeroBits() > 0) { "" }
 
-fun calculateNeighbouringBitmasks(): Map<ULong, ULong> {
+      val shiftedPackedLine = packedLine shr 1
 
-  val neighbouringBitsBitmasks: MutableMap<ULong, ULong> = mutableMapOf()
+      // update bitboards
+      indexArray.reversed().forEachIndexed { idx, i ->
+        val mask = 1UL
+        //				logger.trace { "" + ("shiftedPackedLine: ${(shiftedPackedLine shr idx).toString(radix =
+        // 2).padStart(8, '0')}") }
+        //				logger.trace { "" + ("mask             : ${mask.toString(radix = 2).padStart(8, '0')}") }
 
-  for (column in columnInfos) {
-    for ((a, b) in column.shiftPairs) {
-      neighbouringBitsBitmasks[a] = neighbouringBitsBitmasks.getOrDefault(a, 0UL) or b
-      neighbouringBitsBitmasks[b] = neighbouringBitsBitmasks.getOrDefault(b, 0UL) or a
+        val value = if (((shiftedPackedLine shr idx) and mask) > 0.toUInt()) 1UL else 0UL
+
+        updatedBitboard = updatedBitboard or (value shl i)
+
+        //				logger.trace { "" + ("value            : ${(value shl i).toString(radix = 2).padStart(64, '0')}") }
+        //				logger.trace { "" + ("whitePieces      : ${whitePieces.toString(radix = 2).padStart(64, '0')}") }
+        //				logger.trace { "" + ("updatedBitboard  : ${updatedBitboard.toString(radix = 2).padStart(64, '0')}") }
+      }
+    }
+    PushDirection.DOWN -> {
+      val indexArray = verticalLineIndexArray.first { it.contains(index) }
+    }
+    PushDirection.UPPER_RIGHT -> {
+      val indexArray = upwardRightLineIndexArray.first { it.contains(index) }
+    }
+    PushDirection.LOWER_RIGHT -> {
+      val indexArray = upwardRightLineIndexArray.first { it.contains(index) }
+    }
+    PushDirection.UPPER_LEFT -> {
+      val indexArray = downwardRightLineIndexArray.first { it.contains(index) }
+    }
+    PushDirection.LOWER_LEFT -> {
+      val indexArray = downwardRightLineIndexArray.first { it.contains(index) }
     }
   }
+}*/
 
-  return neighbouringBitsBitmasks.toMap()
-}
+/*fun Bitboard.movePieceBit(fromIndex: Int, toIndex: Int) {
+	// region From Gemini
+	val fromMask = 1UL shl fromIndex
+	val toMask = 1UL shl toIndex
+	val clearFrom = fromMask.inv()
 
-val clusterArray = neighbouringBitsBitmasks.values.toULongArray()
+	// 1. Identify what is currently sitting at 'fromIndex'
+	val isWhite = (whitePieces and fromMask) != 0UL
+	val isBlack = (blackPieces and fromMask) != 0UL
+	val isStack = (stackPieces and fromMask) != 0UL
+	val isGipf  = (gipfPieces  and fromMask) != 0UL
 
-val threeRunSubmasks: List<ULong> = columnInfos.flatMap { (_, _, positions, _, _, _, _) ->
-  positions.windowed(3).map { sublist ->
-    sublist.fold(0UL) { acc, lng ->
-      acc or lng
-    }
-  }
-}
+	// 2. Clear the 'fromIndex' across all boards
+	whitePieces = whitePieces and clearFrom
+	blackPieces = blackPieces and clearFrom
+	stackPieces = stackPieces and clearFrom
+	gipfPieces  = gipfPieces  and clearFrom
 
-val reducedThreeRunSubmasks: List<ULong> =
-    listOf(
-        112UL,
-        448UL,
-        3584UL,
-        28672UL,
-        229376UL,
-        3670016UL,
-        29360128UL,
-        234881024UL,
-        1879048192UL,
-        7516192768UL,
-        60129542144UL,
-        120259084288UL,
-        2081UL,
-        70900514816UL,
-        4162UL,
-        4362600448UL,
-        8324UL,
-        135274496UL,
-        16648UL,
-        2113792UL,
-        132112UL,
-        585189294080UL,
-        8454656UL,
-        292594647040UL,
-        272662528UL,
-        146297323520UL,
-        529UL,
-        33296UL,
-        1058UL,
-        4260864UL,
-        2116UL,
-        276955136UL,
-        4232UL,
-        9143582720UL,
-        532736UL,
-        155692564480UL,
-        68173824UL,
-        311385128960UL,
-        4431282176UL,
-        622770257920UL,
-    )
+	// 3. Set the 'toIndex' on the matching boards
+	if (isWhite) whitePieces = whitePieces or toMask
+	if (isBlack) blackPieces = blackPieces or toMask
+	if (isStack) stackPieces = stackPieces or toMask
+	if (isGipf)  gipfPieces  = gipfPieces  or toMask
+
+	// endregion
+}*/
+
+// direction to push (start: Push Up, end: push down)
 
 @OptIn(ExperimentalUnsignedTypes::class)
 @Serializable
@@ -393,9 +180,9 @@ data class Bitboard(
   fun diff(oldBitboard: Bitboard): Bitboard {
     // --- 0. CONFIGURABLE DEBUGGING ---
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("--- BITBOARD DIFF CALLED ---") }
-      logger.info { "" + ("Original Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
-      logger.info { "" + ("Current Bitboard State: ${Json.encodeToString(this) }}") }
+      logger.trace { "" + ("--- BITBOARD DIFF CALLED ---") }
+      logger.trace { "" + ("Original Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
+      logger.trace { "" + ("Current Bitboard State: ${Json.encodeToString(this) }}") }
     }
 
     // --- 1. PRE-CONDITION WARNING ---
@@ -453,10 +240,10 @@ data class Bitboard(
               diffBoard.blackDVONNLayer.sumOf { it.countOneBits() } +
               diffBoard.blackPUNCTLayer.sumOf { it.countOneBits() }
 
-      logger.info { "" + ("Total changes: $totalChanges") }
-      logger.info { "" + ("Diff complete. Total bits flipped across calculated layers.") }
-      logger.info { "" + ("Diff Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
-      logger.info { "" + ("--- BITBOARD DIFF COMPLETED ---") }
+      logger.trace { "Total changes: $totalChanges" }
+      logger.trace { "" + ("Diff complete. Total bits flipped across calculated layers.") }
+      logger.trace { "" + ("Diff Bitboard State: ${Json.encodeToString(oldBitboard) }}") }
+      logger.trace { "" + ("--- BITBOARD DIFF COMPLETED ---") }
     }
 
     check(this.globalOccupancy == oldBitboard.globalOccupancy) {
@@ -715,14 +502,11 @@ val Bitboard.vacantLines
     (globalOccupancy and columnInfo.columnMask) != columnInfo.columnMask
   }
 
-// TODO
-// region From Gemini
-
 fun Bitboard.executePushUp(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- EXECUTE PUSH UP CALLED ---") }
-    logger.info { "" + ("Column: $col") }
+    logger.trace { "" + ("--- EXECUTE PUSH UP CALLED ---") }
+    logger.trace { "Column: $col" }
   }
 
   require(col.shiftPairs.isNotEmpty()) {
@@ -745,11 +529,11 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
 
     if ((occupiedSpots and fromMask) != 0UL) {
       movesToApply.add(fromMask to toMask)
-      logger.debug { "" + ("  -> Piece found at $fromMask. Queuing shift to $toMask.") }
+      logger.debug { "  -> Piece found at $fromMask. Queuing shift to $toMask." }
     } else {
       gapFound = true
       vacantBitFound = fromMask
-      logger.debug { "" + ("  -> Gap discovered at $fromMask. Ending discovery phase.") }
+      logger.debug { "  -> Gap discovered at $fromMask. Ending discovery phase." }
       break
     }
 
@@ -776,27 +560,27 @@ fun Bitboard.executePushUp(col: ColumnInfo): ULong {
   // --- 3. MODIFICATION: Apply the shifts in REVERSE ---
   // Mutates in place; moving the last piece first prevents teleportation bugs
   if (logger.isDebugEnabled()) {
-    logger.info {
+    logger.trace {
       "" + ("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...")
     }
   }
 
   movesToApply.asReversed().forEach { (fromMask, toMask) ->
-    logger.debug { "" + ("  -> Shifting piece from $fromMask to $toMask.") }
+    logger.debug { "  -> Shifting piece from $fromMask to $toMask." }
     logger.debug { "" + ("  -> board before shifting: 0b${globalOccupancy.toString(2)}") }
     applyShiftToAll(fromMask, toMask)
     logger.debug { "" + ("  -> board after shifting:  0b${globalOccupancy.toString(2)}") }
   }
 
-  logger.debug { "" + ("--- PUSH UP COMPLETE. Returning vacant bit: $vacantBitFound ---") }
+  logger.debug { "--- PUSH UP COMPLETE. Returning vacant bit: $vacantBitFound ---" }
   return vacantBitFound
 }
 
 fun Bitboard.executePushDown(col: ColumnInfo): ULong {
   // --- 0. CONFIGURABLE DEBUGGING ---
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- EXECUTE PUSH DOWN CALLED ---") }
-    logger.info { "" + ("Column: $col") }
+    logger.trace { "" + ("--- EXECUTE PUSH DOWN CALLED ---") }
+    logger.trace { "Column: $col" }
   }
 
   require(col.shiftPairs.isNotEmpty()) {
@@ -856,19 +640,19 @@ fun Bitboard.executePushDown(col: ColumnInfo): ULong {
 
   // --- 3. MODIFICATION: Apply the shifts in REVERSE ---
   if (logger.isDebugEnabled()) {
-    logger.info {
+    logger.trace {
       "" + ("Applying ${movesToApply.size} shifts in reverse order to prevent overwrite...")
     }
   }
 
   movesToApply.asReversed().forEach { (fromMask, toMask) ->
-    logger.debug { "" + ("  -> Shifting piece from $fromMask to $toMask.") }
+    logger.debug { "  -> Shifting piece from $fromMask to $toMask." }
     logger.debug { "" + ("  -> board before shifting: 0b${globalOccupancy.toString(2)}") }
     applyShiftToAll(fromMask, toMask)
     logger.debug { "" + ("  -> board after shifting:  0b${globalOccupancy.toString(2)}") }
   }
 
-  logger.debug { "" + ("--- PUSH DOWN COMPLETE. Returning vacant bit: $vacantBitFound ---") }
+  logger.debug { "--- PUSH DOWN COMPLETE. Returning vacant bit: $vacantBitFound ---" }
   return vacantBitFound
 }
 
@@ -914,8 +698,6 @@ fun Bitboard.executePullUp(col: ColumnInfo, vacantBitFound: ULong) {
     applyShiftToAll(currentMask, newMask)
   }
 }
-
-// endregion
 
 fun Bitboard.convertBitboardToBoard(board: Board): Board {
   val updatedNodes =
@@ -1127,92 +909,6 @@ fun Bitboard.convertBitboardToBoard(board: Board): Board {
   return board.copy(nodes = updatedNodes)
 }
 
-/*fun Bitboard.shiftPieces(index: Int, pushDirection: PushDirection) {
-  require(index in openningLineIndexArray) {
-    "Invalid opening line placement! Index $index is not a valid selection. " +
-        "Eligible indices: ${openningLineIndexArray.joinToString()}"
-  }
-
-  // TODO check if line has empty spots
-
-  when (pushDirection) {
-    PushDirection.UP -> {
-      var updatedBitboard = whitePieces
-      var packedLine = 0UL
-      val indexArray = verticalLineIndexArray.first { it.contains(index) }
-      indexArray.forEach { i ->
-        val mask = 1UL shl i
-        val value = if ((whitePieces and mask) > 0UL) 1UL else 0UL
-        packedLine = (packedLine shl 1) + value
-
-        // clear bit
-        updatedBitboard = updatedBitboard and (value shl i).inv()
-      }
-      check(packedLine.countTrailingZeroBits() > 0) { "" }
-
-      val shiftedPackedLine = packedLine shr 1
-
-      // update bitboards
-      indexArray.reversed().forEachIndexed { idx, i ->
-        val mask = 1UL
-        //				logger.info { "" + ("shiftedPackedLine: ${(shiftedPackedLine shr idx).toString(radix =
-        // 2).padStart(8, '0')}") }
-        //				logger.info { "" + ("mask             : ${mask.toString(radix = 2).padStart(8, '0')}") }
-
-        val value = if (((shiftedPackedLine shr idx) and mask) > 0.toUInt()) 1UL else 0UL
-
-        updatedBitboard = updatedBitboard or (value shl i)
-
-        //				logger.info { "" + ("value            : ${(value shl i).toString(radix = 2).padStart(64, '0')}") }
-        //				logger.info { "" + ("whitePieces      : ${whitePieces.toString(radix = 2).padStart(64, '0')}") }
-        //				logger.info { "" + ("updatedBitboard  : ${updatedBitboard.toString(radix = 2).padStart(64, '0')}") }
-      }
-    }
-    PushDirection.DOWN -> {
-      val indexArray = verticalLineIndexArray.first { it.contains(index) }
-    }
-    PushDirection.UPPER_RIGHT -> {
-      val indexArray = upwardRightLineIndexArray.first { it.contains(index) }
-    }
-    PushDirection.LOWER_RIGHT -> {
-      val indexArray = upwardRightLineIndexArray.first { it.contains(index) }
-    }
-    PushDirection.UPPER_LEFT -> {
-      val indexArray = downwardRightLineIndexArray.first { it.contains(index) }
-    }
-    PushDirection.LOWER_LEFT -> {
-      val indexArray = downwardRightLineIndexArray.first { it.contains(index) }
-    }
-  }
-}*/
-
-/*fun Bitboard.movePieceBit(fromIndex: Int, toIndex: Int) {
-	// region From Gemini
-	val fromMask = 1UL shl fromIndex
-	val toMask = 1UL shl toIndex
-	val clearFrom = fromMask.inv()
-
-	// 1. Identify what is currently sitting at 'fromIndex'
-	val isWhite = (whitePieces and fromMask) != 0UL
-	val isBlack = (blackPieces and fromMask) != 0UL
-	val isStack = (stackPieces and fromMask) != 0UL
-	val isGipf  = (gipfPieces  and fromMask) != 0UL
-
-	// 2. Clear the 'fromIndex' across all boards
-	whitePieces = whitePieces and clearFrom
-	blackPieces = blackPieces and clearFrom
-	stackPieces = stackPieces and clearFrom
-	gipfPieces  = gipfPieces  and clearFrom
-
-	// 3. Set the 'toIndex' on the matching boards
-	if (isWhite) whitePieces = whitePieces or toMask
-	if (isBlack) blackPieces = blackPieces or toMask
-	if (isStack) stackPieces = stackPieces or toMask
-	if (isGipf)  gipfPieces  = gipfPieces  or toMask
-
-	// endregion
-}*/
-
 fun Bitboard.getActiveWhiteDvonnPieces(): ULong {
   // TODO("Replace with XOR")
   val layers = 7 // whiteDVONNLayer.size.minus(1)
@@ -1301,9 +997,9 @@ fun Bitboard.getActiveWhitePunctPieces(): ULong {
     // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
     // if layer [i] is even it is the color of the base layer
     // if layer [i] is odd it is the opposing color
-    var visibleWhiteThisLayer = 0UL
-    var visibleBlackThisLayer = 0UL
-    if (i.mod(2) == 0) {
+    var visibleWhiteThisLayer: ULong
+	  var visibleBlackThisLayer: ULong
+	  if (i.mod(2) == 0) {
       // even layer
       visibleWhiteThisLayer = whitePUNCTLayer[i] and blockedPunctMask.inv()
       visibleBlackThisLayer = blackPUNCTLayer[i] and blockedPunctMask.inv()
@@ -1335,9 +1031,9 @@ fun Bitboard.getActiveBlackPunctPieces(): ULong {
     // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
     // if layer [i] is even it is the color of the base layer
     // if layer [i] is odd it is the opposing color
-    var visibleWhiteThisLayer = 0UL
-    var visibleBlackThisLayer = 0UL
-    if (i.mod(2) == 0) {
+    var visibleWhiteThisLayer: ULong
+	  var visibleBlackThisLayer: ULong
+	  if (i.mod(2) == 0) {
       // even layer
       visibleWhiteThisLayer = whitePUNCTLayer[i] and blockedPunctMask.inv()
       visibleBlackThisLayer = blackPUNCTLayer[i] and blockedPunctMask.inv()
@@ -1377,20 +1073,20 @@ fun Bitboard.usePiecePotential(
   val playerPotentials =
       if (possibleBitMove.pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- USE POTENTIAL CALLED ---") }
-    logger.info { "" + ("Piece: ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType}") }
-    logger.info {
+    logger.trace { "" + ("--- USE POTENTIAL CALLED ---") }
+    logger.trace { "" + ("Piece: ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType}") }
+    logger.trace {
       "" +
           ("Source Bit:                   0b${possibleBitMove.sourceBit.toString(2).padStart(40, '0')}")
     }
-    logger.info {
+    logger.trace {
       "" +
           ("Target Bit:                   0b${possibleBitMove.targetBit.toString(2).padStart(40, '0')}")
     }
-    logger.info {
+    logger.trace {
       "" + ("Player Potentials:            0b${playerPotentials.toString(2).padStart(40, '0')}")
     }
-    logger.info {
+    logger.trace {
       "" + ("Board before using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}")
     }
   }
@@ -1405,7 +1101,7 @@ fun Bitboard.usePiecePotential(
 
   fun safeRemoveAndCheck(board: ULong, boardName: String, removeAtIndex: ULong): ULong {
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" +
             ("$boardName Board before using $boardName potential\n" +
                 "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
@@ -1422,20 +1118,20 @@ fun Bitboard.usePiecePotential(
       "UNDO FAILED: Failed to use potential for ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType} piece from $boardName bitboard."
     }
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" +
             ("$boardName Board after using $boardName potential\n" +
                 "removeAtIndex: 0b${removeAtIndex.toString(2).padStart(40, '0')}\n" +
                 "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}")
       }
     }
-    logger.debug { "" + ("Successfully removed bit from $boardName.") }
+    logger.debug { "Successfully removed bit from $boardName." }
     return newBoard
   }
 
   fun safeAddAndCheck(board: ULong, boardName: String, addAtIndex: ULong): ULong {
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" +
             ("$boardName Board before adding piece at \n" +
                 "addAtIndex:    0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
@@ -1447,14 +1143,14 @@ fun Bitboard.usePiecePotential(
       "ADD FAILED: Failed to add ${possibleBitMove.pieceColor} ${possibleBitMove.pieceType} piece to $boardName bitboard at index $addAtIndex."
     }
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" +
             ("$boardName Board after adding piece at \n" +
                 "addAtIndex:    0b${addAtIndex.toString(2).padStart(40, '0')}\n" +
                 "new $boardName bitboard:      0b${newBoard.toString(2).padStart(40, '0')}")
       }
     }
-    logger.debug { "" + ("Successfully added bit to $boardName.") }
+    logger.debug { "Successfully added bit to $boardName." }
     return newBoard
   }
 
@@ -2089,8 +1785,8 @@ fun Bitboard.usePiecePotential(
     }
   }
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- USE POTENTIAL COMPLETE ---") }
-    logger.info {
+    logger.trace { "" + ("--- USE POTENTIAL COMPLETE ---") }
+    logger.trace {
       "" + ("Board after using potential: 0b${globalOccupancy.toString(2).padStart(40, '0')}")
     }
   }
@@ -2099,8 +1795,8 @@ fun Bitboard.usePiecePotential(
 fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitMove>) {
   // --- 0. CONFIGURABLE DEBUGGING ---
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- GET TAMSK MOVES CALLED ---") }
-    logger.info { "" + ("Player: ${player.name}") }
+    logger.trace { "" + ("--- GET TAMSK MOVES CALLED ---") }
+    logger.trace { "" + ("Player: ${player.name}") }
   }
 
   // --- 1. EVALUATE CENTER SPOT ---
@@ -2120,10 +1816,10 @@ fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitM
   // If the intersection doesn't perfectly match the center spot mask, no move exists.
   if (tamskPieceAtCenter != boardCenterSpotMask) {
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" + ("No valid TAMSK piece found at center for ${player.name}. Returning null.")
       }
-      logger.info { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
+      logger.trace { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
     }
     return
   }
@@ -2167,8 +1863,6 @@ fun Bitboard.getTamskMoves(player: Player, movesBuffer: MutableList<PossibleBitM
   }
 }
 
-// direction to push (start: Push Up, end: push down)
-
 fun Bitboard.useTamskPotential(
     player: Player,
     sourceIndex: ULong,
@@ -2181,12 +1875,12 @@ fun Bitboard.useTamskPotential(
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- USE TAMSK POTENTIAL CALLED ---") }
-    logger.info { "" + ("Player: ${player.name} | Source: $sourceIndex | Target: $targetIndex") }
-    logger.info { "" + ("PushDirection: $pushDirection | Col: $col") }
-    logger.info { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
-    logger.info { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
-    logger.info {
+    logger.trace { "" + ("--- USE TAMSK POTENTIAL CALLED ---") }
+    logger.trace { "" + ("Player: ${player.name} | Source: $sourceIndex | Target: $targetIndex") }
+    logger.trace { "PushDirection: $pushDirection | Col: $col" }
+    logger.trace { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
+    logger.trace { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
+    logger.trace {
       "" + ("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
     }
   }
@@ -2235,15 +1929,15 @@ fun Bitboard.useTamskPotential(
   when (player.name) {
     PlayerName.WHITE -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2254,15 +1948,15 @@ fun Bitboard.useTamskPotential(
         "Failed to remove White Potential piece from source index."
       }
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2271,15 +1965,15 @@ fun Bitboard.useTamskPotential(
 
     PlayerName.BLACK -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2291,15 +1985,15 @@ fun Bitboard.useTamskPotential(
       }
 
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               (" Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2313,19 +2007,19 @@ fun Bitboard.useTamskPotential(
   var vacantBitFound = 0UL
 
   if (isIndexOccupied) {
-    logger.debug { "" + ("Target index is occupied. Executing shift ($pushDirection).") }
+    logger.debug { "Target index is occupied. Executing shift ($pushDirection)." }
     when (pushDirection) {
       PushDirection.UP,
       PushDirection.UPPER_RIGHT,
       PushDirection.LOWER_RIGHT -> {
         vacantBitFound = executePushUp(col)
-        logger.debug { "" + ("Executed PushUp. Vacant bit found: $vacantBitFound") }
+        logger.debug { "Executed PushUp. Vacant bit found: $vacantBitFound" }
       }
       PushDirection.DOWN,
       PushDirection.UPPER_LEFT,
       PushDirection.LOWER_LEFT -> {
         vacantBitFound = executePushDown(col)
-        logger.debug { "" + ("Executed PushDown. Vacant bit found: $vacantBitFound") }
+        logger.debug { "Executed PushDown. Vacant bit found: $vacantBitFound" }
       }
     }
 
@@ -2343,15 +2037,15 @@ fun Bitboard.useTamskPotential(
   when (player.name) {
     PlayerName.WHITE -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2362,15 +2056,15 @@ fun Bitboard.useTamskPotential(
         "Failed to add White TAMSK piece to target index."
       }
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2379,15 +2073,15 @@ fun Bitboard.useTamskPotential(
 
     PlayerName.BLACK -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Black Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2400,15 +2094,15 @@ fun Bitboard.useTamskPotential(
       }
 
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("Black TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Black Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2417,7 +2111,7 @@ fun Bitboard.useTamskPotential(
   }
 
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- USE TAMSK POTENTIAL COMPLETE ---") }
+    logger.trace { "" + ("--- USE TAMSK POTENTIAL COMPLETE ---") }
   }
 
   return vacantBitFound
@@ -2436,16 +2130,16 @@ fun Bitboard.undoTamskPotential(
   val playerPotentials = if (player.name == PlayerName.WHITE) whitePotentials else blackPotentials
   val playerTAMSK = if (player.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- UNDO TAMSK POTENTIAL CALLED ---") }
-    logger.info {
+    logger.trace { "" + ("--- UNDO TAMSK POTENTIAL CALLED ---") }
+    logger.trace {
       "" + ("Player: ${player.name} | Source: $sourceIndex | RemoveAt: $removeAtIndex")
     }
-    logger.info {
-      "" + ("WasOccupied: $wasIndexOccupied | PushDirection: $pushDirection | Col: $col")
+    logger.trace {
+	    "WasOccupied: $wasIndexOccupied | PushDirection: $pushDirection | Col: $col"
     }
-    logger.info { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
-    logger.info { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
-    logger.info {
+    logger.trace { "" + ("Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}") }
+    logger.trace { "" + ("Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}") }
+    logger.trace {
       "" + ("CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
     }
   }
@@ -2520,14 +2214,14 @@ fun Bitboard.undoTamskPotential(
 
   // --- 4. REVERT SHIFTING ---
   if (wasIndexOccupied) {
-    logger.debug { "" + ("Reverting board shift. Original push: $pushDirection") }
+    logger.debug { "Reverting board shift. Original push: $pushDirection" }
     when (pushDirection) {
       // If the original move pushed UP, we must pull DOWN to undo
       PushDirection.UP,
       PushDirection.UPPER_RIGHT,
       PushDirection.LOWER_RIGHT -> {
         executePullDown(col, vacantBitFound)
-        logger.debug { "" + ("Executed PullDown on col $col") }
+        logger.debug { "Executed PullDown on col $col" }
       }
 
       // If the original move pushed DOWN, we must pull UP to undo
@@ -2535,7 +2229,7 @@ fun Bitboard.undoTamskPotential(
       PushDirection.UPPER_LEFT,
       PushDirection.LOWER_LEFT -> {
         executePullUp(col, vacantBitFound)
-        logger.debug { "" + ("Executed PullUp on col $col") }
+        logger.debug { "Executed PullUp on col $col" }
       }
     }
   } else {
@@ -2547,15 +2241,15 @@ fun Bitboard.undoTamskPotential(
   when (player.name) {
     PlayerName.WHITE -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board before adding piece:       0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board before adding piece:  0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2567,15 +2261,15 @@ fun Bitboard.undoTamskPotential(
         "Failed to restore White Potential piece to center."
       }
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("White TAMSK Board after adding piece:        0b${whiteTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("White Potentials Board after adding piece:   0b${whitePotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2584,15 +2278,15 @@ fun Bitboard.undoTamskPotential(
 
     PlayerName.BLACK -> {
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("Black TAMSK Board before adding piece:       0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Potentials Board before adding piece:  0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2605,15 +2299,15 @@ fun Bitboard.undoTamskPotential(
       }
 
       if (logger.isDebugEnabled()) {
-        logger.info {
+        logger.trace {
           "" +
               ("TAMSK Board after adding piece:        0b${blackTAMSK.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("Potentials Board after adding piece:   0b${blackPotentials.toString(2).padStart(40, '0')}")
         }
-        logger.info {
+        logger.trace {
           "" +
               ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
         }
@@ -2792,10 +2486,10 @@ fun Bitboard.getDvonnMoves(
             // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
             // if layer [i] is even it is the color of the base layer
             // if layer [i] is odd it is the opposing color
-            var visibleWhiteThisLayer = 0UL
-            var visibleBlackThisLayer = 0UL
+            var visibleWhiteThisLayer: ULong
+	          var visibleBlackThisLayer: ULong
 
-            if (i.mod(2) == 0) {
+	          if (i.mod(2) == 0) {
               // even layer
               visibleWhiteThisLayer = whiteDVONNLayer[i] and blockedDvonnMask.inv()
               visibleBlackThisLayer = blackDVONNLayer[i] and blockedDvonnMask.inv()
@@ -2824,10 +2518,10 @@ fun Bitboard.getDvonnMoves(
             // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
             // if layer [i] is even it is the color of the base layer
             // if layer [i] is odd it is the opposing color
-            var visibleWhiteThisLayer = 0UL
-            var visibleBlackThisLayer = 0UL
+            var visibleWhiteThisLayer: ULong
+	          var visibleBlackThisLayer: ULong
 
-            if (i.mod(2) == 0) {
+	          if (i.mod(2) == 0) {
               // even layer
               visibleWhiteThisLayer = whiteDVONNLayer[i] and blockedDvonnMask.inv()
               visibleBlackThisLayer = blackDVONNLayer[i] and blockedDvonnMask.inv()
@@ -2946,10 +2640,10 @@ fun Bitboard.getPunctMoves(
             // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
             // if layer [i] is even it is the color of the base layer
             // if layer [i] is odd it is the opposing color
-            var visibleWhiteThisLayer = 0UL
-            var visibleBlackThisLayer = 0UL
+            var visibleWhiteThisLayer: ULong
+	          var visibleBlackThisLayer: ULong
 
-            if (i.mod(2) == 0) {
+	          if (i.mod(2) == 0) {
               // even layer
               visibleWhiteThisLayer = whitePUNCTLayer[i] and blockedPunctMask.inv()
               visibleBlackThisLayer = blackPUNCTLayer[i] and blockedPunctMask.inv()
@@ -2978,10 +2672,10 @@ fun Bitboard.getPunctMoves(
             // 1. Grab the pieces on this layer, but ONLY if they aren't blocked by a higher layer
             // if layer [i] is even it is the color of the base layer
             // if layer [i] is odd it is the opposing color
-            var visibleWhiteThisLayer = 0UL
-            var visibleBlackThisLayer = 0UL
+            var visibleWhiteThisLayer: ULong
+	          var visibleBlackThisLayer: ULong
 
-            if (i.mod(2) == 0) {
+	          if (i.mod(2) == 0) {
               // even layer
               visibleWhiteThisLayer = whitePUNCTLayer[i] and blockedPunctMask.inv()
               visibleBlackThisLayer = blackPUNCTLayer[i] and blockedPunctMask.inv()
@@ -3073,11 +2767,11 @@ fun Bitboard.getPunctMoves(
 
 fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   // --- 0. CONFIGURABLE DEBUGGING ---
-  //  if (logger.isDebugEnabled()) {
-  //    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---") }
-  //    logger.info { "" + ("Player: ${player.name}") }
-  //    logger.info { "" + ("Bitboard State: ${Json.encodeToString<Bitboard>(this)}") }
-  //  }
+    if (logger.isDebugEnabled()) {
+      logger.trace { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW CALLED ---") }
+      logger.trace { "" + ("Player: ${player.name}") }
+      logger.trace { "" + ("Bitboard State: ${Json.encodeToString<Bitboard>(this)}") }
+    }
 
   val playerPieces =
       when (player.name) {
@@ -3087,10 +2781,10 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
 
   val columns = columnInfos.filterIndexed { index, column ->
     if (logger.isDebugEnabled()) {
-      logger.info {
+      logger.trace {
         "" + ("player Active Pieces: 0b${playerPieces.toString(2).padStart(40, '0')}")
       }
-      logger.info {
+      logger.trace {
         "" + ("Line $index Mask:         0b${column.columnMask.toString(2).padStart(40, '0')}")
       }
     }
@@ -3098,37 +2792,31 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
     val result =
         column.submasks.any { submask ->
           val fourInARow = (submask and playerPieces) == submask
-          //                  if (logger.isDebugEnabled() && fourInARow) {
-          //                    logger.info {
-          //                      "" + ("Sublist:              0b${submask.toString(2).padStart(40,
-          // '0')}")
-          //                    }
-          //                    logger.info {
-          //                      "" + ("player Active Pieces:
-          // 0b${playerPieces.toString(2).padStart(40, '0')}")
-          //                    }
-          //                    logger.info { "" + ("Result: $fourInARow") }
-          //                  }
+                            if (logger.isDebugEnabled() && fourInARow) {
+                              logger.trace { "" + ("Sublist:              0b${submask.toString(2).padStart(40,'0')}") }
+                              logger.trace { "player Active Pieces 0b${playerPieces.toString(2).padStart(40, '0')}" }
+                              logger.trace { "Result: ${true}" }
+                            }
           fourInARow
         }
 
     if (logger.isDebugEnabled()) {
-      if (result) logger.info { "" + ("--- FOUND FOUR IN A ROW IN LINE $index ---") }
-      else logger.info { "" + ("--- NO 4 IN A ROW IN LINE $index ---") }
+      if (result) logger.trace { "--- FOUND FOUR IN A ROW IN LINE $index ---" }
+      else logger.trace { "--- NO 4 IN A ROW IN LINE $index ---" }
     }
 
     //    if ((column.columnMask and playerPieces).countOneBits() < 4) {
     //      if (logger.isDebugEnabled()) {
-    //        logger.info { "" + ("--- NO 4 IN A LINE $index ---") }
+    //        logger.trace { "" + ("--- NO 4 IN A LINE $index ---") }
     //      }
     //      false
     //    } else {
     //      if (logger.isDebugEnabled()) {
-    //        logger.info { "" + (//            "--- FOUND FOUR IN A LINE $index ---"
+    //        logger.trace { "" + (//            "--- FOUND FOUR IN A LINE $index ---"
     // ) } // \n0b${column.columnMask.toString(2).padStart(40, '0')}")
     //      }
     //
-    //	    logger.info { "" + ("column.positions.windowed(4).any: ${
+    //	    logger.trace { "" + ("column.positions.windowed(4).any: ${
     //		    column.positions.windowed(4).any { sublist ->
     //			    val sum = sublist.fold(0UL) { acc, lng ->
     //				    acc or lng
@@ -3141,7 +2829,7 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   }
 
   if (logger.isDebugEnabled()) {
-    logger.info { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---") }
+    logger.trace { "" + ("--- EVALUATE LINES FOR FOUR IN A ROW COMPLETED ---") }
   }
 
   return columns
@@ -3488,4 +3176,3 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
 
   return emptyList()
 }
-

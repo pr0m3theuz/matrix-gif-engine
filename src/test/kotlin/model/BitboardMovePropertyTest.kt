@@ -285,7 +285,7 @@ class BitboardPropertyTest {
 		try {
 			val selectedPiece = move.onlyPiece().let { currentPlayer.selectPiece(it) }
 			val vacantBit = bitboard.addPieceToBitboard(move)
-			val wasOccupied = vacantBit != 0UL
+			val wasOccupied = vacantBit != ULong.MAX_VALUE
 
 			move.onlyPiece().let { currentPlayer.piecesInReserve.add(it) }
 			bitboard.undoAddPieceToBitboard(move, vacantBit, wasOccupied)
@@ -390,7 +390,7 @@ class BitboardPropertyTest {
 		val removedPieces = mutableListOf<UInt>()
 
 		try {
-			bitboard.removeSelectedPiecesToRemove(player, move, removedPieces)
+			bitboard.removeSelectedPieces(player, move, removedPieces)
 			player.addRetrievedCapturedPieces(removedPieces)
 
 			val newlyStackedPieces = player.combinePieces()

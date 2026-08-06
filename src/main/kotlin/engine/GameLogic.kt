@@ -1,7 +1,6 @@
 package org.example.engine
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import jdk.internal.foreign.abi.Binding
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
@@ -169,7 +168,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
     when (packedMove) {
       is PackedMove.Multiple -> {
         val retrievedCapturedPieces = mutableListOf<UInt>()
-        bitboard.removeSelectedPiecesToRemove(
+        bitboard.removeSelectedPieces(
             player = state.currentPlayer,
             piecesToRemove = packedMove.values.distinct(),
             retrievedCapturedPieces,

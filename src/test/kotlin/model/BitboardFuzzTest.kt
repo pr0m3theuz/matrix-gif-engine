@@ -191,7 +191,7 @@ class BitboardFuzzTest {
       val vacantBit = bitboard.addPieceToBitboard(move)
 
       // Fuzz the undo process with a random assumption of occupancy to test robust state checking.
-      val wasOccupied = vacantBit != 0UL
+      val wasOccupied = vacantBit != ULong.MAX_VALUE
       bitboard.undoAddPieceToBitboard(move, vacantBit, wasOccupied)
 
       assertEquals(initBitboard, bitboard) {
@@ -296,7 +296,7 @@ class BitboardFuzzTest {
 
     try {
       // Generates the mutable list buffer output while pulling items off the bitboard
-      bitboard.removeSelectedPiecesToRemove(player, move, removedPieces)
+      bitboard.removeSelectedPieces(player, move, removedPieces)
 
       // Reverts mutations relying on the tracked operations in movesBuffer
       bitboard.undoRetrieveAndCapturePieces(removedPieces)

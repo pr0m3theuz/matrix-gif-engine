@@ -14,8 +14,8 @@ fun Bitboard.getTamskMoves(
 ) {
 	// --- 0. CONFIGURABLE DEBUGGING ---
 	if (logger.isDebugEnabled()) {
-		logger.debug { "" + ("--- GET TAMSK MOVES CALLED ---") }
-		logger.debug { "" + ("Player: ${player.name}") }
+		logger.trace { "" + ("--- GET TAMSK MOVES CALLED ---") }
+		logger.trace { "" + ("Player: ${player.name}") }
 	}
 
 	// --- 1. EVALUATE CENTER SPOT ---
@@ -31,10 +31,10 @@ fun Bitboard.getTamskMoves(
 	// If the intersection doesn't perfectly match the center spot mask, no move exists.
 	if (tamskPieceAtCenter != boardCenterSpotMask) {
 		if (logger.isDebugEnabled()) {
-			logger.debug {
+			logger.trace {
 				"" + ("No valid TAMSK piece found at center for ${player.name}. Returning null.")
 			}
-			logger.debug { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
+			logger.trace { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
 		}
 		return
 	}
@@ -45,7 +45,7 @@ fun Bitboard.getTamskMoves(
 		"CRITICAL ERROR: Evaluated center spot mask must contain exactly one bit. Got: $tamskPieceAtCenter"
 	}
 
-	logger.debug { "" + ("Valid TAMSK move found for ${player.name} at center spot.") }
+	logger.trace { "" + ("Valid TAMSK move found for ${player.name} at center spot.") }
 
 	// --- 4. RETURN MOVE ---
 	// Cache the vacantLines reference in case it's a computed property,

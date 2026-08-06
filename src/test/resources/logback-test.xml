@@ -1,11 +1,20 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/tests/testing.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/tests/testing-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Single log file max size -->
+            <maxFileSize>2MB</maxFileSize>
+            <!-- Total aggregate size cap across all archived files -->
+            <totalSizeCap>1GB</totalSizeCap>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="info">
-        <appender-ref ref="STDOUT" />
+    <root level="debug">
+        <appender-ref ref="FILE" />
     </root>
 </configuration>

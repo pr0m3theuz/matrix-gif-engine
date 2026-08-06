@@ -501,7 +501,7 @@ class GetMovesOptimizedTest {
     val dvonnMoves = mutableListOf<PackedMove>()
     bitboard.getDvonnMoves(
         player = currentPlayer,
-        columnInfos = org.example.model.columnInfos,
+        columnInfos = columnInfos,
         dvonnMoves,
     )
 

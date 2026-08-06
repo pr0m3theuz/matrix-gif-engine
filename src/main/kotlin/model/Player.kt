@@ -424,6 +424,7 @@ fun Player.selectMove(
                   alphaBetaScore = AlphaBetaScoreBitPacked(),
                   rng = rng,
                   depth = strength.minimaxDepth,
+            caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}"
               )
               .move
         }

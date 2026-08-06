@@ -115,7 +115,7 @@ data class MCTSNode(
       is PackedMove.Multiple -> {
         val retrievedCapturedPieces = mutableListOf<UInt>()
 
-        childBitboard.removeSelectedPiecesToRemove(
+        childBitboard.removeSelectedPieces(
             player = childCurrentPlayer,
             piecesToRemove = selectedPackedMove.values.distinct(),
             movesBuffer = retrievedCapturedPieces,
@@ -650,7 +650,7 @@ fun simulatePieceRetrievalCapture(
 
         // can i modify selectedPieceToRemove.values directly
         val retrievedCapturedPieces = mutableListOf<UInt>()
-        bitboard.removeSelectedPiecesToRemove(
+        bitboard.removeSelectedPieces(
             player = currentPlayer,
             piecesToRemove = selectedPieceToRemove.values.distinct(),
             retrievedCapturedPieces,

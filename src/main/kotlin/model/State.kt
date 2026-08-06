@@ -12,7 +12,6 @@ import org.example.engine.ExperienceCollector
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.api.mk
 import org.jetbrains.kotlinx.multik.api.ones
-import org.jetbrains.kotlinx.multik.api.toNDArray
 import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.D1Array
 import org.jetbrains.kotlinx.multik.ndarray.data.D2Array
@@ -331,7 +330,7 @@ fun State.encodeState(): D2Array<Int> {
 
               newBitboard
                   .deepCopy()
-                  .removeSelectedPiecesToRemove(
+                  .removeSelectedPieces(
                       player = newState.currentPlayer,
                       piecesToRemove = retrieveCapture.values.distinct(),
                       retrievedCapturedPieces,
@@ -443,7 +442,7 @@ fun State.encodeState(): D2Array<Int> {
 
               newBitboard
                   .deepCopy()
-                  .removeSelectedPiecesToRemove(
+                  .removeSelectedPieces(
                       player = newState.nextPlayer,
                       piecesToRemove = retrieveCapture.values.distinct(),
                       movesBuffer = retrievedCapturedPieces,
