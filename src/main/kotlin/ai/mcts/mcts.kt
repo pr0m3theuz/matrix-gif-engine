@@ -520,9 +520,9 @@ fun simulatePlayerTurn(
 ) {
   if (logger.isDebugEnabled()) {
     //		logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
-    logger.info { "" + ("currentPlayer: $currentPlayer") }
-    logger.info { "" + ("opponentPlayer: $opponentPlayer") }
-    logger.info { "" + ("Bitboard: ${Json.encodeToString(bitboard)}") }
+    logger.info { "currentPlayer: $currentPlayer" }
+    logger.info { "opponentPlayer: $opponentPlayer" }
+    logger.info { "Bitboard: ${Json.encodeToString(bitboard)}" }
   }
 
   // TODO given a list of moves, select a random move

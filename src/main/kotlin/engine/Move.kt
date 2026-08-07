@@ -626,13 +626,13 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     require(currentNode.piece != null) { "Piece ${currentNode.piece} is null" }
   }
 
-  logger.info { "" + ("[SHIFT] Processing node $currentCoordStr ($pieceDesc) pushing $moveDirection") }
+  logger.info { "[SHIFT] Processing node $currentCoordStr ($pieceDesc) pushing $moveDirection" }
 
   val targetCoordinate = currentNode.neighbors?.getNeighborFromPushDirection(moveDirection)
   val nextNode = board.nodes.firstOrNull { node -> node.coordinate == targetCoordinate }
 
   if (nextNode == null) {
-    logger.info { "" + ("[SHIFT INFO] Shift halted: No neighbor found for $currentCoordStr in direction $moveDirection (Edge of track reached).") }
+    logger.info { "[SHIFT INFO] Shift halted: No neighbor found for $currentCoordStr in direction $moveDirection (Edge of track reached)." }
     return board
   }
 
@@ -673,12 +673,12 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
 
   // Is there empty space in this line else return board
   if (line.first().count { it.piece == null } == 0) {
-    logger.info { "" + ("[SHIFT WARN] Move blocked: Line tracking through $currentCoordStr is completely full. No pieces shifted.") }
+    logger.info { "[SHIFT WARN] Move blocked: Line tracking through $currentCoordStr is completely full. No pieces shifted." }
     return board
   }
 
   if (nextNode.piece == null) {
-    logger.info { "" + ("[SHIFT ACTION] Empty space found at $nextCoordStr. Sliding piece from $currentCoordStr -> $nextCoordStr.") }
+    logger.info { "[SHIFT ACTION] Empty space found at $nextCoordStr. Sliding piece from $currentCoordStr -> $nextCoordStr." }
 
     nextNode.piece = currentNode.piece
 
@@ -703,7 +703,7 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
     return newBoard
   } else {
     val nextPieceDesc = "${nextNode.piece?.colorName} ${nextNode.piece?.type?.name}"
-    logger.info { "" + ("[SHIFT CASCADE] Collision at $nextCoordStr ($nextPieceDesc). Initiating recursive push...") }
+    logger.info { "[SHIFT CASCADE] Collision at $nextCoordStr ($nextPieceDesc). Initiating recursive push..." }
 
     val newBoard =
         shiftPiece(

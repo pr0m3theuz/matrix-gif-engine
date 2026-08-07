@@ -107,7 +107,7 @@ class TranspositionTable() {
   }
 }
 
-val transpositionTable = TranspositionTable()
+//val transpositionTable = TranspositionTable()
 
 // two players: white and black
 // should layers be included

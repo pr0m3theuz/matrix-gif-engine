@@ -45,6 +45,27 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 // /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS easy
 // /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS easy
 
+//-b -g 500 -m mcts -ms random -M minimax -MS greedy
+//-b -g 500 -m minimax -ms greedy -M mcts -MS random
+//-b -g 500 -m mcts -ms random -M minimax -MS easy
+//-b -g 500 -m minimax -ms easy -M mcts -MS random
+//-b -g 500 -m mcts -ms easy -M minimax -MS greedy
+//-b -g 500 -m minimax -ms greedy -M mcts -MS easy
+//-b -g 500 -m minimax -ms easy -M minimax -MS greedy
+//-b -g 500 -m minimax -ms greedy -M minimax -MS easy
+//-b -g 500 -m mcts -ms easy -M mcts -MS random
+//-b -g 500 -m mcts -ms random -M mcts -MS easy
+//-b -g 500 -m mcts -ms easy -M minimax -MS easy
+//-b -g 500 -m minimax -ms easy -M mcts -MS easy
+
+
+// -b -g 500 -m mcts -ms random -M minimax -MS easy
+// -b -g 500 -m minimax -ms easy -M mcts -MS random
+// -b -g 500 -m minimax -ms easy -M minimax -MS greedy
+// -b -g 500 -m minimax -ms greedy -M minimax -MS easy
+// -b -g 500 -m mcts -ms easy -M minimax -MS easy
+// -b -g 500 -m minimax -ms easy -M mcts -MS easy
+
 
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
@@ -298,7 +319,7 @@ private suspend fun runBatch(
                   playerTwoStrength = playerTwoStrength,
               )
               val n = completed.incrementAndGet()
-              if (n % 100 == 0) {
+              if (n % 10 == 0) {
                 val secs = (System.currentTimeMillis() - startTime) / 1000.0
                 val rate = n / secs
                 val etaSecs = ((totalGames - n) / rate).toLong()
@@ -424,7 +445,7 @@ fun playOneGame(
       if (evaluateCapturedPieces(gameState)) break
 
       if (verbose) {
-        logger.info { "" + ("Turn: $turn") }
+        logger.info { "Turn: $turn" }
         gameState.printStateSummary()
       }
 
@@ -512,7 +533,7 @@ fun playOneGame(
             if (evaluateCapturedPieces(gameState)) break
 
             if (verbose) {
-                logger.info { "" + ("Turn: $turn") }
+                logger.info { "Turn: $turn" }
                 gameState.printStateSummary()
             }
 
@@ -539,14 +560,13 @@ fun playOneGame(
         throw e
     }
 
-    val winner =
-        determineWinner(
-            gameState.currentPlayer,
-            gameState.nextPlayer,
-            playerWhoMadeTheLastMove,
-            state = gameState,
-            printStatement = verbose,
-        )
+    determineWinner(
+        gameState.currentPlayer,
+        gameState.nextPlayer,
+        playerWhoMadeTheLastMove,
+        state = gameState,
+        printStatement = verbose,
+    )
 }
 
 private fun dumpCrashState(gameId: Int, seed: Long, turn: Int, gameState: State, e: Throwable) {

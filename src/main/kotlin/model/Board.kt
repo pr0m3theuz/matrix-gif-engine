@@ -90,7 +90,7 @@ fun Board.removePieces(retrievedCapturedPieceNodes: List<RetrievedCapturedPieceN
     newNodes
         .first { it.coordinate == updatedNode.coordinate }
         .let {
-					logger.info { "" + ("Removing node $it") }
+					logger.info { "Removing node $it" }
           newNodes.remove(it)
         }
   }
@@ -166,8 +166,8 @@ fun Board.printHexGrid(prefix: String) {
           'J' to 1..4,
       )
 
-  logger.info { "" + ("=================== $prefix GIPF BOARD ===================") }
-  logger.info { "" + (" |1|1|1|1|1|1||2||3||4|5|6|7|8|9|") }
+  logger.info { "=================== $prefix GIPF BOARD ===================" }
+  logger.info { " |1|1|1|1|1|1||2||3||4|5|6|7|8|9|" }
   for (rowLetter in columns) {
     val rowStringBuilder = StringBuilder()
 

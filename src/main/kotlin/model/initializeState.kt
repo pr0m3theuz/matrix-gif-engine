@@ -2,6 +2,8 @@
 
 package org.example.model
 
+import org.example.engine.TranspositionTable
+
 fun initializeState(
   playerOneModel: Model = Model.MINIMAX,
   playerOneStrength: Strength = Strength.EASY,
@@ -16,6 +18,7 @@ fun initializeState(
           name = PlayerName.WHITE,
           model = playerOneModel,
           strength = playerOneStrength,
+          transpositionTable = TranspositionTable()
       )
 
   val blackPlayer =
@@ -23,6 +26,7 @@ fun initializeState(
           name = PlayerName.BLACK,
           model = playerTwoModel,
           strength = playerTwoStrength,
+          transpositionTable = TranspositionTable()
       )
 
   // Create pieces

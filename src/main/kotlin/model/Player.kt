@@ -12,7 +12,7 @@ import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
-import org.example.engine.transpositionTable
+import org.example.engine.TranspositionTable
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -30,13 +30,13 @@ enum class Model {
 fun getModel(model: String): Model {
   return when (model) {
     "MCTS",
-    "mcts" -> return Model.MCTS
+    "mcts" -> Model.MCTS
     "MINIMAX",
-    "minimax" -> return Model.MINIMAX
+    "minimax" -> Model.MINIMAX
     "nn",
     "NN",
     "NEURAL_NETWORK",
-    "neural_network" -> return Model.NEURAL_NETWORK
+    "neural_network" -> Model.NEURAL_NETWORK
     else -> Model.MCTS
   }
 }
@@ -105,6 +105,7 @@ data class Player(
     val piecesInReserve: MutableList<UInt> = mutableListOf(),
     val capturedPieces: MutableList<UInt> = mutableListOf(),
     @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+    @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): Player {
     //    val string = Json.encodeToString(serializer(), this)
@@ -117,6 +118,7 @@ data class Player(
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
         collector = if (copyCollector) this.collector else null,
+        transpositionTable = this.transpositionTable,
     )
   }
 
@@ -342,15 +344,14 @@ data class Player(
     // OPTIMIZATION: flatMap cleanly replaces map { MutableList(...) }.flatten()
     val unstackedPieces: List<UInt> = newlyStackedPieces.flatMap { piece ->
       requireNotNull(piece.extractPieceType()) { "Piece Type cannot be null. $piece." }
-      listOf(
-              piece.extractPieceType()?.let {
+        listOfNotNull(
+            piece.extractPieceType()?.let {
                 0u.createPiece(it, piece.extractPieceColor(), potential = false)
-              },
-              piece.extractPieceType()?.let {
+            },
+            piece.extractPieceType()?.let {
                 0u.createPiece(it, piece.extractPieceColor(), potential = false)
-              },
-          )
-          .filterNotNull()
+            },
+        )
     }
 
     // --- 3. MUTATE STATE (With Post-Condition Checks) ---
@@ -412,6 +413,7 @@ fun Player.selectMove(
                   rng = rng,
                   depth = strength.minimaxDepth,
                   turnPhase = turnPhase,
+              transpositionTable = transpositionTable
               )
               .move
         }
@@ -424,7 +426,8 @@ fun Player.selectMove(
                   alphaBetaScore = AlphaBetaScoreBitPacked(),
                   rng = rng,
                   depth = strength.minimaxDepth,
-            caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}"
+            caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
+                    transpositionTable = transpositionTable,
               )
               .move
         }

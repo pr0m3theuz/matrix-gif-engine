@@ -5,8 +5,8 @@ import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.ai.scoreBitboardState
 import org.example.engine.Bound
+import org.example.engine.TranspositionTable
 import org.example.engine.getZobristHash
-import org.example.engine.transpositionTable
 import org.example.model.*
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -40,6 +40,7 @@ fun alphaBetaPackedMove(
     rng: Random,
     turnPhase: TurnPhase? = null,
     isPVNode: Boolean = true,
+    transpositionTable: TranspositionTable,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
@@ -93,6 +94,7 @@ fun alphaBetaPackedMove(
             "ALPHA-BETA MAIN BEGINNING",
             logger.isDebugEnabled(),
             rng,
+            transpositionTable = transpositionTable,
         )
       } else {
         Triple(emptyList(), 0, emptyList())
@@ -352,7 +354,8 @@ fun alphaBetaPackedMove(
                       alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
                       isPVNode = isPVNode && packedMove == availableMoves[0],
-                turnPhase = TurnPhase.ExtraMove
+                turnPhase = TurnPhase.ExtraMove,
+                  transpositionTable = transpositionTable
                   )
                   .score
 
@@ -381,6 +384,7 @@ fun alphaBetaPackedMove(
                 "ALPHA-BETA ADD PIECE",
                 logger.isDebugEnabled(),
                 rng,
+                transpositionTable = transpositionTable,
             )
 
         bitboard.assertPieceCount(
@@ -401,6 +405,7 @@ fun alphaBetaPackedMove(
                             alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                             rng = rng,
                             isPVNode = isPVNode && packedMove == availableMoves[0],
+                        transpositionTable = transpositionTable
                         )
                         .score +
                         tamskMoveScore +
@@ -530,7 +535,8 @@ fun alphaBetaPackedMove(
                       alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
                       isPVNode = isPVNode && packedMove == availableMoves[0],
-                      turnPhase = TurnPhase.ExtraMove
+                      turnPhase = TurnPhase.ExtraMove,
+                  transpositionTable = transpositionTable
                   )
                   .score
 
@@ -560,6 +566,7 @@ fun alphaBetaPackedMove(
                 "ALPHA-BETA USE POTENTIAL",
                 logger.isDebugEnabled(),
                 rng = rng,
+                transpositionTable = transpositionTable,
             )
 
         val beforeRecursionBitboardState = bitboard.deepCopy()
@@ -577,6 +584,7 @@ fun alphaBetaPackedMove(
                             alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                             rng = rng,
                             isPVNode = isPVNode && packedMove == availableMoves[0],
+                        transpositionTable = transpositionTable
                         )
                         .score +
                         tamskMoveScore +
@@ -749,6 +757,7 @@ private fun bestPiecesToRemove(
     caller: String,
     isDebugEnabled: Boolean,
     rng: Random,
+    transpositionTable: TranspositionTable
 ): Triple<List<UInt>, Int, List<UInt>> {
   val initBitboard = bitboard.deepCopy()
 
@@ -762,6 +771,7 @@ private fun bestPiecesToRemove(
           alphaBetaScore = alphaBetaScore.copy(move = null),
           rng = rng,
           "$caller bestPiecesToRemove()",
+          transpositionTable = transpositionTable,
       )
 
   bitboard.diff(initBitboard)
@@ -818,6 +828,7 @@ fun resolveBoardRemovals(
     alphaBetaScore: AlphaBetaScoreBitPacked,
     rng: Random,
     caller: String = "",
+    transpositionTable: TranspositionTable
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- RESOLVE BOARD REMOVALS CALLED ---") }
@@ -908,13 +919,12 @@ fun resolveBoardRemovals(
                   alphaBetaPackedMove(
                           maxDepth = maxDepth,
                           depth = depth.minus(1),
-                          // state = state,
                           bitboard = bitboard,
                           currentPlayer = opponentPlayer,
                           opponentPlayer = currentPlayer,
-                          // gameTree = gameTree,
                           alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                           rng = rng,
+                      transpositionTable = transpositionTable
                       )
                       .score,
           )
