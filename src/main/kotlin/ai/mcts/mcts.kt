@@ -10,6 +10,7 @@ import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
 import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlin.random.Random
+import kotlin.time.Duration
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -358,12 +359,13 @@ data class MCTSNode(
 }
 
 fun selectMoveMCTS(
-    bitboard: Bitboard,
-    currentPlayer: Player,
-    nextPlayer: Player,
-    rounds: IntRange = 0..9999,
-    turnPhase: TurnPhase,
-    rng: Random,
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  nextPlayer: Player,
+  rounds: IntRange = 0..9999,
+  turnPhase: TurnPhase,
+  rng: Random,
+  duration: Duration = Duration.ZERO,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -388,44 +390,81 @@ fun selectMoveMCTS(
     return null
   }
 
-  repeat(rounds.count()) {
-    var currentNode: MCTSNode? = rootMCTSNode
+  if (duration == Duration.ZERO) {
+    repeat(rounds.count()) {
+      var currentNode: MCTSNode? = rootMCTSNode
 
-    while (
+      while (
         currentNode?.unvisitedMoves?.isEmpty() == true &&
-            currentNode.childrenNodes.isNotEmpty() &&
-            !evaluateCapturedPieces(currentNode.currentPlayer) // &&
-    // !evaluatePiecesInReserve(currentNode.currentPlayer)
-    ) {
-      //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-      //        logger.info { "" + ("Current node has no children!}") }
-      //      }
+        currentNode.childrenNodes.isNotEmpty() &&
+        !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+      // !evaluatePiecesInReserve(currentNode.currentPlayer)
+      ) {
+        //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+        //        logger.info { "" + ("Current node has no children!}") }
+        //      }
 
-      currentNode = currentNode.selectChildNodeToExplore()
-    }
+        currentNode = currentNode.selectChildNodeToExplore()
+      }
 
-    checkNotNull(currentNode) {
-      "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
-          "Verify tree expansion bounds and parent-child link validity."
-    }
+      checkNotNull(currentNode) {
+        "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
+            "Verify tree expansion bounds and parent-child link validity."
+      }
 
-    //    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
-    //      logger.info { "" + ("Current node has no children!") }
-    //    }
+      //    if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
+      //      logger.info { "" + ("Current node has no children!") }
+      //    }
 
-    if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
+      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
 
-    val winner =
+      val winner =
         simulateRandomGame(
-            currentNode.bitboard.deepCopy(),
-            currentNode.currentPlayer.deepCopy(),
-            currentNode.nextPlayer.deepCopy(),
-            rng = rng,
+          currentNode.bitboard.deepCopy(),
+          currentNode.currentPlayer.deepCopy(),
+          currentNode.nextPlayer.deepCopy(),
+          rng = rng,
         )
 
-    while (currentNode != null && winner != null) {
-      currentNode.recordWin(winner)
-      currentNode = currentNode.parentNode
+      while (currentNode != null && winner != null) {
+        currentNode.recordWin(winner)
+        currentNode = currentNode.parentNode
+      }
+    }
+  } else {
+    val startTime = System.nanoTime()
+    val endTime = startTime + duration.inWholeNanoseconds
+
+    while (System.nanoTime() < endTime) {
+      var currentNode: MCTSNode? = rootMCTSNode
+
+      while (
+        currentNode?.unvisitedMoves?.isEmpty() == true &&
+        currentNode.childrenNodes.isNotEmpty() &&
+        !evaluateCapturedPieces(currentNode.currentPlayer)
+      ) {
+        currentNode = currentNode.selectChildNodeToExplore()
+      }
+
+      checkNotNull(currentNode) {
+        "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
+            "Verify tree expansion bounds and parent-child link validity."
+      }
+
+      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
+
+      val winner =
+        simulateRandomGame(
+          currentNode.bitboard.deepCopy(),
+          currentNode.currentPlayer.deepCopy(),
+          currentNode.nextPlayer.deepCopy(),
+          rng = rng,
+        )
+
+      while (currentNode != null && winner != null) {
+        currentNode.recordWin(winner)
+        currentNode = currentNode.parentNode
+      }
     }
   }
 
