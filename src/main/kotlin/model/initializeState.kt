@@ -9,6 +9,7 @@ fun initializeState(
   playerOneStrength: Strength = Strength.EASY,
   playerTwoModel: Model = Model.MINIMAX,
   playerTwoStrength: Strength = Strength.EASY,
+  timeControl: Boolean = false
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
@@ -18,6 +19,7 @@ fun initializeState(
           name = PlayerName.WHITE,
           model = playerOneModel,
           strength = playerOneStrength,
+          timeControl = timeControl,
           transpositionTable = TranspositionTable()
       )
 
@@ -26,6 +28,7 @@ fun initializeState(
           name = PlayerName.BLACK,
           model = playerTwoModel,
           strength = playerTwoStrength,
+          timeControl = timeControl,
           transpositionTable = TranspositionTable()
       )
 
