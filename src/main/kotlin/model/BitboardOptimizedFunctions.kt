@@ -324,8 +324,6 @@ fun Bitboard.undoAddPieceToBitboard(
 
 fun Bitboard.usePiecePotential(
     move: UInt,
-    currentPlayer: Player,
-    nextPlayer: Player,
 ) {
   // TODO filter for legal moves before calling this
   //  pieces can not be neutralized
@@ -336,10 +334,10 @@ fun Bitboard.usePiecePotential(
   val sourceBit = move.extractSourceBit()
   val targetBit = move.extractTargetBit()
 
-  if (sourceBit == ULong.MAX_VALUE || targetBit == sourceBit || pieceType == PieceType.TAMSK || blackPotentials == 0UL || whitePotentials == 0UL) {
-    logger.trace { "Invalid source bit: $sourceBit." }
-    return
-  }
+//  if (sourceBit == ULong.MAX_VALUE || targetBit == sourceBit || pieceType == PieceType.TAMSK || blackPotentials == 0UL || whitePotentials == 0UL) {
+//    logger.trace { "Invalid source bit: $sourceBit." }
+//    return
+//  }
   require(sourceBit != targetBit) {
     "Movement violation: Origin and destination bit indexes must be different. Cannot use a piece potential on itself"
   }
@@ -1338,10 +1336,10 @@ fun Bitboard.useTamskPotential(move: UInt): ULong {
   val col = move.extractColumnInfo()
   val pushDirection = move.extractPushDirection() ?: error("Missing push direction in move: $move")
 
-  if (sourceIndex != boardCenterSpotMask || targetIndex == sourceIndex || move.extractPieceType() != PieceType.TAMSK || blackPotentials == 0UL || whitePotentials == 0UL) {
-    logger.trace { "Invalid source bit: $sourceIndex." }
-    return ULong.MAX_VALUE
-  }
+//  if (sourceIndex != boardCenterSpotMask || targetIndex == sourceIndex || move.extractPieceType() != PieceType.TAMSK || blackPotentials == 0UL || whitePotentials == 0UL) {
+//    logger.trace { "Invalid source bit: $sourceIndex." }
+//    return ULong.MAX_VALUE
+//  }
 
   // --- 1. CONFIGURABLE DEBUGGING ---
   val playerPotentials = if (pieceColor == PlayerName.WHITE) whitePotentials else blackPotentials
