@@ -43,3 +43,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+.cifuzz-corpus
+.jqwik-database
+*.hprof
+*.log*
+diff.txt
+*.pem
