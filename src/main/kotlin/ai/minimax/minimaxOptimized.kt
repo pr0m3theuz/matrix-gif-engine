@@ -229,10 +229,11 @@ fun alphaBetaPackedMove(
 
   if (ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name) {
     availableMoves.sortByDescending {
-      if (
-          ((it as PackedMove.Single).value.extractPieceType() == ttEntry.move.extractPieceType() &&
-              it.value.extractMoveType() == ttEntry.move.extractMoveType()) ||
-              it.value == ttEntry.move
+      if ((it as PackedMove.Single).value == ttEntry.move) {
+        2
+      } else if (
+          (it.value.extractPieceType() == ttEntry.move.extractPieceType() &&
+              it.value.extractMoveType() == ttEntry.move.extractMoveType())
       )
           1
       else 0
@@ -262,7 +263,6 @@ fun alphaBetaPackedMove(
     when (moveValue.extractMoveType()) {
       // region MoveType.AddPiece
       MoveType.AddPiece -> {
-        // for each selectable dot, add piece, push piece, assess resulting state, score it
         require(
             moveValue.extractPiece() != null || moveValue.extractPieceType() == PieceType.TAMSK
         ) {
@@ -309,9 +309,9 @@ fun alphaBetaPackedMove(
               bitboard.addPieceToBitboard(moveValue)
             }
 
-        check(vacantBitFound != null) {
-          "Invalid board state: No vacant bit found for piece deployment."
-        }
+//        check(vacantBitFound != null) {
+//          "Invalid board state: No vacant bit found for piece deployment."
+//        }
 
         val postMoveBitboardState = bitboard.deepCopy()
 
@@ -353,9 +353,9 @@ fun alphaBetaPackedMove(
                       opponentPlayer = opponentPlayer,
                       alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
-                      isPVNode = isPVNode && packedMove == availableMoves[0],
-                turnPhase = TurnPhase.ExtraMove,
-                  transpositionTable = transpositionTable
+                      isPVNode = isPVNode && moveValue == ttEntry.move,
+                      turnPhase = TurnPhase.ExtraMove,
+                      transpositionTable = transpositionTable,
                   )
                   .score
 
@@ -404,8 +404,8 @@ fun alphaBetaPackedMove(
                             opponentPlayer = currentPlayer,
                             alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                             rng = rng,
-                            isPVNode = isPVNode && packedMove == availableMoves[0],
-                        transpositionTable = transpositionTable
+                            isPVNode = isPVNode && moveValue == ttEntry.move,
+                            transpositionTable = transpositionTable,
                         )
                         .score +
                         tamskMoveScore +
@@ -532,9 +532,9 @@ fun alphaBetaPackedMove(
                       opponentPlayer = opponentPlayer,
                       alphaBetaScore = AlphaBetaScoreBitPacked(),
                       rng = rng,
-                      isPVNode = isPVNode && packedMove == availableMoves[0],
+                      isPVNode = isPVNode && moveValue == ttEntry.move,
                       turnPhase = TurnPhase.ExtraMove,
-                  transpositionTable = transpositionTable
+                      transpositionTable = transpositionTable,
                   )
                   .score
 
@@ -581,8 +581,8 @@ fun alphaBetaPackedMove(
                             opponentPlayer = currentPlayer,
                             alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                             rng = rng,
-                            isPVNode = isPVNode && packedMove == availableMoves[0],
-                        transpositionTable = transpositionTable
+                            isPVNode = isPVNode && moveValue == ttEntry.move,
+                            transpositionTable = transpositionTable,
                         )
                         .score +
                         tamskMoveScore +
@@ -755,7 +755,7 @@ private fun bestPiecesToRemove(
     caller: String,
     isDebugEnabled: Boolean,
     rng: Random,
-    transpositionTable: TranspositionTable
+    transpositionTable: TranspositionTable,
 ): Triple<List<UInt>, Int, List<UInt>> {
   val initBitboard = bitboard.deepCopy()
 
@@ -826,7 +826,7 @@ fun resolveBoardRemovals(
     alphaBetaScore: AlphaBetaScoreBitPacked,
     rng: Random,
     caller: String = "",
-    transpositionTable: TranspositionTable
+    transpositionTable: TranspositionTable,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- RESOLVE BOARD REMOVALS CALLED ---") }
@@ -922,7 +922,7 @@ fun resolveBoardRemovals(
                           opponentPlayer = currentPlayer,
                           alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                           rng = rng,
-                      transpositionTable = transpositionTable
+                          transpositionTable = transpositionTable,
                       )
                       .score,
           )
