@@ -1,14 +1,13 @@
 package org.example
 
+import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
-import org.example.engine.TranspositionTable
 import org.example.engine.constructZobristHashKeysTable
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
 import org.example.model.*
-import kotlin.random.Random
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -20,18 +19,19 @@ fun main() {
 
   constructZobristHashKeysTable(rng)
 
-  var gameState: State = initializeState(
-      Model.MINIMAX,
-      Strength.EASY,
-      Model.MINIMAX,
-      Strength.EASY,
-  )
+  var gameState: State =
+      initializeState(
+          Model.MINIMAX,
+          Strength.RANDOM,
+          Model.MCTS,
+          Strength.MEDIUM,
+          timeControl = true,
+      )
 
   var turn = 0
 
   var playerWhoMadeTheLastMove: Player? = null
 
-  // TODO implement function to evaluate if the current player's pieces has any valid moves left
   while (
       !evaluateCapturedPieces(gameState) // ||
   //          gameState.bitboard.identifyAvailableMoves(gameState.currentPlayer).isNotEmpty()
@@ -41,21 +41,12 @@ fun main() {
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
 
-    // TODO implement function to evaluate if the current player's pieces has any valid moves left
-    if (
-        (evaluateCapturedPieces(gameState)) // ||
-    //            gameState.bitboard.identifyAvailableMoves(gameState.currentPlayer).isEmpty()) &&
-    //            getEligiblePotentialMoves(gameState).isEmpty()
-    ) {
-      break
-    }
-
     gameState = playerTurn(gameState, turn, rng)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
     playerWhoMadeTheLastMove = gameState.currentPlayer
-    // state new turn
+    // start new turn
     gameState = gameState.rotatePlayers()
 
     // break if there are no moves on the last 2 turns as per the rules
@@ -75,7 +66,7 @@ fun main() {
   }
 
   gameState.printStateSummary()
-  logger.info { "" + ("State: ${Json.encodeToString(gameState)}") }
+  logger.info { "State: ${Json.encodeToString(gameState)}" }
 
   val winner =
       determineWinner(
@@ -86,21 +77,21 @@ fun main() {
           printStatement = true,
       )
 
-//  when (winner?.name) {
-//    gameState.currentPlayer.name -> {
-//      gameState.currentPlayer.collector?.endEpisode(1)
-//      gameState.nextPlayer.collector?.endEpisode(-1)
-//    }
-//    gameState.nextPlayer.name -> {
-//      gameState.nextPlayer.collector?.endEpisode(1)
-//      gameState.currentPlayer.collector?.endEpisode(-1)
-//    }
-//    else -> {}
-//  }
+  //  when (winner?.name) {
+  //    gameState.currentPlayer.name -> {
+  //      gameState.currentPlayer.collector?.endEpisode(1)
+  //      gameState.nextPlayer.collector?.endEpisode(-1)
+  //    }
+  //    gameState.nextPlayer.name -> {
+  //      gameState.nextPlayer.collector?.endEpisode(1)
+  //      gameState.currentPlayer.collector?.endEpisode(-1)
+  //    }
+  //    else -> {}
+  //  }
 
-  logger.info { "" + ("Player: ${winner?.name} won") }
+  logger.info { "Player: ${winner?.name} won" }
   gameState.turnMoves.keys.toList().takeLast(3).forEach { turns ->
-    logger.info { "" + ("Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}") }
+    logger.info { "Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}" }
   }
 
   val lastTurnPlayer =
@@ -121,7 +112,7 @@ fun main() {
         "does not match the player who executed the winning turn ('$lastTurnPlayer')."
   }
 
-//  gameState.collector?.saveCurrentEpisodes(agent = "mcts"/, games = 1.toString())
+  //  gameState.collector?.saveCurrentEpisodes(agent = "mcts"/, games = 1.toString())
 
   // TODO
   // val combinedExperiences = gameState.currentPlayer.collector.toBuffer() +
