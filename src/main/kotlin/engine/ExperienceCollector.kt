@@ -9,6 +9,7 @@ import org.jetbrains.kotlinx.multik.api.*
 import org.jetbrains.kotlinx.multik.api.io.writeNPZ
 import org.jetbrains.kotlinx.multik.ndarray.data.*
 import org.jetbrains.kotlinx.multik.ndarray.operations.plus
+import java.io.File
 
 data class ExperienceCollector(
     // list of episodes<game states per episode<features & nodes>>
@@ -85,9 +86,15 @@ data class ExperienceBuffer(
     val globalStates: D3Array<Float>,
     val rewards: D2Array<Int>,
 ) {
-  /** Serializes this [ExperienceBuffer] to an HDF5 file at [filePath]. */
+  /** Serializes this [ExperienceBuffer] to an HDF5 file at [path]. */
   fun serialize(path: Path) {
-    HdfFile.write(path).use { hdfFile ->
+    File("training_data").mkdirs()
+    val file = File("training_data", path.toString())
+    if (!file.exists()) {
+      file.createNewFile()
+    }
+
+    HdfFile.write(file.toPath()).use { hdfFile ->
       val experience: WritableGroup = hdfFile.putGroup("experience")
 
       experience.putDataset("states", states.toNested4D())

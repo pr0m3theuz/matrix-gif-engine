@@ -17,7 +17,7 @@ import kotlin.time.Clock.System.now
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 suspend fun main() = coroutineScope {
-  val totalGames = 2
+  val totalGames = 500
   val cores = Runtime.getRuntime().availableProcessors()
   val dispatcher = Dispatchers.Default.limitedParallelism(cores)
   val completed = AtomicInteger(0)
@@ -28,7 +28,7 @@ suspend fun main() = coroutineScope {
           try {
             val collectors = playOneGame(gameId)
             val n = completed.incrementAndGet()
-            if (n % 50 == 0) logger.info { "Completed $n/$totalGames games" }
+            if (n % 100 == 0) logger.info { "Completed $n/$totalGames games" }
             collectors
           } catch (e: Exception) {
             logger.info { "" + ("Game $gameId failed: ${e.message}") }
@@ -50,17 +50,14 @@ suspend fun main() = coroutineScope {
   // .reduce { acc, buffer -> acc + buffer }
   //
     stateBuffer.serialize(
-      (
-        Path(
-          "/training_data",
-          "state_experience_mcts_${totalGames}_games_${
-            now().toString().replace(
-              ":",
-              "-"
-            )
-          }.h5",
-        )
-      )
+          Path(
+            "state_experience_mcts_${totalGames}_games_${
+              now().toString().replace(
+                ":",
+                "-"
+              )
+            }.h5",
+          )
     )
 
   println(completed.get())

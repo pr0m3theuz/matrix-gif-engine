@@ -119,7 +119,7 @@ class ExperienceBufferTest {
     val original = sampleBuffer()
 
     val writeFile = newH5File()
-    original.serialize(writeFile)
+    original.serialize(writeFile,)
 
     val readFile = newH5File()
     val loaded = original.load(readFile)
@@ -135,7 +135,7 @@ class ExperienceBufferTest {
     val original = sampleBuffer(episodes = 1, steps = 5)
 
     val writeFile = newH5File()
-    original.serialize(writeFile)
+    original.serialize(writeFile,)
 
     val readFile = newH5File()
     val loaded = original.load(readFile)
@@ -155,7 +155,7 @@ class ExperienceBufferTest {
     val original = sampleBuffer(episodes = 1, steps = 1, rows = 2, cols = 2)
 
     val writeFile = newH5File()
-    original.serialize(writeFile)
+    original.serialize(writeFile,)
 
     val readFile = newH5File()
     val loaded = original.load(readFile)
@@ -169,7 +169,7 @@ class ExperienceBufferTest {
   fun `serialize closes file handle so it can be reopened`() {
     val buffer = sampleBuffer()
     val h5File = newH5File()
-    buffer.serialize(h5File)
+    buffer.serialize(h5File,)
 
     // If serialize failed to close, this reopen would throw or deadlock depending on backend
     val reopened = newH5File()
