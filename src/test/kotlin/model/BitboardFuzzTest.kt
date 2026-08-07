@@ -229,7 +229,7 @@ class BitboardFuzzTest {
     val move = (movesBuffer.first() as PackedMove.Single).value
 
     try {
-      bitboard.usePiecePotential(move, currentPlayer, nextPlayer)
+      bitboard.usePiecePotential(move)
       bitboard.undoUsePiecePotential(move)
 
       assertEquals(initBitboard, bitboard) {

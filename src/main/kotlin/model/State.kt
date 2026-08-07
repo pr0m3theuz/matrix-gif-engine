@@ -293,8 +293,6 @@ fun State.encodeState(): D2Array<Int> {
               MoveType.UsePotential -> {
                 newBitboard.usePiecePotential(
                     move = move.value,
-                    currentPlayer = newState.currentPlayer,
-                    nextPlayer = newState.nextPlayer,
                 )
               }
               MoveType.RetrieveCapturePieces -> {}
@@ -418,8 +416,6 @@ fun State.encodeState(): D2Array<Int> {
               MoveType.UsePotential -> {
                 newBitboard.usePiecePotential(
                     move = move.value,
-                    currentPlayer = newState.nextPlayer,
-                    nextPlayer = newState.currentPlayer,
                 )
               }
               MoveType.RetrieveCapturePieces -> {}

@@ -231,8 +231,6 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
             bitboard.usePiecePotential(
                 move = bestMove,
-                currentPlayer = state.currentPlayer,
-                nextPlayer = state.nextPlayer,
             )
           }
 

@@ -506,8 +506,6 @@ fun alphaBetaPackedMove(
 
         bitboard.usePiecePotential(
             move = moveValue,
-            currentPlayer = currentPlayer,
-            nextPlayer = opponentPlayer,
         )
 
         val postUsePotentialBitboardState = bitboard.deepCopy()
