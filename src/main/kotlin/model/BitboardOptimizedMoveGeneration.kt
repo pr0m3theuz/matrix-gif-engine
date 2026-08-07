@@ -606,13 +606,21 @@ fun Bitboard.identifyAvailableMoves(
 //          }
 //          .distinctBy { piece -> piece.extractPieceType() }
 
-	val seenTypes = mutableSetOf<PieceType>()
+	// PERFORMANCE OPTIMIZATION:
+	// Replacing mutableSetOf<PieceType>() with an integer bitmask (seenTypesMask).
+	// This avoids Set allocation and object hashing overhead during move generation,
+	// which is a highly executed hot path in search algorithms like Minimax and MCTS.
+	// Since PieceType only has 7 enum values, they easily fit into a 32-bit Int.
+	var seenTypesMask = 0
 	val playableStackedPiecesInReserve = mutableListOf<UInt>()
 
 	for (piece in currentPlayer.piecesInReserve) {
 		val type = piece.extractPieceType()
 		if (type != null) {
-			if (type != PieceType.GIPF && piece.extractPotential() && seenTypes.add(type)) {
+			val typeOrdinal = type.ordinal
+			val typeBit = 1 shl typeOrdinal
+			if (type != PieceType.GIPF && piece.extractPotential() && (seenTypesMask and typeBit) == 0) {
+				seenTypesMask = seenTypesMask or typeBit
 				playableStackedPiecesInReserve.add(piece)
 			}
 		}
