@@ -171,8 +171,6 @@ data class MCTSNode(
             val selectedMove = selectedPackedMove.value
             childBitboard.usePiecePotential(
                 move = selectedMove,
-                currentPlayer = currentPlayer,
-                nextPlayer = nextPlayer,
             )
 
             turnPhase = TurnPhase.PlayerInputWindow
@@ -618,8 +616,6 @@ fun simulatePlayerMove(
         MoveType.UsePotential -> {
           bitboard.usePiecePotential(
             move = randomPackedMove.value,
-              currentPlayer = currentPlayer,
-              nextPlayer = opponentPlayer,
           )
         }
         MoveType.RetrieveCapturePieces -> {}
