@@ -7,6 +7,7 @@ import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
 import org.example.ai.humanEvaluation.BestPackedMove
 import org.example.ai.humanEvaluation.alphaBetaPackedMove
 import org.example.ai.mcts.PackedMove
+import org.example.engine.TranspositionTable
 import org.example.model.*
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
@@ -448,11 +449,14 @@ class ResolveBoardRemovalsTest {
             PackedMove.Multiple(listOf(1090387850u)),
         )
 
-      val alphaBetaScore = AlphaBetaScoreBitPacked(
-          move = PackedMove.Multiple(listOf(16646025u, 16646027u, 16646028u, 1090387850u)),
-          alpha = 0,
-          beta = 2147483647
-      )
+    val alphaBetaScore =
+        AlphaBetaScoreBitPacked(
+            move = PackedMove.Multiple(listOf(16646025u, 16646027u, 16646028u, 1090387850u)),
+            alpha = 0,
+            beta = 2147483647,
+        )
+
+    val transpositionTable = TranspositionTable()
 
     removalLoop@ for ((index, removePieces) in removePiecesPowerset.withIndex()) {
       require(removePieces is PackedMove.Multiple)
@@ -481,13 +485,12 @@ class ResolveBoardRemovalsTest {
                   alphaBetaPackedMove(
                           maxDepth = maxDepth,
                           depth = depth.minus(1),
-                          // state = state,
                           bitboard = bitboard.deepCopy(),
                           currentPlayer = opponentPlayer,
                           opponentPlayer = currentPlayer,
-                          // gameTree = gameTree,
                           alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                           rng = rng,
+                          transpositionTable = transpositionTable,
                       )
                       .score,
           )
@@ -589,7 +592,14 @@ class ResolveBoardRemovalsTest {
             model = Model.MINIMAX,
             strength = Strength.EASY,
             piecesInReserve =
-                mutableListOf(771751936u, 771751936u, 771751936u, 973078528u, 905969664u, 905969664u),
+                mutableListOf(
+                    771751936u,
+                    771751936u,
+                    771751936u,
+                    973078528u,
+                    905969664u,
+                    905969664u,
+                ),
         )
 
     val opponentPlayer =
@@ -727,7 +737,7 @@ class ResolveBoardRemovalsTest {
             PackedMove.Single(975732640u),
             PackedMove.Single(980467599u),
             PackedMove.Single(979992486u),
-        ) 
+        )
     // ==========================================
     // 7. Transition Table Context
     // ==========================================
@@ -766,21 +776,21 @@ class ResolveBoardRemovalsTest {
     assertEquals(10, opponentPlayer.piecesInReserve.size)
     assertEquals(2, opponentPlayer.capturedPieces.size)
 
-
-      val bitboardForTesting = bitboard.deepCopy()
+    val bitboardForTesting = bitboard.deepCopy()
 
     alphaBetaPackedMove(
-      maxDepth = maxDepth,
-      depth = depth.minus(1),
-      bitboard = bitboardForTesting,
-      currentPlayer = opponentPlayer,
-      opponentPlayer = currentPlayer,
-      //					              gameTree = gameTree,
-      alphaBetaScore = AlphaBetaScoreBitPacked(),
-      rng = rng,
-      isPVNode = isPVNode && packedMove == availableMoves[0],
+        maxDepth = maxDepth,
+        depth = depth.minus(1),
+        bitboard = bitboardForTesting,
+        currentPlayer = opponentPlayer,
+        opponentPlayer = currentPlayer,
+        //					              gameTree = gameTree,
+        alphaBetaScore = AlphaBetaScoreBitPacked(),
+        rng = rng,
+        isPVNode = isPVNode && packedMove == availableMoves[0],
+        transpositionTable = TranspositionTable(),
     )
 
-      bitboardForTesting.diff(bitboard)
+    bitboardForTesting.diff(bitboard)
   }
 }

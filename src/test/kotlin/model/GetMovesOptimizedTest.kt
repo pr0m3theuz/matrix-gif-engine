@@ -14,21 +14,63 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 class GetMovesOptimizedTest {
 
-  val rays = ulongArrayOf(70900812351UL, 4366865519UL, 412231887UL, 9145962895UL, 585206237169UL, 70905040371UL, 4639562230UL, 9279123964UL, 155728765432UL, 292603166225UL, 585210494514UL, 71177764453UL, 13506477770UL, 155861942148UL, 311455416072UL, 146305679889UL, 292611393058UL, 585487060052UL, 80048265385UL, 160092369218UL, 311590641796UL, 622908653832UL, 146561664034UL, 293127522884UL, 594580739224UL, 226824562977UL, 315945930818UL, 623037653124UL, 154363136068UL, 308994708104UL, 747106870544UL, 386380613665UL, 627000741954UL, 267114549384UL, 542819033856UL, 956789048336UL, 685217417249UL, 989222969600UL, 1016373264896UL, 1070673822736UL)
+  val rays =
+      ulongArrayOf(
+          70900812351UL,
+          4366865519UL,
+          412231887UL,
+          9145962895UL,
+          585206237169UL,
+          70905040371UL,
+          4639562230UL,
+          9279123964UL,
+          155728765432UL,
+          292603166225UL,
+          585210494514UL,
+          71177764453UL,
+          13506477770UL,
+          155861942148UL,
+          311455416072UL,
+          146305679889UL,
+          292611393058UL,
+          585487060052UL,
+          80048265385UL,
+          160092369218UL,
+          311590641796UL,
+          622908653832UL,
+          146561664034UL,
+          293127522884UL,
+          594580739224UL,
+          226824562977UL,
+          315945930818UL,
+          623037653124UL,
+          154363136068UL,
+          308994708104UL,
+          747106870544UL,
+          386380613665UL,
+          627000741954UL,
+          267114549384UL,
+          542819033856UL,
+          956789048336UL,
+          685217417249UL,
+          989222969600UL,
+          1016373264896UL,
+          1070673822736UL,
+      )
 
-//    get() {
-//      val rays = mutableMapOf<ULong, ULong>()
-//      columnInfos
-//          .flatMap { it.positions }
-//          .forEach { position ->
-//            columnInfos.forEach { info ->
-//              rays[position] =
-//                  rays.getOrDefault(position, 0UL) or
-//                      if (info.columnMask and position != 0UL) info.columnMask else 0UL
-//            }
-//          }
-//      return rays
-//    }
+  //    get() {
+  //      val rays = mutableMapOf<ULong, ULong>()
+  //      columnInfos
+  //          .flatMap { it.positions }
+  //          .forEach { position ->
+  //            columnInfos.forEach { info ->
+  //              rays[position] =
+  //                  rays.getOrDefault(position, 0UL) or
+  //                      if (info.columnMask and position != 0UL) info.columnMask else 0UL
+  //            }
+  //          }
+  //      return rays
+  //    }
 
   fun getZertzJumpsInDirection(
       potentials: ULong,
@@ -90,7 +132,7 @@ class GetMovesOptimizedTest {
       emptySquares: ULong,
       movesBuffer: MutableList<PackedMove>,
   ) {
-//    val sourceTargets: MutableList<Pair<ULong, ULong>> = mutableListOf()
+    //    val sourceTargets: MutableList<Pair<ULong, ULong>> = mutableListOf()
 
     var tempPotentials = potentials
     while (tempPotentials != 0UL) {
@@ -131,7 +173,9 @@ class GetMovesOptimizedTest {
             } else if (adjacentBitPosition < potentialBitPosition) {
               tempTargets and adjacentBit - 1UL
             } else {
-              tempTargets and (adjacentBit or (adjacentBit - 1UL).inv()) and rays[potentialBitPosition]
+              tempTargets and
+                  (adjacentBit or (adjacentBit - 1UL).inv()) and
+                  rays[potentialBitPosition]
             }
 
         val tempValidTargets = validTargets // and (adjacentBits.inv())
@@ -142,22 +186,22 @@ class GetMovesOptimizedTest {
               } else {
                 validTargets.takeLowestOneBit()
               }
-//          sourceTargets.add(Pair(potential, target))
+          //          sourceTargets.add(Pair(potential, target))
           movesBuffer.add(
-            PackedMove.Single(
-              0u.packPossibleBitMove(
-                sourceBit = potential,
-                targetBit = target,
-                moveType = MoveType.UsePotential,
+              PackedMove.Single(
+                  0u.packPossibleBitMove(
+                          sourceBit = potential,
+                          targetBit = target,
+                          moveType = MoveType.UsePotential,
+                      )
+                      .setPieceType(
+                          pieceType = PieceType.ZERTZ,
+                      )
+                      .setPieceColor(
+                          pieceColor = PlayerName.BLACK,
+                      )
+                      .setPotential(potential = true)
               )
-                .setPieceType(
-                  pieceType = PieceType.ZERTZ,
-                )
-                .setPieceColor(
-                  pieceColor = PlayerName.BLACK,
-                )
-                .setPotential(potential = true)
-            )
           )
 
           tempTargets = tempTargets xor target
@@ -168,7 +212,7 @@ class GetMovesOptimizedTest {
       tempPotentials = tempPotentials xor potential
     }
 
-//    return sourceTargets
+    //    return sourceTargets
   }
 
   val shiftForward: (ULong) -> ULong = { it shl 1 }
@@ -273,102 +317,104 @@ class GetMovesOptimizedTest {
   fun getZertzMovesTwo() {
     repeat(100000) {
       val bitboard =
-        Bitboard(
-          whiteGIPF = 893352538030.toULong(),
-          blackZERTZ = 274911494144.toULong(),
-          blackPotentials = 274911494144.toULong(),
-        )
+          Bitboard(
+              whiteGIPF = 893352538030.toULong(),
+              blackZERTZ = 274911494144.toULong(),
+              blackPotentials = 274911494144.toULong(),
+          )
 
       val currrentPlayer = Player(name = PlayerName.BLACK)
 
       val movesBuffer = mutableListOf<PackedMove>()
       bitboard.getZertzMoves(
-        currrentPlayer,
-        columnInfos,
-        movesBuffer,
+          currrentPlayer,
+          columnInfos,
+          movesBuffer,
       )
 
       val expectedPiece =
-        Piece(
-          abbreviation = "BZ",
-          potential = true,
-          colorName = PlayerName.BLACK,
-          type = PieceType.ZERTZ,
-          isNeutralized = false,
-        )
+          Piece(
+              abbreviation = "BZ",
+              potential = true,
+              colorName = PlayerName.BLACK,
+              type = PieceType.ZERTZ,
+              isNeutralized = false,
+          )
 
-/*      val expectedMoves =
-        mutableListOf<PossibleBitMove>(
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 32768UL,
-            targetBit = 16UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 32768UL,
-            targetBit = 131072UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 32768UL,
-            targetBit = 137438953472UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 33554432UL,
-            targetBit = 1UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 33554432UL,
-            targetBit = 68719476736UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-          PossibleBitMove(
-            piece = expectedPiece,
-            sourceBit = 33554432UL,
-            targetBit = 137438953472UL,
-            pieceType = PieceType.ZERTZ,
-            pieceColor = PlayerName.BLACK,
-            moveType = MoveType.UsePotential,
-          ),
-        )*/
+      /*      val expectedMoves =
+      mutableListOf<PossibleBitMove>(
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 32768UL,
+          targetBit = 16UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 32768UL,
+          targetBit = 131072UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 32768UL,
+          targetBit = 137438953472UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 33554432UL,
+          targetBit = 1UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 33554432UL,
+          targetBit = 68719476736UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+        PossibleBitMove(
+          piece = expectedPiece,
+          sourceBit = 33554432UL,
+          targetBit = 137438953472UL,
+          pieceType = PieceType.ZERTZ,
+          pieceColor = PlayerName.BLACK,
+          moveType = MoveType.UsePotential,
+        ),
+      )*/
 
-//    val sortedMoves =
-//        movesBuffer.map { (it as PackedMove.Single).value.toPossibleBitMove() }.toMutableList()
-//
-//    sortedMoves.sortWith(compareBy<PossibleBitMove> { it.sourceBit }.thenBy { it.targetBit })
-//
-//    assertEquals(
-//        expectedMoves.first(),
-//        sortedMoves.first(),
-//    )
-//    assertEquals(
-//        expectedMoves.last(),
-//        sortedMoves.last(),
-//    )
-//
-//    assertEquals(
-//        expectedMoves.size,
-//        movesBuffer.size,
-//    )
-//
-//    logger.info { "" + (movesBuffer) }
+      //    val sortedMoves =
+      //        movesBuffer.map { (it as PackedMove.Single).value.toPossibleBitMove()
+      // }.toMutableList()
+      //
+      //    sortedMoves.sortWith(compareBy<PossibleBitMove> { it.sourceBit }.thenBy { it.targetBit
+      // })
+      //
+      //    assertEquals(
+      //        expectedMoves.first(),
+      //        sortedMoves.first(),
+      //    )
+      //    assertEquals(
+      //        expectedMoves.last(),
+      //        sortedMoves.last(),
+      //    )
+      //
+      //    assertEquals(
+      //        expectedMoves.size,
+      //        movesBuffer.size,
+      //    )
+      //
+      //    logger.info { "" + (movesBuffer) }
     }
   }
 
@@ -407,30 +453,55 @@ class GetMovesOptimizedTest {
   fun `getZertzMoves using shifting`() {
     repeat(100000) {
       val bitboard =
-        Bitboard(
-          blackZERTZ = 274911494144UL,
-          blackPotentials = 318541758525UL,
-        )
+          Bitboard(
+              blackZERTZ = 274911494144UL,
+              blackPotentials = 318541758525UL,
+          )
 
       val currrentPlayer = Player(name = PlayerName.BLACK)
 
       val movesBuffer = mutableListOf<PackedMove>()
-        getJumpsInDirection(
+      getJumpsInDirection(
           boardMask = 1UL.shl(40).minus(1UL),
           potentials = 274911494144.toULong(),
           occupied = 893352538030.toULong(),
           emptySquares = (893352538030.toULong().inv() and 1UL.shl(40).minus(1UL)),
           movesBuffer = movesBuffer,
-        )
+      )
 
       val expectedSourceTargets =
-        "[(32768, 16), (32768, 131072), (32768, 137438953472), (33554432, 1), (33554432, 137438953472), (33554432, 68719476736)]"
+          "[(32768, 16), (32768, 131072), (32768, 137438953472), (33554432, 1), (33554432, 137438953472), (33554432, 68719476736)]"
 
-//      assertEquals(expectedSourceTargets, target.toString())
+      //      assertEquals(expectedSourceTargets, target.toString())
     }
   }
 
-  @Test fun getYinshMoves() {}
+  @Test
+  fun getYinshMoves() {
+    val bitboard = Bitboard(
+        whiteGIPF = 66080u,
+        whiteDVONNLayer = ulongArrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u),
+        whitePUNCTLayer = ulongArrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u),
+        whiteTAMSK = 4194304u,
+        whiteYINSH = 16384u,
+        whiteZERTZ = 0u,
+        whitePotentials = 4210688u,
+        blackGIPF = 554050813952u,
+        blackDVONNLayer = ulongArrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u),
+        blackPUNCTLayer = ulongArrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u),
+        blackTAMSK = 0u,
+        blackYINSH = 5u,
+        blackZERTZ = 0u,
+        blackPotentials = 0u,
+    )
+
+    val copy = bitboard.deepCopy()
+
+    val move = 318490376u
+
+    copy.usePiecePotential(move)
+    print(move)
+  }
 
   @Test fun getDvonnMoves() {}
 
