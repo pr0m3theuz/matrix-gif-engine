@@ -175,7 +175,7 @@ class GetMovesOptimizedTest {
             } else {
               tempTargets and
                   (adjacentBit or (adjacentBit - 1UL).inv()) and
-                  rays[potentialBitPosition]
+                  rays[adjacentBitPosition]
             }
 
         val tempValidTargets = validTargets // and (adjacentBits.inv())
@@ -472,7 +472,10 @@ class GetMovesOptimizedTest {
       val expectedSourceTargets =
           "[(32768, 16), (32768, 131072), (32768, 137438953472), (33554432, 1), (33554432, 137438953472), (33554432, 68719476736)]"
 
-      //      assertEquals(expectedSourceTargets, target.toString())
+//      val results = movesBuffer.map { (it as PackedMove.Single).value.extractSourceBit() to it.value.extractTargetBit() }.toString()
+
+//      movesBuffer.associateBy { (it as PackedMove.Single).value.extractSourceBit() to it.value.extractTargetBit() }
+//            assertEquals(expectedSourceTargets, results)
     }
   }
 
