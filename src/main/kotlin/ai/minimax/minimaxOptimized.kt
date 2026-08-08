@@ -742,6 +742,11 @@ fun alphaBetaPackedMove(
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
+    // can't return null even if there are no good moves
+//  if (alphaBetaScore.move == null && depth == maxDepth) {
+//      alphaBetaScore.move = availableMoves.firstOrNull()
+//  }
+
   return BestPackedMove(alphaBetaScore.move, score = score)
 }
 

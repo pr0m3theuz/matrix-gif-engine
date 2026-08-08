@@ -40,6 +40,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
+    var preBitboard = newState.bitboard.deepCopy()
   while (
       when (newState.currentPlayer.name) {
         PlayerName.WHITE ->
@@ -53,6 +54,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
+      if (newState.bitboard == preBitboard) break
   }
 
   newState.assertPieceCount()
@@ -69,6 +71,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
 
 
   // Handle Tamsk Potential
+    preBitboard = newState.bitboard.deepCopy()
   while (
       when (newState.currentPlayer.name) {
         PlayerName.WHITE ->
@@ -82,6 +85,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
+      if (newState.bitboard == preBitboard) break
   }
 
   newState.assertPieceCount()

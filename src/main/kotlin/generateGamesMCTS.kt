@@ -1,5 +1,6 @@
 package org.example
 
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -12,29 +13,43 @@ import org.example.model.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.Path
 import kotlin.random.Random
+import kotlin.system.measureTimeMillis
 import kotlin.time.Clock.System.now
+import kotlin.time.Duration
+import kotlin.time.measureTimedValue
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 suspend fun main() = coroutineScope {
   val totalGames = 500
   val cores = Runtime.getRuntime().availableProcessors()
-  val dispatcher = Dispatchers.Default.limitedParallelism(cores)
+  val dispatcher = Dispatchers.Default.limitedParallelism((cores - 2).coerceAtLeast(1))
   val completed = AtomicInteger(0)
+    val failed = AtomicInteger(0)
+    val startTime = System.currentTimeMillis()
 
-  val jobs =
+  val (jobs: List<Deferred<Any?>>, elapsedMs: Duration) = measureTimedValue {
       (1..totalGames).map { gameId ->
         async(dispatcher) {
           try {
             val collectors = playOneGame(gameId)
             val n = completed.incrementAndGet()
-            if (n % 100 == 0) logger.info { "Completed $n/$totalGames games" }
+            if (n % 100 == 0) {
+                val secs = (System.currentTimeMillis() - startTime) / 1000.0
+                val rate = n / secs
+                val etaSecs = ((totalGames - n) / rate).toLong()
+                logger.info {
+                    "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
+                }
+            }
             collectors
           } catch (e: Exception) {
-            logger.info { "" + ("Game $gameId failed: ${e.message}") }
+              failed.incrementAndGet()
+              logger.info { "Game $gameId failed: ${e.message}" }
           }
         }
       }
+  }
 
   val experiences = jobs.awaitAll()
 
@@ -60,8 +75,9 @@ suspend fun main() = coroutineScope {
           )
     )
 
-  println(completed.get())
-  logger.info { "" + ("All games finished.") }
+    logger.info {
+        "Done. ${completed.get()} succeeded, ${failed.get()} failed, ${(System.currentTimeMillis() - startTime)/1000.0}s elapsed."
+    }
 }
 
 fun playOneGame(gameId: Int): ExperienceCollector? {

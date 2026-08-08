@@ -324,8 +324,7 @@ private suspend fun runBatch(
                 val rate = n / secs
                 val etaSecs = ((totalGames - n) / rate).toLong()
                 logger.info {
-                  "" +
-                      ("Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)")
+                  "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
                 }
               }
             } catch (e: Throwable) {
