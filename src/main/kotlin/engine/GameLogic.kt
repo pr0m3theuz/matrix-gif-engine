@@ -308,7 +308,7 @@ fun determineWinner(
     bitboard: Bitboard? = null,
     state: State? = null,
     printStatement: Boolean = false,
-): Player? {
+): Pair<Player, WinCondition>? {
   // TODO refactor & test
 
   val capturedGIPFPieces =
@@ -355,5 +355,14 @@ fun determineWinner(
   }
 
   // TODO should number of pieces captured be a win condition
-  return capturedGIPFPieces ?: bitboardHasAvailableMoves ?: playerWhoMadeTheLastMove
+
+  return capturedGIPFPieces?.let {Pair(it, WinCondition.CapturedAllGIPFPieces)} ?:
+  bitboardHasAvailableMoves?.let { Pair(it, WinCondition.HasMovesAvailable) } ?:
+  playerWhoMadeTheLastMove?.let {Pair(it, WinCondition.MadeTheLastMove) }
+}
+
+enum class WinCondition {
+  CapturedAllGIPFPieces,
+  MadeTheLastMove,
+  HasMovesAvailable
 }

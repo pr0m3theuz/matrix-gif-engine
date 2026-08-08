@@ -82,7 +82,8 @@ fun scoreBitboardState(
   }
 
   if (moves == 0 || countCapturedOpponentGIPFCount == 3 || countCapturedGIPFCount == 3) {
-    val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)
+    val winner =
+        determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)?.first
     winner?.let {
       return if (it.name == currentPlayer.name) {
         Int.MAX_VALUE - 100

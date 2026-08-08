@@ -106,7 +106,7 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
           playerWhoMadeTheLastMove,
           state = gameState,
           printStatement = false, // turn this off in batch runs
-      )
+      )?.first
 
   when (winner?.name) {
     gameState.currentPlayer.name -> {
