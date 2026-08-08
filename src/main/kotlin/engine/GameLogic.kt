@@ -1,11 +1,11 @@
 package org.example.engine
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
 import org.example.model.*
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -58,15 +58,14 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.assertPieceCount()
 
 
-    val availableMoves = mutableListOf<PackedMove>()
-    newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
+  val availableMoves = mutableListOf<PackedMove>()
+  newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
 
-    if (availableMoves.isNotEmpty()) {
-        newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+  if (availableMoves.isNotEmpty()) {
+      newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
 
-        newState.assertPieceCount()
-    }
-
+      newState.assertPieceCount()
+  }
 
   // Handle Tamsk Potential
   while (
@@ -87,7 +86,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.assertPieceCount()
 
   // TODO While there are pieces to remove
-  //  TODO Has a bug
+  //  TODO Has a bug? what bug?
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
     newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
     // recombine player pieces
