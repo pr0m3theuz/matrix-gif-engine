@@ -1587,6 +1587,151 @@ fun Bitboard.useTamskPotential(move: UInt): ULong {
   return vacantBitFound
 }
 
+fun Bitboard.removeUnusedTamskPotential(currentPlayer: Player): UInt {
+
+  //  if (sourceIndex != boardCenterSpotMask || targetIndex == sourceIndex ||
+  // move.extractPieceType() != PieceType.TAMSK || blackPotentials == 0UL || whitePotentials == 0UL)
+  // {
+  //    logger.trace { "Invalid source bit: $sourceIndex." }
+  //    return ULong.MAX_VALUE
+  //  }
+
+  // --- 1. CONFIGURABLE DEBUGGING ---
+  val playerPotentials =
+      if (currentPlayer.name == PlayerName.WHITE) whitePotentials else blackPotentials
+  val playerTAMSK = if (currentPlayer.name == PlayerName.WHITE) whiteTAMSK else blackTAMSK
+  if (logger.isDebugEnabled()) {
+    logger.trace { "--- REMOVE UNUSED TAMSK POTENTIAL CALLED ---" }
+    logger.trace { "Player: $currentPlayer.name" }
+    logger.trace { "Player TAMSK:      0b${playerTAMSK.toString(2).padStart(40, '0')}" }
+    logger.trace { "Player Potentials: 0b${playerPotentials.toString(2).padStart(40, '0')}" }
+    logger.trace {
+      "CenterMask:        0b${boardCenterSpotMask.toString(2).padStart(40, '0')}"
+    }
+  }
+
+  // --- 3. RULE VALIDATION ---
+  val isPotentialsValid = (playerPotentials and boardCenterSpotMask) == boardCenterSpotMask
+  val isTamskValid = (playerTAMSK and boardCenterSpotMask) == boardCenterSpotMask
+
+  check(isPotentialsValid && isTamskValid) {
+    buildString {
+      appendLine("ILLEGAL TAMSK OPENING MOVE:")
+      if (!isPotentialsValid) {
+        appendLine(
+            "  -> Source Violation: Source index (0b${
+            playerPotentials.toString(2).padStart(40, '0')
+          }) must intersect the board center spot mask (0b${
+            boardCenterSpotMask.toString(2).padStart(40, '0')
+          })."
+        )
+      }
+      if (!isTamskValid) {
+        appendLine(
+            "  -> Target Violation: Target index (0b${
+            playerTAMSK.toString(2).padStart(40, '0')
+          }) must be fully contained within the opening line mask (0b${
+            boardCenterSpotMask.toString(2).padStart(40, '0')
+          })."
+        )
+      }
+    }
+  }
+
+  check(isPotentialsValid) {
+    "STATE ERROR: $isPotentialsValid does not have a Potential piece at the board center spot."
+  }
+
+  // --- 4. REMOVE UNUSED POTENTIAL ---
+  when (currentPlayer.name) {
+    PlayerName.WHITE -> {
+      if (logger.isDebugEnabled()) {
+        logger.trace {
+          "" +
+              ("White TAMSK Board before removing TAMSK potential:       0b${whiteTAMSK.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("White Potentials Board before removing TAMSK potential:  0b${whitePotentials.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+        }
+      }
+      // Remove from Potentials board (using exact sourceIndex rather than broad mask)
+      whitePotentials = whitePotentials and boardCenterSpotMask.inv()
+
+      check((whitePotentials and boardCenterSpotMask) == 0UL) {
+        "Failed to remove White Potential piece from board center spott."
+      }
+      if (logger.isDebugEnabled()) {
+        logger.trace {
+          "" +
+              ("White TAMSK Board after removing TAMSK potential:        0b${whiteTAMSK.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("White Potentials Board after removing TAMSK potential:   0b${whitePotentials.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+        }
+      }
+    }
+
+    PlayerName.BLACK -> {
+      if (logger.isDebugEnabled()) {
+        logger.trace {
+          "" +
+              ("Black TAMSK Board before removing TAMSK potential:       0b${blackTAMSK.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("Black Potentials Board before removing TAMSK potential:  0b${blackPotentials.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+        }
+      }
+
+      // Remove from Potentials board (using exact sourceIndex rather than broad mask)
+      blackPotentials = blackPotentials and boardCenterSpotMask.inv()
+
+      check((blackPotentials and boardCenterSpotMask) == 0UL) {
+        "Failed to remove Black Potential piece from board center spot."
+      }
+
+      if (logger.isDebugEnabled()) {
+        logger.trace {
+          "" +
+              (" Black TAMSK Board after removing TAMSK potential:        0b${blackTAMSK.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("Black Potentials Board after removing TAMSK potential:   0b${blackPotentials.toString(2).padStart(40, '0')}")
+        }
+        logger.trace {
+          "" +
+              ("CenterMask:                            0b${boardCenterSpotMask.toString(2).padStart(40, '0')}")
+        }
+      }
+    }
+  }
+
+  if (logger.isDebugEnabled()) {
+    logger.trace { "--- REMOVE UNUSED TAMSK POTENTIAL COMPLETE ---" }
+  }
+
+  return 0u.createPiece(
+    pieceType = PieceType.TAMSK,
+    pieceColor = currentPlayer.name,
+    potential = false,
+  )
+}
+
 fun Bitboard.undoTamskPotential(
     move: UInt,
     vacantBitFound: ULong,
