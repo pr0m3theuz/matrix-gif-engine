@@ -40,7 +40,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.assertPieceCount()
 
   // Handle Tamsk Potential
-    var preBitboard = newState.bitboard.deepCopy()
   while (
       when (newState.currentPlayer.name) {
         PlayerName.WHITE ->
@@ -54,7 +53,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
-      if (newState.bitboard == preBitboard) break
   }
 
   newState.assertPieceCount()
@@ -71,7 +69,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
 
 
   // Handle Tamsk Potential
-    preBitboard = newState.bitboard.deepCopy()
   while (
       when (newState.currentPlayer.name) {
         PlayerName.WHITE ->
@@ -85,7 +82,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
-      if (newState.bitboard == preBitboard) break
   }
 
   newState.assertPieceCount()
@@ -117,40 +113,20 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
           rng = rng,
       )
 
-  //      when (turnPhase) {
-  //        TurnPhase.PieceRemoval ->
-  //            resolveBoardRemovals(
-  //                    currentPlayer = state.currentPlayer.deepCopy(),
-  //                    opponentPlayer = state.nextPlayer.deepCopy(),
-  //                    bitboard = bitboard.deepCopy(),
-  //                    depth = 3,
-  //                    alphaBetaScore = AlphaBetaScoreBitPacked(),
-  //                    rng = rng,
-  //                )
-  //                .move
-  //        else ->
-  //            alphaBetaPackedMove(
-  //                    depth = 3,
-  //                    bitboard = bitboard.deepCopy(),
-  //                    currentPlayer = state.currentPlayer.deepCopy(),
-  //                    opponentPlayer = state.nextPlayer.deepCopy(),
-  //                    alphaBetaScore = AlphaBetaScoreBitPacked(),
-  //                    rng = rng,
-  //                )
-  //                .move
-  //      }
+  /**
+   * The TAMSK-potential Rules
+   * You must make use of it in the same turn it is pushed onto
+   * the middle spot. If not, the potential goes out of the  game.
+   */
+  // if packedMove == null && turnPhase == TurnPhase.ExtraMove
+  //  remove potential from the board and add it to the opponent's captured pieces.
+  //  figure how to handle this in the minimax search.
+  if (packedMove == null && turnPhase == TurnPhase.ExtraMove) {
+    val unusedTAMSKPotential = bitboard.removeUnusedTamskPotential(state.currentPlayer)
 
-  // TODO use agent to selectMove
-  // TODO handle bestMove when selectMoveMCTS returns null. it is a pass? how to record
-  //    val packedMove: PackedMove? =
-  //        selectMoveMCTS(
-  //            bitboard = bitboard,
-  //            currentPlayer = state.currentPlayer,
-  //            nextPlayer = state.nextPlayer,
-  //            turnPhase = turnPhase,
-  //            rounds = 0..999,
-  //            rng = rng,
-  //        )
+    // add the unused TAMSK Potential to the opponent's captured pieces.
+    state.nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+  }
 
   if (packedMove != null) {
     // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }
