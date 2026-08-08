@@ -9,6 +9,7 @@ enum class MoveType {
   AddPiece,
   UsePotential,
   RetrieveCapturePieces,
+// TODO add UnusedTamskPotential,
 }
 
 enum class TurnPhase {

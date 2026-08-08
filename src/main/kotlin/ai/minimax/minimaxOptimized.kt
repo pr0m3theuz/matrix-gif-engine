@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example.ai.humanEvaluation
 
 import kotlin.random.Random
@@ -114,6 +116,10 @@ fun alphaBetaPackedMove(
     // score = evaluate s for original player
     // return [null, score]
 
+    // TODO add Quiescence Search
+
+    val score = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng)
+
     // d. UNDO the piece removals to evaluate the next choice
     if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
       currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
@@ -132,8 +138,6 @@ fun alphaBetaPackedMove(
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-    val score = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng)
-
     return BestPackedMove(
         score = score,
     )
@@ -150,7 +154,6 @@ fun alphaBetaPackedMove(
   if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
     if (ttEntry.bound == Bound.EXACT) {
 
-      // d. UNDO the piece removals to evaluate the next choice
       if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
         currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
 
@@ -173,7 +176,6 @@ fun alphaBetaPackedMove(
       )
     }
     if (ttEntry.bound == Bound.BETA && ttEntry.score >= alphaBetaScore.beta) {
-      // d. UNDO the piece removals to evaluate the next choice
       if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
         currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
 
@@ -196,7 +198,6 @@ fun alphaBetaPackedMove(
       )
     }
     if (ttEntry.bound == Bound.ALPHA && ttEntry.score >= alphaBetaScore.alpha) {
-      // d. UNDO the piece removals to evaluate the next choice
       if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
         currentPlayer.uncombinePieces(preMoveNewlyStackedPieces)
 
@@ -227,18 +228,28 @@ fun alphaBetaPackedMove(
   // how to make a move and then assess the state/
   availableMoves.shuffle(rng)
 
-  if (ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name) {
-    availableMoves.sortByDescending {
-      if ((it as PackedMove.Single).value == ttEntry.move) {
-        2
-      } else if (
-          (it.value.extractPieceType() == ttEntry.move.extractPieceType() &&
-              it.value.extractMoveType() == ttEntry.move.extractMoveType())
-      )
-          1
-      else 0
+  val pvMove = ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name
+
+  availableMoves.sortByDescending {
+    val move = (it as PackedMove.Single).value
+    if (pvMove && move == ttEntry.move) {
+      10
+    } else if (it.value == currentPlayer.killerMoves[0][depth]) {
+      3
+    } else if (it.value == currentPlayer.killerMoves[1][depth]) {
+      2
+    } else if (
+        pvMove && // todo try target bit and push direction
+            move.extractTargetBit() == ttEntry.move.extractTargetBit() &&
+            move.extractPushDirection() == ttEntry.move.extractPushDirection() &&
+            move.extractMoveType() == ttEntry.move.extractMoveType()
+    ) {
+      1
+    } else {
+      0
     }
   }
+
   // endregion
 
   // TODO trying to improve move ordering by searching the smaller subset of UsePotential moves
@@ -309,9 +320,9 @@ fun alphaBetaPackedMove(
               bitboard.addPieceToBitboard(moveValue)
             }
 
-//        check(vacantBitFound != null) {
-//          "Invalid board state: No vacant bit found for piece deployment."
-//        }
+        //        check(vacantBitFound != null) {
+        //          "Invalid board state: No vacant bit found for piece deployment."
+        //        }
 
         val postMoveBitboardState = bitboard.deepCopy()
 
@@ -493,6 +504,8 @@ fun alphaBetaPackedMove(
           // best: $alphaBetaScore"
           //          }
 
+          currentPlayer.updateKillerMoves(moveValue, depth)
+
           bound = Bound.BETA
           break@outerLoop
           //                  return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
@@ -635,23 +648,12 @@ fun alphaBetaPackedMove(
           alphaBetaScore.move = move.move
 
           bound = Bound.EXACT
-
-          //          logger.info { "use potential: ply $depth index $index: set best to:
-          // $alphaBetaScore" }
-          //          logger.info {
-          //            "use potential: ply $depth player: ${currentPlayer.name} index: $index:
-          // move: $move, score: ${move.score},  alphaBetaScore: $alphaBetaScore"
-          //          }
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
-          //          logger.info {
-          //            "use potential: ply $depth player: ${currentPlayer.name} move $index: return
-          // best: $alphaBetaScore"
-          //          }
+          currentPlayer.updateKillerMoves(moveValue, depth)
+
           bound = Bound.BETA
           break@outerLoop
-          //          require(alphaBetaScore.move != null)
-          //          return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
         }
       }
       // endregion
@@ -742,10 +744,10 @@ fun alphaBetaPackedMove(
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-    // can't return null even if there are no good moves
-//  if (alphaBetaScore.move == null && depth == maxDepth) {
-//      alphaBetaScore.move = availableMoves.firstOrNull()
-//  }
+  // can't return null even if there are no good moves
+  //  if (alphaBetaScore.move == null && depth == maxDepth) {
+  //      alphaBetaScore.move = availableMoves.firstOrNull()
+  //  }
 
   return BestPackedMove(alphaBetaScore.move, score = score)
 }

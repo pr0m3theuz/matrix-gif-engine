@@ -125,6 +125,8 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
     // add the unused TAMSK Potential to the opponent's captured pieces.
     state.nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+
+    state.turnMoves.getOrDefault(turn, mutableListOf()).add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
   }
 
   if (packedMove != null) {

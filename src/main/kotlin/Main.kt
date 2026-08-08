@@ -22,8 +22,8 @@ fun main() {
   var gameState: State =
       initializeState(
           Model.MINIMAX,
-          Strength.RANDOM,
-          Model.MCTS,
+          Strength.MEDIUM,
+          Model.MINIMAX,
           Strength.MEDIUM,
           timeControl = true,
       )

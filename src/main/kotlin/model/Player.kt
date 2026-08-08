@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example.model
 
 import kotlin.random.Random
@@ -101,14 +103,15 @@ fun getStrength(strength: String): Strength {
 
 @Serializable
 data class Player(
-    val name: PlayerName,
-    val model: Model = Model.NEURAL_NETWORK,
-    val strength: Strength = Strength.RANDOM,
-    val piecesInReserve: MutableList<UInt> = mutableListOf(),
-    val capturedPieces: MutableList<UInt> = mutableListOf(),
-    val timeControl: Boolean = false,
-    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
-    @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
+  val name: PlayerName,
+  val model: Model = Model.NEURAL_NETWORK,
+  val strength: Strength = Strength.RANDOM,
+  val piecesInReserve: MutableList<UInt> = mutableListOf(),
+  val capturedPieces: MutableList<UInt> = mutableListOf(),
+  val timeControl: Boolean = false,
+  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+  @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
+  @Transient val killerMoves: List<UIntArray> = List(2) {  UIntArray(128) },
 ) {
   fun deepCopy(copyCollector: Boolean = false): Player {
     //    val string = Json.encodeToString(serializer(), this)
@@ -123,6 +126,7 @@ data class Player(
         timeControl = this.timeControl,
         collector = if (copyCollector) this.collector else null,
         transpositionTable = this.transpositionTable,
+        killerMoves = this.killerMoves,
     )
   }
 
@@ -391,6 +395,15 @@ data class Player(
       logger.info { "Post Uncombine Basic Pieces: $postReserveBasics" }
       logger.info { "--- UNCOMBINE PIECES COMPLETED ---" }
     }
+  }
+}
+
+fun Player.updateKillerMoves(move: UInt, depth: Int) {
+  val firstKiller = killerMoves[0][depth]
+
+  if (firstKiller != move) {
+    killerMoves[1][depth] = firstKiller
+    killerMoves[0][depth] = move
   }
 }
 

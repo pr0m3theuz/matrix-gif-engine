@@ -102,6 +102,8 @@ fun Bitboard.getTamskMoves(
 			)
 		)
 	}
+
+	// TODO add Unused TAMSK Potential Move to Moves Buffer
 }
 
 fun Bitboard.getZertzMoves(
