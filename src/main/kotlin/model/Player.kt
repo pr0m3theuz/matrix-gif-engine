@@ -2,10 +2,16 @@
 
 package org.example.model
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTimedValue
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
@@ -15,9 +21,6 @@ import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
 import org.example.engine.TranspositionTable
-import kotlin.math.min
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTimedValue
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -355,14 +358,14 @@ data class Player(
     // OPTIMIZATION: flatMap cleanly replaces map { MutableList(...) }.flatten()
     val unstackedPieces: List<UInt> = newlyStackedPieces.flatMap { piece ->
       requireNotNull(piece.extractPieceType()) { "Piece Type cannot be null. $piece." }
-        listOfNotNull(
-            piece.extractPieceType()?.let {
-                0u.createPiece(it, piece.extractPieceColor(), potential = false)
-            },
-            piece.extractPieceType()?.let {
-                0u.createPiece(it, piece.extractPieceColor(), potential = false)
-            },
-        )
+      listOfNotNull(
+          piece.extractPieceType()?.let {
+            0u.createPiece(it, piece.extractPieceColor(), potential = false)
+          },
+          piece.extractPieceType()?.let {
+            0u.createPiece(it, piece.extractPieceColor(), potential = false)
+          },
+      )
     }
 
     // --- 3. MUTATE STATE (With Post-Condition Checks) ---
@@ -423,6 +426,7 @@ fun Player.updateCaptureMoves(move: UInt, depth: Int) {
 fun Player.selectMove(
     turnPhase: TurnPhase,
     bitboard: Bitboard,
+    currentPlayer: Player,
     opponent: Player,
     rng: Random,
 ): PackedMove? {
@@ -446,7 +450,7 @@ fun Player.selectMove(
                 alphaBetaPackedMove(
                   maxDepth = startingDepth,
                   bitboard = bitboard.deepCopy(),
-                  currentPlayer = this.deepCopy(),
+                  currentPlayer = currentPlayer.deepCopy(),
                   opponentPlayer = opponent.deepCopy(),
                   alphaBetaScore = AlphaBetaScoreBitPacked(),
                   rng = rng,
@@ -468,17 +472,17 @@ fun Player.selectMove(
           } else {
             transpositionTable.newSearch()
             alphaBetaPackedMove(
-              maxDepth = strength.minimaxDepth,
-              bitboard = bitboard.deepCopy(),
-              currentPlayer = this.deepCopy(),
-              opponentPlayer = opponent.deepCopy(),
-              alphaBetaScore = AlphaBetaScoreBitPacked(),
-              rng = rng,
-              depth = strength.minimaxDepth,
-              turnPhase = turnPhase,
-              transpositionTable = transpositionTable
-            )
-              .move
+                    maxDepth = strength.minimaxDepth,
+                    bitboard = bitboard.deepCopy(),
+                    currentPlayer = currentPlayer.deepCopy(),
+                    opponentPlayer = opponent.deepCopy(),
+                    alphaBetaScore = AlphaBetaScoreBitPacked(),
+                    rng = rng,
+                    depth = strength.minimaxDepth,
+                    turnPhase = turnPhase,
+                    transpositionTable = transpositionTable,
+                )
+                .move
           }
         }
         TurnPhase.PieceRemoval -> {
@@ -492,20 +496,21 @@ fun Player.selectMove(
             val endTime = startTime + remainingTime.inWholeNanoseconds
 
             while (System.nanoTime() < endTime || startingDepth <= strength.minimaxDepth) {
-              val (move, elapsed) = measureTimedValue {
-                resolveBoardRemovals(
-                  maxDepth = startingDepth,
-                  currentPlayer = this.deepCopy(),
-                  opponentPlayer = opponent.deepCopy(),
-                  bitboard = bitboard.deepCopy(),
-                  alphaBetaScore = AlphaBetaScoreBitPacked(),
-                  rng = rng,
-                  depth = startingDepth,
-                  caller = "PLAYER $name selectMove() @ ${startingDepth}",
-                  transpositionTable = transpositionTable,
-                )
-                  .move
-              }
+              val (move, elapsed) =
+                  measureTimedValue {
+                    resolveBoardRemovals(
+                            maxDepth = startingDepth,
+                            currentPlayer = this.deepCopy(),
+                            opponentPlayer = opponent.deepCopy(),
+                            bitboard = bitboard.deepCopy(),
+                            alphaBetaScore = AlphaBetaScoreBitPacked(),
+                            rng = rng,
+                            depth = startingDepth,
+                            caller = "PLAYER $name selectMove() @ ${startingDepth}",
+                            transpositionTable = transpositionTable,
+                        )
+                        .move
+                  }
 
               remainingTime -= elapsed
               bestMove = move
@@ -518,17 +523,17 @@ fun Player.selectMove(
           } else {
             transpositionTable.newSearch()
             resolveBoardRemovals(
-              maxDepth = strength.minimaxDepth,
-              currentPlayer = this.deepCopy(),
-              opponentPlayer = opponent.deepCopy(),
-              bitboard = bitboard.deepCopy(),
-              alphaBetaScore = AlphaBetaScoreBitPacked(),
-              rng = rng,
-              depth = strength.minimaxDepth,
-              caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
-              transpositionTable = transpositionTable,
-            )
-              .move
+                    maxDepth = strength.minimaxDepth,
+                    currentPlayer = this.deepCopy(),
+                    opponentPlayer = opponent.deepCopy(),
+                    bitboard = bitboard.deepCopy(),
+                    alphaBetaScore = AlphaBetaScoreBitPacked(),
+                    rng = rng,
+                    depth = strength.minimaxDepth,
+                    caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
+                    transpositionTable = transpositionTable,
+                )
+                .move
           }
         }
       }

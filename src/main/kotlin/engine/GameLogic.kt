@@ -107,8 +107,9 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
   val packedMove: PackedMove? =
       state.currentPlayer.selectMove(
           turnPhase = turnPhase,
-          bitboard = bitboard.deepCopy(),
-          opponent = state.nextPlayer.deepCopy(),
+          bitboard = bitboard,
+          currentPlayer = state.currentPlayer,
+          opponent = state.nextPlayer,
           rng = rng,
       )
 
