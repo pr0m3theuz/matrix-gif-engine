@@ -529,6 +529,7 @@ fun Player.selectMove(
           rounds = strength.mctsRounds,
           rng = rng,
           duration = if (timeControl) strength.duration else Duration.ZERO,
+        useRAVE = this.useRAVE,
       )
     }
     Model.NEURAL_NETWORK -> {

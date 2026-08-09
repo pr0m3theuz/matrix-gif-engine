@@ -5,11 +5,12 @@ package org.example.model
 import org.example.engine.TranspositionTable
 
 fun initializeState(
-  playerOneModel: Model = Model.MINIMAX,
-  playerOneStrength: Strength = Strength.EASY,
-  playerTwoModel: Model = Model.MINIMAX,
-  playerTwoStrength: Strength = Strength.EASY,
-  timeControl: Boolean = false
+    playerOneModel: Model = Model.MINIMAX,
+    playerOneStrength: Strength = Strength.EASY,
+    playerTwoModel: Model = Model.MINIMAX,
+    playerTwoStrength: Strength = Strength.EASY,
+    timeControl: Boolean = false,
+    useRAVE: Boolean = false,
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
@@ -20,7 +21,8 @@ fun initializeState(
           model = playerOneModel,
           strength = playerOneStrength,
           timeControl = timeControl,
-          transpositionTable = TranspositionTable()
+          useRAVE = useRAVE,
+          transpositionTable = TranspositionTable(),
       )
 
   val blackPlayer =
@@ -29,7 +31,8 @@ fun initializeState(
           model = playerTwoModel,
           strength = playerTwoStrength,
           timeControl = timeControl,
-          transpositionTable = TranspositionTable()
+          useRAVE = useRAVE,
+          transpositionTable = TranspositionTable(),
       )
 
   // Create pieces
