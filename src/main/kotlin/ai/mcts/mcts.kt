@@ -1,5 +1,10 @@
 package org.example.ai.mcts
 
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.sqrt
+import kotlin.random.Random
+import kotlin.time.Duration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.engine.determineWinner
@@ -7,21 +12,39 @@ import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-import kotlin.math.ln
-import kotlin.math.sqrt
-import kotlin.random.Random
-import kotlin.time.Duration
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
-fun calculateUCTScore(
-    parentRollouts: Double,
-    childRollouts: Int,
-    winPercentage: Float,
-    temperature: Double = 1.5,
+fun calculateUCTRAVEScore(
+  parentRollouts: Double,
+  childRollouts: Int,
+  winPercentage: Float,
+  temperature: Double = 1.5,
+  useRAVE: Boolean = false,
+  raveWins: Int = 0,
+  raveCounts: Int = 0,
+  raveK: Int = 3,
+  bias: Double =
+        10.0.pow(
+            -7
+        ), // see pg 3 for bias constant amounts https://www.ijcai.org/Proceedings/15/Papers/112.pdf
 ): Double {
   val exploration = sqrt(ln(parentRollouts).div(childRollouts.toDouble()))
-  return winPercentage + temperature * exploration
+  val ucb = winPercentage + temperature * exploration
+
+  if (!useRAVE || raveCounts == 0) {
+    return ucb
+  }
+
+  val betaState =  sqrt(raveK / ((3 * parentRollouts) + raveK))
+    // raveCounts / (raveCounts + parentRollouts + bias * raveCounts + parentRollouts)
+
+  val amaf = raveWins.toDouble() / raveCounts
+  // val mean = winPercentage
+
+  val uctRAVE = (((1.0 - betaState) * winPercentage) + (betaState * amaf))
+
+  return uctRAVE + temperature * exploration
 }
 
 // TODO how to figure out when a turn ends
@@ -74,6 +97,9 @@ data class MCTSNode(
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var rolloutCounts: Int = 0,
     val unvisitedMoves: MutableList<PackedMove> = mutableListOf(),
+    val useRAVE: Boolean = false,
+    var raveCounts: Int = 0,
+    var raveWins: Int = 0,
 ) {
   override fun toString(): String {
     // Break the cycle: Do NOT include parentNode or childrenNodes here
@@ -104,12 +130,12 @@ data class MCTSNode(
      * current player? if yes, remove pieces. Add retrieval/capture moves to
      * identifyAvailableMoves()
      */
-
-    this.turnCount = if (parentNode?.currentPlayer?.name == this.currentPlayer.name) {
-	    this.turnCount
-    } else {
-	    this.turnCount.plus(1)
-    }
+    this.turnCount =
+        if (parentNode?.currentPlayer?.name == this.currentPlayer.name) {
+          this.turnCount
+        } else {
+          this.turnCount.plus(1)
+        }
 
     var turnPhase: TurnPhase? = null
     when (selectedPackedMove) {
@@ -231,7 +257,7 @@ data class MCTSNode(
                   currentPlayerRemovablePieces,
               )
 
-          !turnHasHadNormalMove && turnPhase != TurnPhase.PlayerInputWindow  ->
+          !turnHasHadNormalMove && turnPhase != TurnPhase.PlayerInputWindow ->
               ChildState(
                   childCurrentPlayer,
                   childNextPlayer,
@@ -290,6 +316,7 @@ data class MCTSNode(
                     previousTurnPhases.plus(this.turnPhase)
                 else emptyList(),
             unvisitedMoves = nodeMoves.toMutableList(),
+            useRAVE = this.useRAVE,
         )
 
     //    if (nodeMoves.isEmpty()) {
@@ -320,29 +347,40 @@ data class MCTSNode(
     this.rolloutCounts += 1
   }
 
+  fun updateRAVE(winner: Player) {
+    this.raveWins += if (this.currentPlayer == winner) 1 else 0
+    this.raveCounts += 1
+  }
+
   fun winPercentage(player: Player): Float {
+    if (rolloutCounts == 0) return 0f
     return winCounts[player.name]!!.div(this.rolloutCounts.toFloat())
   }
 
   fun selectChildNodeToExplore(): MCTSNode {
     val totalRollouts = childrenNodes.sumOf { it.rolloutCounts.toDouble() }
+
+    //
+    val childNodePlayer = childrenNodes.first().currentPlayer
+
     var bestScore = -1.0
     var bestChildNode: MCTSNode? = null
 
-	  for (childNode in this.childrenNodes) {
-		  val score =
-			  calculateUCTScore(
-				  parentRollouts = totalRollouts,
-				  childRollouts = childNode.rolloutCounts,
-				  winPercentage = childNode.winPercentage(nextPlayer),
-				  temperature = 1.5,
-			  )
+    for (childNode in this.childrenNodes) {
+      val score =
+          calculateUCTRAVEScore(
+              parentRollouts = totalRollouts,
+              childRollouts = childNode.rolloutCounts,
+              winPercentage = childNode.winPercentage(childNodePlayer),
+              temperature = 1.5,
+              useRAVE = this.useRAVE,
+          )
 
-		  if (score > bestScore) {
-			  bestScore = score
-			  bestChildNode = childNode
-		  }
-	  }
+      if (score > bestScore) {
+        bestScore = score
+        bestChildNode = childNode
+      }
+    }
 
     if (this.childrenNodes.size == 1) {
       bestChildNode = this.childrenNodes.first()
@@ -359,13 +397,14 @@ data class MCTSNode(
 }
 
 fun selectMoveMCTS(
-  bitboard: Bitboard,
-  currentPlayer: Player,
-  nextPlayer: Player,
-  rounds: IntRange = 0..9999,
-  turnPhase: TurnPhase,
-  rng: Random,
-  duration: Duration = Duration.ZERO,
+    bitboard: Bitboard,
+    currentPlayer: Player,
+    nextPlayer: Player,
+    rounds: IntRange = 0..9999,
+    turnPhase: TurnPhase,
+    rng: Random,
+    duration: Duration = Duration.ZERO,
+    useRAVE: Boolean = false,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -373,9 +412,9 @@ fun selectMoveMCTS(
 
   if (availableMoves.isEmpty()) return null
 
-    if (rounds.last() == 0) {
-        return availableMoves.random(rng)
-    }
+  if (rounds.last() == 0) {
+    return availableMoves.random(rng)
+  }
 
   val rootMCTSNode =
       MCTSNode(
@@ -384,6 +423,7 @@ fun selectMoveMCTS(
           nextPlayer = nextPlayer,
           turnPhase = turnPhase,
           unvisitedMoves = availableMoves.toMutableList(),
+          useRAVE = useRAVE,
       )
 
   if (rootMCTSNode.unvisitedMoves.isEmpty()) {
@@ -395,9 +435,9 @@ fun selectMoveMCTS(
       var currentNode: MCTSNode? = rootMCTSNode
 
       while (
-        currentNode?.unvisitedMoves?.isEmpty() == true &&
-        currentNode.childrenNodes.isNotEmpty() &&
-        !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+          currentNode?.unvisitedMoves?.isEmpty() == true &&
+              currentNode.childrenNodes.isNotEmpty() &&
+              !evaluateCapturedPieces(currentNode.currentPlayer) // &&
       // !evaluatePiecesInReserve(currentNode.currentPlayer)
       ) {
         //      if (currentNode.unvisitedMoves.isEmpty() && currentNode.childrenNodes.isEmpty()) {
@@ -418,13 +458,16 @@ fun selectMoveMCTS(
 
       if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
 
+      val simulationActions: MutableList<PackedMove> = mutableListOf()
+
       val winner =
-        simulateRandomGame(
-          currentNode.bitboard.deepCopy(),
-          currentNode.currentPlayer.deepCopy(),
-          currentNode.nextPlayer.deepCopy(),
-          rng = rng,
-        )
+          simulateRandomGame(
+              currentNode.bitboard.deepCopy(),
+              currentNode.currentPlayer.deepCopy(),
+              currentNode.nextPlayer.deepCopy(),
+              rng = rng,
+              simulationActions = simulationActions,
+          )
 
       while (currentNode != null && winner != null) {
         currentNode.recordWin(winner)
@@ -439,9 +482,9 @@ fun selectMoveMCTS(
       var currentNode: MCTSNode? = rootMCTSNode
 
       while (
-        currentNode?.unvisitedMoves?.isEmpty() == true &&
-        currentNode.childrenNodes.isNotEmpty() &&
-        !evaluateCapturedPieces(currentNode.currentPlayer)
+          currentNode?.unvisitedMoves?.isEmpty() == true &&
+              currentNode.childrenNodes.isNotEmpty() &&
+              !evaluateCapturedPieces(currentNode.currentPlayer)
       ) {
         currentNode = currentNode.selectChildNodeToExplore()
       }
@@ -453,30 +496,44 @@ fun selectMoveMCTS(
 
       if (currentNode.unvisitedMoves.isNotEmpty()) currentNode = currentNode.addRandomChildNode(rng)
 
+      // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
+      // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
+      val simulationActions: MutableList<PackedMove> = mutableListOf()
+
       val winner =
-        simulateRandomGame(
-          currentNode.bitboard.deepCopy(),
-          currentNode.currentPlayer.deepCopy(),
-          currentNode.nextPlayer.deepCopy(),
-          rng = rng,
-        )
+          simulateRandomGame(
+              currentNode.bitboard.deepCopy(),
+              currentNode.currentPlayer.deepCopy(),
+              currentNode.nextPlayer.deepCopy(),
+              rng = rng,
+              simulationActions,
+          )
 
       while (currentNode != null && winner != null) {
         currentNode.recordWin(winner)
         currentNode = currentNode.parentNode
+
+        // Check if this sibling's action appears in the simulation
+        if (currentNode != null && currentNode.childrenNodes.isNotEmpty()) {
+          for (siblingNode in currentNode.childrenNodes) {
+            if (siblingNode.move in simulationActions) {
+              siblingNode.updateRAVE(winner)
+            }
+          }
+        }
       }
     }
   }
 
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
-	for (child in rootMCTSNode.childrenNodes) {
-		val winPercentage = child.winPercentage(nextPlayer)
-		if (winPercentage > bestPercentage) {
-			bestPercentage = winPercentage
-			bestMove = child.move
-		}
-	}
+  for (child in rootMCTSNode.childrenNodes) {
+    val winPercentage = child.winPercentage(nextPlayer)
+    if (winPercentage > bestPercentage) {
+      bestPercentage = winPercentage
+      bestMove = child.move
+    }
+  }
 
   // TODO What to do when no best move is found?
   return bestMove ?: availableMoves.random(rng)
@@ -497,14 +554,15 @@ fun simulateRandomGame(
     currentPlayer: Player,
     nextPlayer: Player,
     rng: Random,
+    simulationActions: MutableList<PackedMove>,
 ): Player? {
 
   var playerWhoMadeTheLastMove: Player? = null
 
   // TODO if > 15 pieces and GIPF pieces in reserve rotate player
 
-  var activePlayer = currentPlayer.deepCopy()
-  var opponentPlayer = nextPlayer.deepCopy()
+  var activePlayer = currentPlayer
+  var opponentPlayer = nextPlayer
 
   val availableMoves = mutableListOf<PackedMove>()
   bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
@@ -520,6 +578,7 @@ fun simulateRandomGame(
         currentPlayer = activePlayer,
         opponentPlayer = opponentPlayer,
         rng = rng,
+        simulationActions,
     )
 
     // TODO fix early game turns. white gets an extra move
@@ -541,10 +600,11 @@ fun simulateRandomGame(
 
   val winner =
       determineWinner(
-          activePlayer,
-          opponentPlayer,
-          playerWhoMadeTheLastMove ?: nextPlayer,
-      )?.first
+              activePlayer,
+              opponentPlayer,
+              playerWhoMadeTheLastMove ?: nextPlayer,
+          )
+          ?.first
   //  logger.info { "" + ("Player: ${winner?.name} won") }
   return winner
 }
@@ -554,6 +614,7 @@ fun simulatePlayerTurn(
     currentPlayer: Player,
     opponentPlayer: Player,
     rng: Random,
+    simulationActions: MutableList<PackedMove>,
 ) {
   if (logger.isDebugEnabled()) {
     //		logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
@@ -569,6 +630,7 @@ fun simulatePlayerTurn(
       currentPlayer,
       opponentPlayer,
       rng,
+      simulationActions,
   )
 
   val tamskMoves = mutableListOf<PackedMove>()
@@ -580,6 +642,7 @@ fun simulatePlayerTurn(
         currentPlayer,
         opponentPlayer,
         rng,
+        simulationActions,
     )
   }
 
@@ -588,6 +651,7 @@ fun simulatePlayerTurn(
       currentPlayer,
       opponentPlayer,
       rng = rng,
+      simulationActions,
   )
 
   tamskMoves.clear()
@@ -599,14 +663,38 @@ fun simulatePlayerTurn(
         currentPlayer,
         opponentPlayer,
         rng = rng,
+        simulationActions,
     )
   }
+
+  // TODO come back to this for UnusedTamskPotential when there are no vacancies on the board
+  //  while (
+  //    when (currentPlayer.name) {
+  //      PlayerName.WHITE ->
+  //        bitboard.whiteTAMSK and
+  //            bitboard.whitePotentials and
+  //            boardCenterSpotMask
+  //      PlayerName.BLACK ->
+  //        bitboard.blackTAMSK and
+  //            bitboard.blackPotentials and
+  //            boardCenterSpotMask
+  //    } == boardCenterSpotMask
+  //  ) {
+  //    simulatePlayerMove(
+  //      bitboard,
+  //      currentPlayer,
+  //      opponentPlayer,
+  //      rng = rng,
+  //      simulationActions
+  //    )
+  //  }
 
   simulatePieceRetrievalCapture(
       bitboard,
       currentPlayer,
       opponentPlayer,
       rng,
+      simulationActions,
   )
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
@@ -617,6 +705,7 @@ fun simulatePlayerMove(
     currentPlayer: Player,
     opponentPlayer: Player,
     rng: Random,
+    simulationActions: MutableList<PackedMove>,
 ) {
   //  val initbitboard = bitboard.deepCopy()
   val possibleBitMoves = mutableListOf<PackedMove>()
@@ -628,6 +717,8 @@ fun simulatePlayerMove(
   }
 
   val randomPackedMove = possibleBitMoves.random(rng)
+
+  simulationActions.add(randomPackedMove)
 
   when (randomPackedMove) {
     is PackedMove.Multiple -> {}
@@ -645,7 +736,7 @@ fun simulatePlayerMove(
             bitboard.useTamskPotential(randomPackedMove.value)
           } else {
             val selectedPiece =
-              randomPackedMove.value.onlyPiece().let { currentPlayer.selectPiece(it) }
+                randomPackedMove.value.onlyPiece().let { currentPlayer.selectPiece(it) }
 
             selectedPiece?.let {
               bitboard.addPieceToBitboard(randomPackedMove.value)
@@ -654,7 +745,7 @@ fun simulatePlayerMove(
         }
         MoveType.UsePotential -> {
           bitboard.usePiecePotential(
-            move = randomPackedMove.value,
+              move = randomPackedMove.value,
           )
         }
         MoveType.RetrieveCapturePieces -> {}
@@ -670,12 +761,15 @@ fun simulatePieceRetrievalCapture(
     currentPlayer: Player,
     opponentPlayer: Player,
     rng: Random,
+    simulationActions: MutableList<PackedMove>,
 ) {
   val removePiecesPowerset = mutableListOf<PackedMove>()
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
 
   if (removePiecesPowerset.isNotEmpty()) {
     val selectedPieceToRemove = removePiecesPowerset.random(rng)
+
+    simulationActions.add(selectedPieceToRemove)
 
     when (selectedPieceToRemove) {
       is PackedMove.Multiple -> {
