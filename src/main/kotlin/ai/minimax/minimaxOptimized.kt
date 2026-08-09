@@ -232,19 +232,46 @@ fun alphaBetaPackedMove(
 
   availableMoves.sortByDescending {
     val move = (it as PackedMove.Single).value
+    val killer0 = currentPlayer.killerMoves[0][depth]
+    val killer1 = currentPlayer.killerMoves[1][depth]
+    val capture0 = currentPlayer.captureMoves[0][depth]
+    val capture1 = currentPlayer.captureMoves[1][depth]
+
     if (pvMove && move == ttEntry.move) {
       10
-    } else if (it.value == currentPlayer.killerMoves[0][depth]) {
-      3
-    } else if (it.value == currentPlayer.killerMoves[1][depth]) {
-      2
+    } else if (move == killer0) {
+      9
+    } else if (move == killer1) {
+      8
+      //    } else if (move == capture0) {
+      //      7
+      //    } else if (move == capture1) {
+      //      6
     } else if (
-        pvMove && // todo try target bit and push direction
-            move.extractTargetBit() == ttEntry.move.extractTargetBit() &&
-            move.extractPushDirection() == ttEntry.move.extractPushDirection() &&
-            move.extractMoveType() == ttEntry.move.extractMoveType()
+        pvMove && // todo try target bit and push direction. works for add piece but not for use
+                  // potential
+            ((move.extractTargetBit() == ttEntry.move.extractTargetBit() &&
+                move.extractPushDirection() == ttEntry.move.extractPushDirection() &&
+                move.extractMoveType() == ttEntry.move.extractMoveType()) //||
+//                (move.extractPieceType() == ttEntry.move.extractPieceType() &&
+//                    move.extractMoveType() == ttEntry.move.extractMoveType())
+              )
     ) {
-      1
+      5
+      //    } else if (
+      //      // todo try target bit and push direction
+      //      (move.extractTargetBit() == killer0.extractTargetBit() &&
+      //      move.extractPushDirection() == killer0.extractPushDirection() &&
+      //      move.extractMoveType() == killer0.extractMoveType())
+      //    ) {
+      //      4
+      //    } else if (
+      //    // todo try target bit and push direction
+      //      (move.extractTargetBit() == killer1.extractTargetBit() &&
+      //          move.extractPushDirection() == killer1.extractPushDirection() &&
+      //          move.extractMoveType() == killer1.extractMoveType())
+      //    ) {
+      //      3
     } else {
       0
     }
@@ -506,6 +533,10 @@ fun alphaBetaPackedMove(
 
           currentPlayer.updateKillerMoves(moveValue, depth)
 
+          if (bestPiecesToRetrieveCapture2.isNotEmpty()) {
+            currentPlayer.updateCaptureMoves(moveValue, depth)
+          }
+
           bound = Bound.BETA
           break@outerLoop
           //                  return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
@@ -651,6 +682,10 @@ fun alphaBetaPackedMove(
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
           currentPlayer.updateKillerMoves(moveValue, depth)
+
+          if (bestPiecesToRetrieveCapture3.isNotEmpty()) {
+            currentPlayer.updateCaptureMoves(moveValue, depth)
+          }
 
           bound = Bound.BETA
           break@outerLoop
