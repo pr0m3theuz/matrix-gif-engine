@@ -68,42 +68,15 @@ class TranspositionTable() {
 
   //
   fun probe(hash: Long): Pair<Boolean, TransitionTableEntry> {
-//    val index = (hash.toInt()) and mask
+    val index = (hash.toInt()) and mask
+    val entry = table[index]
 
-    for (i in 0 until sizePowerOfTwo) {
-      if (table[i].key == 0L || table[i].key == hash) {
-        if (table[i].key == hash) {
-          table[i].generation = this.generation
-          return Pair(true, table[i])
-        } else return Pair(false, table[i])
-      }
+    if (entry.key == hash) {
+      entry.generation = this.generation
+      return Pair(true, entry)
     }
 
-    var replace = table[0]
-
-    for (i in 0 until sizePowerOfTwo) {
-      val replaceScore = replace.depth - (this.generation - replace.generation)
-      val currentScore = - table[i].depth - (this.generation - table[i].generation)
-
-      if (replaceScore < currentScore) {
-        replace = table[i]
-      }
-    }
-
-    return Pair(false, replace)
-
-//    if (keys[index] == hash && depths[index] >= depth) {
-//      val score = values[index]
-//      val bound = bounds[index].toInt()
-//      if (bound == Bound.EXACT.ordinal) return score
-//      if (bound == Bound.ALPHA.ordinal && score <= alpha) {
-//	      return alpha
-//      }
-//      if (bound == Bound.BETA.ordinal && score <= beta) {
-//        return beta
-//      }
-//    }
-//    return null
+    return Pair(false, entry)
   }
 }
 
