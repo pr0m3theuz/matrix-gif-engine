@@ -475,10 +475,10 @@ fun selectMoveMCTS(
       }
     }
   } else {
-    val startTime = System.nanoTime()
-    val endTime = startTime + duration.inWholeNanoseconds
+    val startTime = System.currentTimeMillis()
+    val endTime = startTime + duration.inWholeMilliseconds
 
-    while (System.nanoTime() < endTime) {
+    while (System.currentTimeMillis() < endTime) {
       var currentNode: MCTSNode? = rootMCTSNode
 
       while (
@@ -507,6 +507,7 @@ fun selectMoveMCTS(
               currentNode.nextPlayer.deepCopy(),
               rng = rng,
               simulationActions,
+              endTime
           )
 
       while (currentNode != null && winner != null) {
@@ -550,11 +551,12 @@ private fun evaluatePiecesInReserve(player: Player): Boolean {
 }
 
 fun simulateRandomGame(
-    bitboard: Bitboard,
-    currentPlayer: Player,
-    nextPlayer: Player,
-    rng: Random,
-    simulationActions: MutableList<PackedMove>,
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  nextPlayer: Player,
+  rng: Random,
+  simulationActions: MutableList<PackedMove>,
+  endTime: Long = Long.MAX_VALUE,
 ): Player? {
 
   var playerWhoMadeTheLastMove: Player? = null
@@ -571,6 +573,11 @@ fun simulateRandomGame(
   //  bitboard.identifyAvailableMoves(opponentPlayer, movesBuffer = opponentMoves)
 
   while (!evaluateCapturedPieces(activePlayer) || availableMoves.isNotEmpty()) {
+
+    if (System.currentTimeMillis() >= endTime) {
+      return null
+    }
+
     if (availableMoves.isEmpty()) break
 
     simulatePlayerTurn(

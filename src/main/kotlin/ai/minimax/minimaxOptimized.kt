@@ -43,6 +43,7 @@ fun alphaBetaPackedMove(
     turnPhase: TurnPhase? = null,
     isPVNode: Boolean = true,
     transpositionTable: TranspositionTable,
+    endTime: Long = Long.MAX_VALUE,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
@@ -97,6 +98,7 @@ fun alphaBetaPackedMove(
             logger.isDebugEnabled(),
             rng,
             transpositionTable = transpositionTable,
+            endTime = endTime,
         )
       } else {
         Triple(emptyList(), 0, emptyList())
@@ -112,7 +114,7 @@ fun alphaBetaPackedMove(
   // endregion
 
   // region Evaluate State
-  if ((availableMoves.isEmpty()) || depth <= 0) {
+  if ((availableMoves.isEmpty()) || depth <= 0 || System.currentTimeMillis() >= endTime) {
     // score = evaluate s for original player
     // return [null, score]
 
@@ -249,13 +251,13 @@ fun alphaBetaPackedMove(
       //      6
     } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
-                  // potential
+            // potential
             ((move.extractTargetBit() == ttEntry.move.extractTargetBit() &&
                 move.extractPushDirection() == ttEntry.move.extractPushDirection() &&
-                move.extractMoveType() == ttEntry.move.extractMoveType()) //||
-//                (move.extractPieceType() == ttEntry.move.extractPieceType() &&
-//                    move.extractMoveType() == ttEntry.move.extractMoveType())
-              )
+                move.extractMoveType() == ttEntry.move.extractMoveType()) // ||
+            //                (move.extractPieceType() == ttEntry.move.extractPieceType() &&
+            //                    move.extractMoveType() == ttEntry.move.extractMoveType())
+            )
     ) {
       5
       //    } else if (
@@ -394,6 +396,7 @@ fun alphaBetaPackedMove(
                       isPVNode = isPVNode && moveValue == ttEntry.move,
                       turnPhase = TurnPhase.ExtraMove,
                       transpositionTable = transpositionTable,
+                      endTime = endTime,
                   )
                   .score
 
@@ -423,6 +426,7 @@ fun alphaBetaPackedMove(
                 logger.isDebugEnabled(),
                 rng,
                 transpositionTable = transpositionTable,
+                endTime = endTime,
             )
 
         bitboard.assertPieceCount(
@@ -444,6 +448,7 @@ fun alphaBetaPackedMove(
                             rng = rng,
                             isPVNode = isPVNode && moveValue == ttEntry.move,
                             transpositionTable = transpositionTable,
+                            endTime = endTime,
                         )
                         .score +
                         tamskMoveScore +
@@ -579,6 +584,7 @@ fun alphaBetaPackedMove(
                       isPVNode = isPVNode && moveValue == ttEntry.move,
                       turnPhase = TurnPhase.ExtraMove,
                       transpositionTable = transpositionTable,
+                      endTime = endTime,
                   )
                   .score
 
@@ -609,6 +615,7 @@ fun alphaBetaPackedMove(
                 logger.isDebugEnabled(),
                 rng = rng,
                 transpositionTable = transpositionTable,
+                endTime = endTime,
             )
 
         val beforeRecursionBitboardState = bitboard.deepCopy()
@@ -627,6 +634,7 @@ fun alphaBetaPackedMove(
                             rng = rng,
                             isPVNode = isPVNode && moveValue == ttEntry.move,
                             transpositionTable = transpositionTable,
+                            endTime = endTime,
                         )
                         .score +
                         tamskMoveScore +
@@ -798,6 +806,7 @@ private fun bestPiecesToRemove(
     isDebugEnabled: Boolean,
     rng: Random,
     transpositionTable: TranspositionTable,
+    endTime: Long = Long.MAX_VALUE,
 ): Triple<List<UInt>, Int, List<UInt>> {
   val initBitboard = bitboard.deepCopy()
 
@@ -812,6 +821,7 @@ private fun bestPiecesToRemove(
           rng = rng,
           "$caller bestPiecesToRemove()",
           transpositionTable = transpositionTable,
+          endTime = endTime,
       )
 
   bitboard.diff(initBitboard)
@@ -869,6 +879,7 @@ fun resolveBoardRemovals(
     rng: Random,
     caller: String = "",
     transpositionTable: TranspositionTable,
+    endTime: Long = Long.MAX_VALUE,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "" + ("--- RESOLVE BOARD REMOVALS CALLED ---") }
@@ -965,6 +976,7 @@ fun resolveBoardRemovals(
                           alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
                           rng = rng,
                           transpositionTable = transpositionTable,
+                          endTime = endTime,
                       )
                       .score,
           )
