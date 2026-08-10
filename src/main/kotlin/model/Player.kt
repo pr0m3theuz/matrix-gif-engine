@@ -438,14 +438,14 @@ fun Player.selectMove(
 
           if (timeControl) {
             transpositionTable.newSearch()
-            var remainingTime = strength.duration
+//            var remainingTime = strength.duration
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            val startTime = System.nanoTime()
-            val endTime = startTime + remainingTime.inWholeNanoseconds
+            val startTime = System.currentTimeMillis()
+            val endTime = startTime + strength.duration.inWholeMilliseconds
 
-            while (System.nanoTime() < endTime && startingDepth <= strength.minimaxDepth) {
+            while (System.nanoTime() < endTime /*&& startingDepth <= strength.minimaxDepth*/) {
               val (move, elapsed) = measureTimedValue {
                 alphaBetaPackedMove(
                   maxDepth = startingDepth,
@@ -456,16 +456,17 @@ fun Player.selectMove(
                   rng = rng,
                   depth = startingDepth,
                   turnPhase = turnPhase,
-                  transpositionTable = transpositionTable
+                  transpositionTable = transpositionTable,
+                  endTime = endTime,
                 )
                   .move
               }
 
-	            remainingTime -= elapsed
+//	            remainingTime -= elapsed
               bestMove = move
               startingDepth = min(startingDepth + 1, strength.minimaxDepth)
               // if there is not enough time remaining break
-              if (remainingTime < elapsed.times(2)) break
+//              if (remainingTime < elapsed.times(2)) break
             }
 
             bestMove
@@ -488,14 +489,14 @@ fun Player.selectMove(
         TurnPhase.PieceRemoval -> {
           if (timeControl) {
             transpositionTable.newSearch()
-            var remainingTime = strength.duration
+//            var remainingTime = strength.duration
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            val startTime = System.nanoTime()
-            val endTime = startTime + remainingTime.inWholeNanoseconds
+            val startTime = System.currentTimeMillis()
+            val endTime = startTime + strength.duration.inWholeMilliseconds
 
-            while (System.nanoTime() < endTime || startingDepth <= strength.minimaxDepth) {
+            while (System.currentTimeMillis() < endTime /*|| startingDepth <= strength.minimaxDepth*/) {
               val (move, elapsed) =
                   measureTimedValue {
                     resolveBoardRemovals(
@@ -508,15 +509,16 @@ fun Player.selectMove(
                             depth = startingDepth,
                             caller = "PLAYER $name selectMove() @ ${startingDepth}",
                             transpositionTable = transpositionTable,
+                            endTime = endTime
                         )
                         .move
                   }
 
-              remainingTime -= elapsed
+//              remainingTime -= elapsed
               bestMove = move
               startingDepth = min(startingDepth + 1, strength.minimaxDepth)
               // if there is not enough time remaining break
-              if (remainingTime < elapsed) break
+//              if (remainingTime < elapsed) break
             }
 
             bestMove
@@ -547,7 +549,7 @@ fun Player.selectMove(
           rounds = strength.mctsRounds,
           rng = rng,
           duration = if (timeControl) strength.duration else Duration.ZERO,
-        useRAVE = this.useRAVE,
+          useRAVE = this.useRAVE,
       )
     }
     Model.NEURAL_NETWORK -> {
