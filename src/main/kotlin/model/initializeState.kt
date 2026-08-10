@@ -9,8 +9,10 @@ fun initializeState(
     playerOneStrength: Strength = Strength.EASY,
     playerTwoModel: Model = Model.MINIMAX,
     playerTwoStrength: Strength = Strength.EASY,
-    timeControl: Boolean = false,
-    useRAVE: Boolean = false,
+    playerOneTimeControl: Boolean = false,
+    playerTwoTimeControl: Boolean = false,
+    playerOneEnableRAVE: Boolean = false,
+    playerTwoEnableRAVE: Boolean = false,
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
@@ -20,8 +22,8 @@ fun initializeState(
           name = PlayerName.WHITE,
           model = playerOneModel,
           strength = playerOneStrength,
-          timeControl = timeControl,
-          useRAVE = useRAVE,
+          timeControl = playerOneTimeControl,
+          useRAVE = playerOneEnableRAVE,
           transpositionTable = TranspositionTable(),
       )
 
@@ -30,8 +32,8 @@ fun initializeState(
           name = PlayerName.BLACK,
           model = playerTwoModel,
           strength = playerTwoStrength,
-          timeControl = timeControl,
-          useRAVE = useRAVE,
+          timeControl = playerTwoTimeControl,
+          useRAVE = playerTwoEnableRAVE,
           transpositionTable = TranspositionTable(),
       )
 

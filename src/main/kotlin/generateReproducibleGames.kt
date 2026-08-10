@@ -147,6 +147,22 @@ suspend fun main(args: Array<String>) = coroutineScope {
                 .get()
         )
         addOption(
+            Option.builder("mtc")
+                .longOpt("agent-1-time-control")
+                .hasArg(false)
+                .argName("AGENT-1-TIME-CONTROL")
+                .desc("Time Given to Agent 1 search for a move (white)")
+                .get()
+        )
+        addOption(
+            Option.builder("mrv")
+                .longOpt("agent-1-mcts-rave")
+                .hasArg(false)
+                //            .argName("AGENT-1-MCTS-RAVE")
+                .desc("Enable MCTS RAVE for Agent 1 (white) (default: false)")
+                .get()
+        )
+        addOption(
             Option.builder("M")
                 .longOpt("agent-2-model")
                 .hasArg(true)
@@ -160,6 +176,22 @@ suspend fun main(args: Array<String>) = coroutineScope {
                 .hasArg(true)
                 .argName("AGENT-2-STRENGTH")
                 .desc("Strength of Agent 2 (white) (default: easy)")
+                .get()
+        )
+        addOption(
+            Option.builder("MTC")
+                .longOpt("agent-2-time-control")
+                .hasArg(false)
+                //            .argName("AGENT-2-TIME-CONTROL")
+                .desc("Time Given to Agent 2 search for a move(black)")
+                .get()
+        )
+        addOption(
+            Option.builder("MRV")
+                .longOpt("agent-2-mcts-rave")
+                .hasArg(false)
+                //            .argName("AGENT-2-MCTS-RAVE")
+                .desc("Enable MCTS RAVE for Agent 2 (black)")
                 .get()
         )
         addOption(
@@ -205,18 +237,24 @@ suspend fun main(args: Array<String>) = coroutineScope {
     return@coroutineScope
   }
 
+  val playerOneModel = getModel(cmd.getOptionValue("agent-1-model"))
+  val playerOneStrength = getStrength(cmd.getOptionValue("agent-1-strength"))
+
+  val playerTwoModel = getModel(cmd.getOptionValue("agent-2-model"))
+  val playerTwoStrength = getStrength(cmd.getOptionValue("agent-2-strength"))
+
+  val playerOneTimeControl = cmd.hasOption("player-one-time-control")
+  val playerOneEnableRAVE = cmd.hasOption("player-one-mcts-rave")
+
+  val playerTwoTimeControl = cmd.hasOption("player-two-time-control")
+  val playerTwoEnableRAVE = cmd.hasOption("player-two-mcts-rave")
+
   if (cmd.hasOption("replay")) {
     val gameId =
         cmd.getOptionValue("game-id").toIntOrNull() ?: error("Usage: replay <game-Id> [seed>")
     val seed = cmd.getOptionValue("seed")?.toLongOrNull() ?: error("Usage: replay <game-Id> [seed>")
 
     val verbose = cmd.getOptionValue("verbose").toBooleanStrictOrNull() ?: false
-
-    val playerOneModel = getModel(cmd.getOptionValue("agent-1-model"))
-    val playerOneStrength = getStrength(cmd.getOptionValue("agent-1-strength"))
-
-    val playerTwoModel = getModel(cmd.getOptionValue("agent-2-model"))
-    val playerTwoStrength = getStrength(cmd.getOptionValue("agent-2-strength"))
 
     logger.info { "Replaying game $gameId with seed $seed (verbose mode)" }
 
@@ -229,6 +267,10 @@ suspend fun main(args: Array<String>) = coroutineScope {
         playerOneStrength = playerOneStrength,
         playerTwoModel = playerTwoModel,
         playerTwoStrength = playerTwoStrength,
+        playerOneTimeControl = playerOneTimeControl,
+        playerTwoTimeControl = playerTwoTimeControl,
+        playerOneEnableRAVE = playerOneEnableRAVE,
+        playerTwoEnableRAVE = playerTwoEnableRAVE,
     )
 
     logger.info {
@@ -247,15 +289,6 @@ suspend fun main(args: Array<String>) = coroutineScope {
     // Print it so you can re-run the exact same batch later if needed.
     val baseSeed = cmd.getOptionValue("seed")?.toLongOrNull() ?: System.currentTimeMillis()
 
-    val playerOneModel = getModel(cmd.getOptionValue("agent-1-model"))
-    val playerOneStrength = getStrength(cmd.getOptionValue("agent-1-strength"))
-
-    val playerTwoModel = getModel(cmd.getOptionValue("agent-2-model"))
-    val playerTwoStrength = getStrength(cmd.getOptionValue("agent-2-strength"))
-
-
-
-
     runBatch(
         totalGames = totalGames,
         parallelism = parallelism,
@@ -264,6 +297,10 @@ suspend fun main(args: Array<String>) = coroutineScope {
         playerOneStrength = playerOneStrength,
         playerTwoModel = playerTwoModel,
         playerTwoStrength = playerTwoStrength,
+        playerOneTimeControl = playerOneTimeControl,
+        playerTwoTimeControl = playerTwoTimeControl,
+        playerOneEnableRAVE = playerOneEnableRAVE,
+        playerTwoEnableRAVE = playerTwoEnableRAVE,
     )
   }
 }
@@ -276,6 +313,10 @@ private suspend fun runBatch(
     playerOneStrength: Strength,
     playerTwoModel: Model,
     playerTwoStrength: Strength,
+    playerOneTimeControl: Boolean,
+    playerTwoTimeControl: Boolean,
+    playerOneEnableRAVE: Boolean,
+    playerTwoEnableRAVE: Boolean,
 ) = coroutineScope {
   logger.info {
     "Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed"
@@ -317,6 +358,10 @@ private suspend fun runBatch(
                   playerOneStrength = playerOneStrength,
                   playerTwoModel = playerTwoModel,
                   playerTwoStrength = playerTwoStrength,
+                  playerOneTimeControl = playerOneTimeControl,
+                  playerTwoTimeControl = playerTwoTimeControl,
+                  playerOneEnableRAVE = playerOneEnableRAVE,
+                  playerTwoEnableRAVE = playerTwoEnableRAVE,
               )
               val n = completed.incrementAndGet()
               if (n % 10 == 0) {
@@ -417,6 +462,10 @@ fun playOneGame(
     playerOneStrength: Strength,
     playerTwoModel: Model,
     playerTwoStrength: Strength,
+    playerOneTimeControl: Boolean = false,
+    playerTwoTimeControl: Boolean = false,
+    playerOneEnableRAVE: Boolean = false,
+    playerTwoEnableRAVE: Boolean = false,
 ) {
   val rng = Random(seed)
 
@@ -428,6 +477,10 @@ fun playOneGame(
           playerOneStrength,
           playerTwoModel,
           playerTwoStrength,
+          playerOneTimeControl,
+          playerTwoTimeControl,
+          playerOneEnableRAVE,
+          playerTwoEnableRAVE,
       )
 
   var turn = 0
@@ -505,18 +558,26 @@ fun playOneGame(
     playerOneStrength: Strength,
     playerTwoModel: Model,
     playerTwoStrength: Strength,
+    playerOneTimeControl: Boolean,
+    playerTwoTimeControl: Boolean,
+    playerOneEnableRAVE: Boolean,
+    playerTwoEnableRAVE: Boolean,
 ) {
     val rng = Random(seed)
 
-    // NOTE: adapt these calls to actually accept `rng` once your game logic
-    // is updated to take an explicit Random parameter instead of a global one.
-    var gameState: State =
-        initializeState(
-            playerOneModel,
-            playerOneStrength,
-            playerTwoModel,
-            playerTwoStrength,
-        )
+  // NOTE: adapt these calls to actually accept `rng` once your game logic
+  // is updated to take an explicit Random parameter instead of a global one.
+  var gameState: State =
+      initializeState(
+          playerOneModel,
+          playerOneStrength,
+          playerTwoModel,
+          playerTwoStrength,
+          playerOneTimeControl,
+          playerTwoTimeControl,
+          playerOneEnableRAVE,
+          playerTwoEnableRAVE,
+      )
 
     var turn = 0
     var playerWhoMadeTheLastMove: Player? = null

@@ -21,11 +21,14 @@ fun main() {
 
   var gameState: State =
       initializeState(
-          Model.MINIMAX,
-          Strength.MEDIUM,
-          Model.MINIMAX,
-          Strength.MEDIUM,
-          timeControl = true,
+          Model.MCTS,
+          Strength.EASY,
+          Model.MCTS,
+          Strength.EASY,
+          playerOneTimeControl = false,
+          playerTwoTimeControl = false,
+          playerOneEnableRAVE = false,
+          playerTwoEnableRAVE = true,
       )
 
   var turn = 0
