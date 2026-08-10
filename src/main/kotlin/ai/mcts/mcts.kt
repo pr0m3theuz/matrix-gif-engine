@@ -202,6 +202,12 @@ data class MCTSNode(
 
             turnPhase = TurnPhase.PlayerInputWindow
           }
+          MoveType.UnusedTamskPotential -> {
+            val unusedTAMSKPotential = childBitboard.removeUnusedTamskPotential(currentPlayer)
+
+            // add the unused TAMSK Potential to the opponent's captured pieces.
+            nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+          }
           MoveType.RetrieveCapturePieces -> {}
         }
       }
@@ -754,6 +760,12 @@ fun simulatePlayerMove(
           bitboard.usePiecePotential(
               move = randomPackedMove.value,
           )
+        }
+        MoveType.UnusedTamskPotential -> {
+          val unusedTAMSKPotential = bitboard.removeUnusedTamskPotential(currentPlayer)
+
+          // add the unused TAMSK Potential to the opponent's captured pieces.
+          opponentPlayer.capturedPieces.add(unusedTAMSKPotential)
         }
         MoveType.RetrieveCapturePieces -> {}
       }

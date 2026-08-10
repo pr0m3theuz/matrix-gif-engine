@@ -234,6 +234,12 @@ fun State.encodeState(): D2Array<Int> {
           is PackedMove.Multiple -> {}
           is PackedMove.Single -> {
             when (move.value.extractMoveType()) {
+              MoveType.UnusedTamskPotential -> {
+                val unusedTAMSKPotential = newBitboard.removeUnusedTamskPotential(newState.currentPlayer)
+
+                // add the unused TAMSK Potential to the opponent's captured pieces.
+                newState.nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+              }
               MoveType.AddPiece -> {
                 if (move.value.extractSourceBit() == boardCenterSpotMask) {
                   newBitboard.useTamskPotential(move.value)
@@ -357,6 +363,12 @@ fun State.encodeState(): D2Array<Int> {
           is PackedMove.Multiple -> {}
           is PackedMove.Single -> {
             when (move.value.extractMoveType()) {
+              MoveType.UnusedTamskPotential -> {
+                val unusedTAMSKPotential = newBitboard.removeUnusedTamskPotential(newState.nextPlayer)
+
+                // add the unused TAMSK Potential to the opponent's captured pieces.
+                newState.currentPlayer.capturedPieces.add(unusedTAMSKPotential)
+              }
               MoveType.AddPiece -> {
                 if (move.value.extractSourceBit() == boardCenterSpotMask) {
                   newBitboard.useTamskPotential(move.value)

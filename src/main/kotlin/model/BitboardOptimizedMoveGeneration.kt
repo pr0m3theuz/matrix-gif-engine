@@ -10,12 +10,12 @@ private val logger = logger {}
 fun Bitboard.getTamskMoves(
 	player: Player,
 	movesBuffer: MutableList<PackedMove>, // Updated to UInt buffer
-	sortedColumns: List<ColumnInfo> = columnInfos, // Added to resolve the global colIndex
+//	sortedColumns: List<ColumnInfo> = columnInfos, // Added to resolve the global colIndex
 ) {
 	// --- 0. CONFIGURABLE DEBUGGING ---
 	if (logger.isDebugEnabled()) {
-		logger.trace { "" + ("--- GET TAMSK MOVES CALLED ---") }
-		logger.trace { "" + ("Player: ${player.name}") }
+		logger.trace { "--- GET TAMSK MOVES CALLED ---" }
+		logger.trace { "Player: ${player.name}" }
 	}
 
 	// --- 1. EVALUATE CENTER SPOT ---
@@ -32,9 +32,9 @@ fun Bitboard.getTamskMoves(
 	if (tamskPieceAtCenter != boardCenterSpotMask) {
 		if (logger.isDebugEnabled()) {
 			logger.trace {
-				"" + ("No valid TAMSK piece found at center for ${player.name}. Returning null.")
+				"No valid TAMSK piece found at center for ${player.name}. Returning null."
 			}
-			logger.trace { "" + ("--- GET TAMSK MOVES COMPLETED ---") }
+			logger.trace { "--- GET TAMSK MOVES COMPLETED ---" }
 		}
 		return
 	}
@@ -45,7 +45,7 @@ fun Bitboard.getTamskMoves(
 		"CRITICAL ERROR: Evaluated center spot mask must contain exactly one bit. Got: $tamskPieceAtCenter"
 	}
 
-	logger.trace { "" + ("Valid TAMSK move found for ${player.name} at center spot.") }
+	logger.trace { "Valid TAMSK move found for ${player.name} at center spot." }
 
 	// --- 4. RETURN MOVE ---
 	// Cache the vacantLines reference in case it's a computed property,
@@ -103,7 +103,23 @@ fun Bitboard.getTamskMoves(
 		)
 	}
 
-	// TODO add Unused TAMSK Potential Move to Moves Buffer
+	// add Unused TAMSK Potential Move to Moves Buffer
+	  movesBuffer.add(
+			PackedMove.Single(
+				0u.packPossibleBitMove(
+					sourceBit = tamskPieceAtCenter,
+					targetBit = tamskPieceAtCenter,
+					moveType = MoveType.UnusedTamskPotential,
+				)
+					.setPieceType(
+						pieceType = PieceType.TAMSK,
+					)
+					.setPieceColor(
+						pieceColor = player.name,
+					)
+					.setPotential(potential = true)
+			)
+		 )
 }
 
 fun Bitboard.getZertzMoves(
@@ -620,6 +636,7 @@ fun Bitboard.identifyAvailableMoves(
 		}
 	}
 
+	// GIPF Pieces
 	val occupiedBits = globalOccupancy
 	if (gipfPieceInReserve != null) {
 		for (colIndex in columnInfos.indices) {

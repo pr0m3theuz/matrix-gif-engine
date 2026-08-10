@@ -301,6 +301,98 @@ fun alphaBetaPackedMove(
     val moveValue = packedMove.value
 
     when (moveValue.extractMoveType()) {
+      // region Unused Tamsk Potential
+      MoveType.UnusedTamskPotential -> {
+        val unusedTAMSKPotential = bitboard.removeUnusedTamskPotential(currentPlayer)
+
+        // add the unused TAMSK Potential to the opponent's captured pieces.
+        opponentPlayer.capturedPieces.add(unusedTAMSKPotential)
+
+        val (bestPiecesToRetrieveCapture4, bestPiecesToRetrieveCapture4Score, newlyStackedPieces) =
+          bestPiecesToRemove(
+            currentPlayer,
+            opponentPlayer,
+            bitboard,
+            maxDepth,
+            depth.minus(1),
+            AlphaBetaScoreBitPacked(),
+            "ALPHA-BETA ADD PIECE",
+            logger.isDebugEnabled(),
+            rng,
+            transpositionTable = transpositionTable,
+            endTime = endTime,
+          )
+
+        bitboard.assertPieceCount(
+          currentPlayer = currentPlayer,
+          nextPlayer = opponentPlayer,
+        )
+
+        val move =
+          BestPackedMove(
+            move = packedMove,
+            score =
+              alphaBetaPackedMove(
+                maxDepth = maxDepth,
+                depth = depth.minus(1),
+                bitboard = bitboard,
+                currentPlayer = opponentPlayer,
+                opponentPlayer = currentPlayer,
+                alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
+                rng = rng,
+                isPVNode = isPVNode && moveValue == ttEntry.move,
+                transpositionTable = transpositionTable,
+                endTime = endTime,
+              )
+                .score +
+                  if (bestPiecesToRetrieveCapture4.isNotEmpty())
+                    bestPiecesToRetrieveCapture4Score
+                  else 0,
+          )
+
+        currentPlayer.uncombinePieces(newlyStackedPieces)
+
+        currentPlayer.removeRetrievedCapturedPieces(bestPiecesToRetrieveCapture4)
+
+        bitboard.undoRetrieveAndCapturePieces(
+          bestPiecesToRetrieveCapture4,
+          "ALPHA-BETA UNUSED TAMSK POTENTIAL @ depth $depth",
+        )
+
+        bitboard.assertPieceCount(
+          currentPlayer = currentPlayer,
+          nextPlayer = opponentPlayer,
+        )
+
+        // Undo removeUnusedTamskPotential
+        bitboard.undoRemoveUnusedTamskPotential(moveValue)
+        opponentPlayer.capturedPieces.remove(unusedTAMSKPotential)
+
+        bitboard.assertPieceCount(
+          currentPlayer = currentPlayer,
+          nextPlayer = opponentPlayer,
+        )
+
+        if (move.score.unaryMinus() > alphaBetaScore.alpha) {
+          alphaBetaScore.alpha = move.score.unaryMinus()
+
+          alphaBetaScore.move = move.move
+
+          bound = Bound.EXACT
+        }
+        if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
+          currentPlayer.updateKillerMoves(moveValue, depth)
+
+          if (bestPiecesToRetrieveCapture4.isNotEmpty()) {
+            currentPlayer.updateCaptureMoves(moveValue, depth)
+          }
+
+          bound = Bound.BETA
+          break@outerLoop
+          //                  return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
+        }
+      }
+      // endregion
       // region MoveType.AddPiece
       MoveType.AddPiece -> {
         require(

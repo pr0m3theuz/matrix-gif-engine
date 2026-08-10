@@ -9,7 +9,7 @@ enum class MoveType {
   AddPiece,
   UsePotential,
   RetrieveCapturePieces,
-// TODO add UnusedTamskPotential,
+  UnusedTamskPotential,
 }
 
 enum class TurnPhase {
@@ -53,6 +53,7 @@ data class PossibleBitMove(
         requireNotNull(targetBit) { "Target bit must not be null" }
         targetBit.toBitList()
       }
+      MoveType.UnusedTamskPotential -> { boardCenterSpotMask.toBitList() }
       MoveType.RetrieveCapturePieces -> {
         retrievedCapturedPiecesBit
             .fold(0UL) { acc, bit ->
@@ -118,6 +119,7 @@ fun UInt.toPossibleBitMove(): PossibleBitMove {
             MoveType.AddPiece.ordinal -> MoveType.AddPiece
             MoveType.UsePotential.ordinal -> MoveType.UsePotential
             MoveType.RetrieveCapturePieces.ordinal -> MoveType.RetrieveCapturePieces
+            MoveType.UnusedTamskPotential.ordinal -> MoveType.UnusedTamskPotential
             else -> error("Unknown move type for packed int: $this")
           },
       columnInfo =
@@ -219,6 +221,7 @@ fun UInt.extractMoveType(): MoveType {
     MoveType.AddPiece.ordinal -> MoveType.AddPiece
     MoveType.UsePotential.ordinal -> MoveType.UsePotential
     MoveType.RetrieveCapturePieces.ordinal -> MoveType.RetrieveCapturePieces
+    MoveType.UnusedTamskPotential.ordinal -> MoveType.UnusedTamskPotential
     else -> error("Unknown move type: $this")
   }
 }
