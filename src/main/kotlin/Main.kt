@@ -2,7 +2,6 @@ package org.example
 
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
-import org.example.ai.mcts.PackedMove
 import org.example.engine.constructZobristHashKeysTable
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
@@ -97,23 +96,23 @@ fun main() {
     logger.info { "Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}" }
   }
 
-//  val lastTurnPlayer =
-//      gameState.turnMoves.keys
-//          .toList()
-//          .takeLast(3)
-//          .filter { gameState.turnMoves[it]?.isNotEmpty() == true }
-//          .let { turn ->
-//            gameState.turnMoves[turn.last()]
-//                ?.filterIsInstance<PackedMove.Single>()
-//                ?.first()
-//                ?.value
-//                ?.extractPieceColor()
-//          }
-//
-//  check(winner?.name == lastTurnPlayer) {
-//    "Terminal State Inconsistency: The declared winner '${winner?.name ?: "None"}' " +
-//        "does not match the player who executed the winning turn ('$lastTurnPlayer')."
-//  }
+  //  val lastTurnPlayer =
+  //      gameState.turnMoves.keys
+  //          .toList()
+  //          .takeLast(3)
+  //          .filter { gameState.turnMoves[it]?.isNotEmpty() == true }
+  //          .let { turn ->
+  //            gameState.turnMoves[turn.last()]
+  //                ?.filterIsInstance<PackedMove.Single>()
+  //                ?.first()
+  //                ?.value
+  //                ?.extractPieceColor()
+  //          }
+  //
+  //  check(winner?.name == lastTurnPlayer) {
+  //    "Terminal State Inconsistency: The declared winner '${winner?.name ?: "None"}' " +
+  //        "does not match the player who executed the winning turn ('$lastTurnPlayer')."
+  //  }
 
   //  gameState.collector?.saveCurrentEpisodes(agent = "mcts"/, games = 1.toString())
 

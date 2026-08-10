@@ -12,11 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.commons.cli.*
 import org.apache.commons.cli.help.HelpFormatter
-import org.example.engine.RESULTS_DIR
-import org.example.engine.determineWinner
-import org.example.engine.evaluateCapturedPieces
-import org.example.engine.playerTurn
-import org.example.engine.recordGameResult
+import org.example.engine.*
 import org.example.model.*
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -24,40 +20,65 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 /**
  * Batch runner with reproducible failures.
  *
- * Normal batch run: java -Xmx48g -jar app.jar run -b -g <TOTAL_GAMES> -p <PARALLELISM> -s <SEED>
- * -m <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS <AGENT 2-DIFFICULTY>
+ * Normal batch run: java -Xmx48g -jar app.jar run -b -g <TOTAL_GAMES> -p <PARALLELISM> -s <SEED> -m
+ * <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS <AGENT 2-DIFFICULTY>
  *
  * Replay a single failed game (verbose, single-threaded): java -jar app.jar -r -G <GAME-ID> -s
  * <SEED> -v <VERBOSE> -m <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS
  * <AGENT-2-DIFFICULTY
  */
 
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M minimax -MS greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M minimax -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M mcts -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS greedy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS random
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS random
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS greedy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M minimax -MS
+// greedy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M minimax -MS
+// easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M mcts -MS random
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M mcts -MS easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS easy
+// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
+// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
+// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS easy
 
-//-b -g 500 -m mcts -ms random -M minimax -MS greedy
-//-b -g 500 -m minimax -ms greedy -M mcts -MS random
-//-b -g 500 -m mcts -ms random -M minimax -MS easy
-//-b -g 500 -m minimax -ms easy -M mcts -MS random
-//-b -g 500 -m mcts -ms easy -M minimax -MS greedy
-//-b -g 500 -m minimax -ms greedy -M mcts -MS easy
-//-b -g 500 -m minimax -ms easy -M minimax -MS greedy
-//-b -g 500 -m minimax -ms greedy -M minimax -MS easy
-//-b -g 500 -m mcts -ms easy -M mcts -MS random
-//-b -g 500 -m mcts -ms random -M mcts -MS easy
-//-b -g 500 -m mcts -ms easy -M minimax -MS easy
-//-b -g 500 -m minimax -ms easy -M mcts -MS easy
-
+// -b -g 500 -m mcts -ms random -M minimax -MS greedy
+// -b -g 500 -m minimax -ms greedy -M mcts -MS random
+// -b -g 500 -m mcts -ms random -M minimax -MS easy
+// -b -g 500 -m minimax -ms easy -M mcts -MS random
+// -b -g 500 -m mcts -ms easy -M minimax -MS greedy
+// -b -g 500 -m minimax -ms greedy -M mcts -MS easy
+// -b -g 500 -m minimax -ms easy -M minimax -MS greedy
+// -b -g 500 -m minimax -ms greedy -M minimax -MS easy
+// -b -g 500 -m mcts -ms easy -M mcts -MS random
+// -b -g 500 -m mcts -ms random -M mcts -MS easy
+// -b -g 500 -m mcts -ms easy -M minimax -MS easy
+// -b -g 500 -m minimax -ms easy -M mcts -MS easy
 
 // -b -g 500 -m mcts -ms random -M minimax -MS easy
 // -b -g 500 -m minimax -ms easy -M mcts -MS random
@@ -65,7 +86,6 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 // -b -g 500 -m minimax -ms greedy -M minimax -MS easy
 // -b -g 500 -m mcts -ms easy -M minimax -MS easy
 // -b -g 500 -m minimax -ms easy -M mcts -MS easy
-
 
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
@@ -80,7 +100,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
             Option.builder("b")
                 .longOpt("batch")
                 .hasArg(false)
-//                .argName("batch")
+                //                .argName("batch")
                 .desc(
                     "Normal batch run: java -Xmx48g -jar app.jar run -b -g <TOTAL_GAMES> -p <PARALLELISM> -s <SEED>" +
                         " -m <AGENT-1-MODEL> -ms <AGENT-1-STRENGTH> -M <AGENT-2-MODEL> -MS <AGENT-2-DIFFICULTY>"
@@ -91,7 +111,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
             Option.builder("r")
                 .longOpt("replay")
                 .hasArg(false)
-//                .argName("REPLAY")
+                //                .argName("REPLAY")
                 .desc(
                     "Replay a single failed game (verbose, single-threaded): java -jar app.jar -r -G <GAME-ID> -s <SEED> -v <VERBOSE>" +
                         " -m <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS <AGENT-2-DIFFICULTY>"
@@ -323,21 +343,19 @@ private suspend fun runBatch(
   }
   logger.info { "(save baseSeed if you want to reproduce this exact batch later)" }
 
-    val filePrefix = "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
-    val file = File(RESULTS_DIR, "${filePrefix}_games_record.jsonl")
-    val lock = file.path
+  val filePrefix =
+      "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
+  val file = File(RESULTS_DIR, "${filePrefix}_games_record.jsonl")
+  val lock = file.path
 
-    if (!file.exists()) {
-        file.createNewFile()
-    }
+  if (!file.exists()) {
+    file.createNewFile()
+  }
 
-
-    val dispatcher = Dispatchers.Default.limitedParallelism(parallelism)
+  val dispatcher = Dispatchers.Default.limitedParallelism(parallelism)
   val completed = AtomicInteger(0)
   val failed = AtomicInteger(0)
   val startTime = System.currentTimeMillis()
-
-
 
   val elapsedMs = measureTimeMillis {
     val jobs =
@@ -401,7 +419,6 @@ private fun deriveSeed(baseSeed: Long, gameId: Int): Long {
 private fun recordFailure(gameId: Int, seed: Long, e: Throwable) {
   val timestamp = System.currentTimeMillis()
 
-  // 1. Human-readable full stack trace, one file per failure for easy opening.
   val traceFile = File(FAILURES_DIR, "game_${gameId}_seed_${seed}.txt")
   traceFile.writeText(
       buildString {
@@ -414,7 +431,6 @@ private fun recordFailure(gameId: Int, seed: Long, e: Throwable) {
       }
   )
 
-  // 2. Structured JSONL entry — one line per failure, easy to grep/parse/aggregate.
   val entry =
       FailureRecord(
           gameId = gameId,
@@ -533,20 +549,20 @@ fun playOneGame(
           printStatement = verbose,
       )
 
-//  when (winner?.name) {
-//    gameState.currentPlayer.name -> {
-//      gameState.currentPlayer.collector?.endEpisode(1)
-//      gameState.nextPlayer.collector?.endEpisode(-1)
-//    }
-//    gameState.nextPlayer.name -> {
-//      gameState.nextPlayer.collector?.endEpisode(1)
-//      gameState.currentPlayer.collector?.endEpisode(-1)
-//    }
-//    else -> {}
-//  }
+  //  when (winner?.name) {
+  //    gameState.currentPlayer.name -> {
+  //      gameState.currentPlayer.collector?.endEpisode(1)
+  //      gameState.nextPlayer.collector?.endEpisode(-1)
+  //    }
+  //    gameState.nextPlayer.name -> {
+  //      gameState.nextPlayer.collector?.endEpisode(1)
+  //      gameState.currentPlayer.collector?.endEpisode(-1)
+  //    }
+  //    else -> {}
+  //  }
 
   recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn)
-//  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
+  //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
 }
 
 fun playOneGame(
@@ -563,7 +579,7 @@ fun playOneGame(
     playerOneEnableRAVE: Boolean,
     playerTwoEnableRAVE: Boolean,
 ) {
-    val rng = Random(seed)
+  val rng = Random(seed)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
@@ -579,54 +595,54 @@ fun playOneGame(
           playerTwoEnableRAVE,
       )
 
-    var turn = 0
-    var playerWhoMadeTheLastMove: Player? = null
+  var turn = 0
+  var playerWhoMadeTheLastMove: Player? = null
 
-    // On failure we dump the move history and last-known state, giving you the
-    // exact sequence leading up to the crash independent of whether seeding
-    // was perfectly deterministic elsewhere in the codebase.
-    try {
-        while (!evaluateCapturedPieces(gameState)) {
-            turn++
-            gameState.turnMoves[turn] = mutableListOf()
+  // On failure we dump the move history and last-known state, giving you the
+  // exact sequence leading up to the crash independent of whether seeding
+  // was perfectly deterministic elsewhere in the codebase.
+  try {
+    while (!evaluateCapturedPieces(gameState)) {
+      turn++
+      gameState.turnMoves[turn] = mutableListOf()
 
-            if (evaluateCapturedPieces(gameState)) break
+      if (evaluateCapturedPieces(gameState)) break
 
-            if (verbose) {
-                logger.info { "Turn: $turn" }
-                gameState.printStateSummary()
+      if (verbose) {
+        logger.info { "Turn: $turn" }
+        gameState.printStateSummary()
+      }
+
+      gameState = playerTurn(gameState, turn, rng)
+      gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
+
+      playerWhoMadeTheLastMove = gameState.currentPlayer
+      gameState = gameState.rotatePlayers()
+
+      if (gameState.turnMoves.size > 2) {
+        val stalled =
+            gameState.turnMoves.keys.toList().takeLast(2).all {
+              gameState.turnMoves[it].isNullOrEmpty()
             }
+        if (stalled) break
+      }
 
-            gameState = playerTurn(gameState, turn, rng)
-            gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
-
-            playerWhoMadeTheLastMove = gameState.currentPlayer
-            gameState = gameState.rotatePlayers()
-
-            if (gameState.turnMoves.size > 2) {
-                val stalled =
-                    gameState.turnMoves.keys.toList().takeLast(2).all {
-                        gameState.turnMoves[it].isNullOrEmpty()
-                    }
-                if (stalled) break
-            }
-
-            check(gameState.currentPlayer.name != gameState.nextPlayer.name) {
-                "Turn rotation failure in game $gameId"
-            }
-        }
-    } catch (e: Throwable) {
-        dumpCrashState(gameId, seed, turn, gameState, e)
-        throw e
+      check(gameState.currentPlayer.name != gameState.nextPlayer.name) {
+        "Turn rotation failure in game $gameId"
+      }
     }
+  } catch (e: Throwable) {
+    dumpCrashState(gameId, seed, turn, gameState, e)
+    throw e
+  }
 
-    determineWinner(
-        gameState.currentPlayer,
-        gameState.nextPlayer,
-        playerWhoMadeTheLastMove,
-        state = gameState,
-        printStatement = verbose,
-    )
+  determineWinner(
+      gameState.currentPlayer,
+      gameState.nextPlayer,
+      playerWhoMadeTheLastMove,
+      state = gameState,
+      printStatement = verbose,
+  )
 }
 
 private fun dumpCrashState(gameId: Int, seed: Long, turn: Int, gameState: State, e: Throwable) {
