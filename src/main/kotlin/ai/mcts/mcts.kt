@@ -648,7 +648,6 @@ fun simulatePlayerTurn(
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-
   while (
     when (currentPlayer.name) {
       PlayerName.WHITE ->
@@ -677,10 +676,6 @@ fun simulatePlayerTurn(
       rng = rng,
       simulationActions,
   )
-
-  tamskMoves.clear()
-  bitboard.getTamskMoves(currentPlayer, tamskMoves)
-
 
   while (
     when (currentPlayer.name) {
