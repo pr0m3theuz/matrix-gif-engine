@@ -5,21 +5,25 @@ package org.example.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import org.example.ai.humanEvaluation.SearchInfo
 import org.example.ai.mcts.PackedMove
 import org.example.engine.ExperienceCollector
+import kotlin.time.Duration
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
 @Serializable
 data class State(
-    val currentPlayer: Player,
-    val nextPlayer: Player,
-    @Transient val board: Board = Board(emptySet()),
-    val bitboard: Bitboard,
-    @Transient val lines: Lines? = null,
-    @Transient
+  val currentPlayer: Player,
+  val nextPlayer: Player,
+  @Transient val board: Board = Board(emptySet()),
+  val bitboard: Bitboard,
+  @Transient val lines: Lines? = null,
+  @Transient
     val turnMoves: MutableMap<Int, MutableList<PackedMove>> = mutableMapOf(), // moves per turn
-    @Transient val collector: ExperienceCollector? = ExperienceCollector(),
+  val turnDuration: MutableMap<Int, MutableList<Long>> = mutableMapOf(), // moves per turn
+  val turnSearchInfo: MutableMap<Int, MutableList<MutableList<SearchInfo>>> = mutableMapOf(),
+  @Transient val collector: ExperienceCollector? = ExperienceCollector(),
 ) {
   fun deepCopy(copyCollector: Boolean = false): State {
     //    val string = Json.encodeToString(serializer(), this)
@@ -32,6 +36,8 @@ data class State(
         bitboard = bitboard.deepCopy(),
         //	    lines = this.lines,
         turnMoves = this.turnMoves.toMutableMap(),
+        turnDuration = this.turnDuration.toMutableMap(),
+      turnSearchInfo = this.turnSearchInfo.toMutableMap(),
         collector = if (copyCollector) this.collector else null,
     )
   }
@@ -43,6 +49,8 @@ data class State(
         board = this.board,
         bitboard = bitboard,
         turnMoves = this.turnMoves,
+        turnDuration = this.turnDuration,
+      turnSearchInfo = this.turnSearchInfo,
         collector = this.collector,
     )
   }

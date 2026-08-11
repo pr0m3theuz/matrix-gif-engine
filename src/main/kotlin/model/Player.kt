@@ -2,19 +2,16 @@
 
 package org.example.model
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTimedValue
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.yield
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
+import org.example.ai.humanEvaluation.SearchInfo
 import org.example.ai.humanEvaluation.alphaBetaPackedMove
 import org.example.ai.humanEvaluation.resolveBoardRemovals
 import org.example.ai.mcts.PackedMove
@@ -107,12 +104,12 @@ fun getStrength(strength: String): Strength {
 @Serializable
 data class Player(
     val name: PlayerName,
-    val model: Model = Model.NEURAL_NETWORK,
-    val strength: Strength = Strength.RANDOM,
+    @EncodeDefault val model: Model = Model.NEURAL_NETWORK,
+    @EncodeDefault val strength: Strength = Strength.RANDOM,
     val piecesInReserve: MutableList<UInt> = mutableListOf(),
     val capturedPieces: MutableList<UInt> = mutableListOf(),
-    val timeControl: Boolean = false,
-    val useRAVE: Boolean = false,
+    @EncodeDefault val timeControl: Boolean = false,
+    @EncodeDefault val useRAVE: Boolean = false,
     @Transient val collector: ExperienceCollector? = ExperienceCollector(),
     @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
     @Transient val killerMoves: List<UIntArray> = List(2) { UIntArray(64) },
@@ -422,13 +419,13 @@ fun Player.updateCaptureMoves(move: UInt, depth: Int) {
   }
 }
 
-
 fun Player.selectMove(
     turnPhase: TurnPhase,
     bitboard: Bitboard,
     currentPlayer: Player,
     opponent: Player,
     rng: Random,
+    searchInfos: MutableList<SearchInfo> = mutableListOf()
 ): PackedMove? {
   return when (model) {
     Model.MINIMAX -> {
@@ -438,7 +435,7 @@ fun Player.selectMove(
 
           if (timeControl) {
             transpositionTable.newSearch()
-//            var remainingTime = strength.duration
+            //            var remainingTime = strength.duration
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
@@ -446,33 +443,41 @@ fun Player.selectMove(
             val endTime = startTime + strength.duration.inWholeMilliseconds
 
             while (System.nanoTime() < endTime /*&& startingDepth <= strength.minimaxDepth*/) {
-              val (move, elapsed) = measureTimedValue {
-                alphaBetaPackedMove(
-                  maxDepth = startingDepth,
-                  bitboard = bitboard.deepCopy(),
-                  currentPlayer = currentPlayer.deepCopy(),
-                  opponentPlayer = opponent.deepCopy(),
-                  alphaBetaScore = AlphaBetaScoreBitPacked(),
-                  rng = rng,
-                  depth = startingDepth,
-                  turnPhase = turnPhase,
-                  transpositionTable = transpositionTable,
-                  endTime = endTime,
-                )
-                  .move
-              }
+              val searchInfo = SearchInfo(startingDepth)
 
-//	            remainingTime -= elapsed
+              val (move, elapsed) =
+                  measureTimedValue {
+                    alphaBetaPackedMove(
+                            maxDepth = startingDepth,
+                            bitboard = bitboard.deepCopy(),
+                            currentPlayer = currentPlayer.deepCopy(),
+                            opponentPlayer = opponent.deepCopy(),
+                            alphaBetaScore = AlphaBetaScoreBitPacked(),
+                            rng = rng,
+                            depth = startingDepth,
+                            turnPhase = turnPhase,
+                            transpositionTable = transpositionTable,
+                            endTime = endTime,
+                            searchInfo = searchInfo,
+                        )
+                        .move
+                  }
+
+              searchInfos.add(searchInfo)
+              //	            remainingTime -= elapsed
               bestMove = move
               startingDepth = min(startingDepth + 1, strength.minimaxDepth)
               // if there is not enough time remaining break
-//              if (remainingTime < elapsed.times(2)) break
+              //              if (remainingTime < elapsed.times(2)) break
             }
 
             bestMove
           } else {
             transpositionTable.newSearch()
-            alphaBetaPackedMove(
+
+            val searchInfo = SearchInfo(strength.minimaxDepth)
+
+            val move = alphaBetaPackedMove(
                     maxDepth = strength.minimaxDepth,
                     bitboard = bitboard.deepCopy(),
                     currentPlayer = currentPlayer.deepCopy(),
@@ -482,21 +487,30 @@ fun Player.selectMove(
                     depth = strength.minimaxDepth,
                     turnPhase = turnPhase,
                     transpositionTable = transpositionTable,
+                    searchInfo = searchInfo,
                 )
                 .move
+
+            searchInfos.add(searchInfo)
+
+            move
           }
         }
         TurnPhase.PieceRemoval -> {
           if (timeControl) {
             transpositionTable.newSearch()
-//            var remainingTime = strength.duration
+            //            var remainingTime = strength.duration
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
             val startTime = System.currentTimeMillis()
             val endTime = startTime + strength.duration.inWholeMilliseconds
 
-            while (System.currentTimeMillis() < endTime /*|| startingDepth <= strength.minimaxDepth*/) {
+            while (
+                System.currentTimeMillis() < endTime /*|| startingDepth <= strength.minimaxDepth*/
+            ) {
+              val searchInfo = SearchInfo(startingDepth)
+
               val (move, elapsed) =
                   measureTimedValue {
                     resolveBoardRemovals(
@@ -509,22 +523,27 @@ fun Player.selectMove(
                             depth = startingDepth,
                             caller = "PLAYER $name selectMove() @ ${startingDepth}",
                             transpositionTable = transpositionTable,
-                            endTime = endTime
+                            endTime = endTime,
+                            searchInfo = searchInfo,
                         )
                         .move
                   }
 
-//              remainingTime -= elapsed
+              searchInfos.add(searchInfo)
+              //              remainingTime -= elapsed
               bestMove = move
               startingDepth = min(startingDepth + 1, strength.minimaxDepth)
               // if there is not enough time remaining break
-//              if (remainingTime < elapsed) break
+              //              if (remainingTime < elapsed) break
             }
 
             bestMove
           } else {
             transpositionTable.newSearch()
-            resolveBoardRemovals(
+
+            val searchInfo = SearchInfo(strength.minimaxDepth)
+
+            val move = resolveBoardRemovals(
                     maxDepth = strength.minimaxDepth,
                     currentPlayer = this.deepCopy(),
                     opponentPlayer = opponent.deepCopy(),
@@ -534,8 +553,13 @@ fun Player.selectMove(
                     depth = strength.minimaxDepth,
                     caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
                     transpositionTable = transpositionTable,
+                    searchInfo = searchInfo,
                 )
                 .move
+
+            searchInfos.add(searchInfo)
+
+            move
           }
         }
       }

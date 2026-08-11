@@ -42,6 +42,8 @@ fun main() {
     logger.info { "Turn: $turn" }
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
+    gameState.turnDuration[turn] = mutableListOf()
+    gameState.turnSearchInfo[turn] = mutableListOf()
 
     gameState = playerTurn(gameState, turn, rng)
 

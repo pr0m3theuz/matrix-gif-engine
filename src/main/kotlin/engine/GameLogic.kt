@@ -1,11 +1,14 @@
 package org.example.engine
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.measureTimedValue
 import kotlinx.serialization.json.Json
+import org.example.ai.humanEvaluation.SearchInfo
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.encode
 import org.example.model.*
-import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -23,8 +26,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
    * between the regular move and the extra move. The same goes for situations where you succeed in
    * pushing a second or third TAMSK-stack onto the central spot during one and the same turn.
    */
-  // TODO While there are pieces to remove
-  //  TODO Has a bug
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
     newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
 
@@ -34,8 +35,6 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
     // return early if the current player captured 3 GIPF Pieces
     if (evaluateCapturedPieces(newState)) return newState
   }
-
-
 
   newState.assertPieceCount()
 
@@ -57,14 +56,13 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
 
   newState.assertPieceCount()
 
-
   val availableMoves = mutableListOf<PackedMove>()
   newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
 
   if (availableMoves.isNotEmpty()) {
-      newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
 
-      newState.assertPieceCount()
+    newState.assertPieceCount()
   }
 
   // Handle Tamsk Potential
@@ -104,19 +102,26 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
 
   val bitboard = state.bitboard.deepCopy()
 
-  val packedMove: PackedMove? =
-      state.currentPlayer.selectMove(
-          turnPhase = turnPhase,
-          bitboard = bitboard,
-          currentPlayer = state.currentPlayer,
-          opponent = state.nextPlayer,
-          rng = rng,
-      )
+  val searchInfos: MutableList<SearchInfo> = mutableListOf()
+
+  val (packedMove: PackedMove?, searchDuration: Duration) =
+      measureTimedValue {
+        state.currentPlayer.selectMove(
+            turnPhase = turnPhase,
+            bitboard = bitboard,
+            currentPlayer = state.currentPlayer,
+            opponent = state.nextPlayer,
+            rng = rng,
+            searchInfos = searchInfos,
+        )
+      }
+
+  state.turnDuration.getOrDefault(turn, mutableListOf()).add(searchDuration.inWholeMilliseconds)
+  state.turnSearchInfo.getOrDefault(turn, mutableListOf()).add(searchInfos)
 
   /**
-   * The TAMSK-potential Rules
-   * You must make use of it in the same turn it is pushed onto
-   * the middle spot. If not, the potential goes out of the  game.
+   * The TAMSK-potential Rules You must make use of it in the same turn it is pushed onto the middle
+   * spot. If not, the potential goes out of the game.
    */
   // if packedMove == null && turnPhase == TurnPhase.ExtraMove
   //  remove potential from the board and add it to the opponent's captured pieces.
@@ -127,7 +132,9 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
     // add the unused TAMSK Potential to the opponent's captured pieces.
     state.nextPlayer.capturedPieces.add(unusedTAMSKPotential)
 
-    state.turnMoves.getOrDefault(turn, mutableListOf()).add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
+    state.turnMoves
+        .getOrDefault(turn, mutableListOf())
+        .add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
   }
 
   if (packedMove != null) {
@@ -171,7 +178,9 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
             // add the unused TAMSK Potential to the opponent's captured pieces.
             state.nextPlayer.capturedPieces.add(unusedTAMSKPotential)
 
-            state.turnMoves.getOrDefault(turn, mutableListOf()).add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
+            state.turnMoves
+                .getOrDefault(turn, mutableListOf())
+                .add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
           }
 
           MoveType.AddPiece -> {
@@ -244,6 +253,8 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
             board = newBoard,
             bitboard = bitboard,
             turnMoves = state.turnMoves,
+            turnDuration = state.turnDuration,
+            turnSearchInfo = state.turnSearchInfo,
             collector = state.collector,
         )
 
@@ -347,13 +358,13 @@ fun determineWinner(
 
   // TODO should number of pieces captured be a win condition
 
-  return capturedGIPFPieces?.let {Pair(it, WinCondition.CapturedAllGIPFPieces)} ?:
-  bitboardHasAvailableMoves?.let { Pair(it, WinCondition.HasMovesAvailable) } ?:
-  playerWhoMadeTheLastMove?.let {Pair(it, WinCondition.MadeTheLastMove) }
+  return capturedGIPFPieces?.let { Pair(it, WinCondition.CapturedAllGIPFPieces) }
+      ?: bitboardHasAvailableMoves?.let { Pair(it, WinCondition.HasMovesAvailable) }
+      ?: playerWhoMadeTheLastMove?.let { Pair(it, WinCondition.MadeTheLastMove) }
 }
 
 enum class WinCondition {
   CapturedAllGIPFPieces,
   MadeTheLastMove,
-  HasMovesAvailable
+  HasMovesAvailable,
 }
