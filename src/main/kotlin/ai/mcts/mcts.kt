@@ -203,10 +203,10 @@ data class MCTSNode(
             turnPhase = TurnPhase.PlayerInputWindow
           }
           MoveType.UnusedTamskPotential -> {
-            val unusedTAMSKPotential = childBitboard.removeUnusedTamskPotential(currentPlayer)
+            val unusedTAMSKPotential = childBitboard.removeUnusedTamskPotential(childCurrentPlayer)
 
             // add the unused TAMSK Potential to the opponent's captured pieces.
-            nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+            childNextPlayer.capturedPieces.add(unusedTAMSKPotential)
           }
           MoveType.RetrieveCapturePieces -> {}
         }
@@ -646,10 +646,21 @@ fun simulatePlayerTurn(
       simulationActions,
   )
 
-  val tamskMoves = mutableListOf<PackedMove>()
-  bitboard.getTamskMoves(currentPlayer, tamskMoves)
+  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-  if (tamskMoves.isNotEmpty()) {
+
+  while (
+    when (currentPlayer.name) {
+      PlayerName.WHITE ->
+        bitboard.whiteTAMSK and
+            bitboard.whitePotentials and
+            boardCenterSpotMask
+      PlayerName.BLACK ->
+        bitboard.blackTAMSK and
+            bitboard.blackPotentials and
+            boardCenterSpotMask
+    } == boardCenterSpotMask
+  ) {
     simulatePlayerMove(
         bitboard,
         currentPlayer,
@@ -670,7 +681,19 @@ fun simulatePlayerTurn(
   tamskMoves.clear()
   bitboard.getTamskMoves(currentPlayer, tamskMoves)
 
-  if (tamskMoves.isNotEmpty()) {
+
+  while (
+    when (currentPlayer.name) {
+      PlayerName.WHITE ->
+        bitboard.whiteTAMSK and
+            bitboard.whitePotentials and
+            boardCenterSpotMask
+      PlayerName.BLACK ->
+        bitboard.blackTAMSK and
+            bitboard.blackPotentials and
+            boardCenterSpotMask
+    } == boardCenterSpotMask
+  ) {
     simulatePlayerMove(
         bitboard,
         currentPlayer,
