@@ -20,10 +20,10 @@ fun main() {
 
   var gameState: State =
       initializeState(
-          Model.MINIMAX,
+          Model.MCTS,
           Strength.EASY,
           Model.MINIMAX,
-          Strength.EASY,
+          Strength.GREEDY,
           playerOneTimeControl = false,
           playerTwoTimeControl = false,
           playerOneEnableRAVE = false,
