@@ -198,7 +198,8 @@ fun scoreBitboardState(
 
     while (pieces != 0UL) {
       val k = pieces.countTrailingZeroBits()
-      weight += 128 shl bitDistanceWeights[abs(k - 18)]
+      // Fix: bitDistanceWeights is indexed directly by k, not by abs(k - 18)
+      weight += 128 shl bitDistanceWeights[k]
       pieces = pieces and (pieces - 1UL)
     }
 
@@ -213,7 +214,8 @@ fun scoreBitboardState(
 
     while (pieces != 0UL) {
       val k = pieces.countTrailingZeroBits()
-      weight += 128 shl bitDistanceWeights[abs(k - 18)]
+      // Fix: bitDistanceWeights is indexed directly by k, not by abs(k - 18)
+      weight += 128 shl bitDistanceWeights[k]
       pieces = pieces and (pieces - 1UL)
     }
 

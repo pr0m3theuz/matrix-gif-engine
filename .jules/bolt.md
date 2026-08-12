@@ -1,0 +1,3 @@
+## 2024-05-24 - Array values extraction index mix-up
+**Learning:** Extracting values from a map (`.values.toIntArray()`) constructed via `0.rangeTo(N).associateWith { k -> mapLogic(k) }` creates an array where `array[k] == mapLogic(k)`. If you then try to index into this array by recomputing `mapLogic(k)` (e.g. `array[abs(k - 18)]`), you get an incorrect value. You should index it directly with `array[k]`. This bug silently degrades correctness of evaluation scoring and performance optimizations relying on it.
+**Action:** Always check the array creation logic when indexing into lookup arrays. If an array maps `k -> v`, make sure you use `k` to index it, not some intermediate value.
