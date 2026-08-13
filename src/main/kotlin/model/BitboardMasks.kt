@@ -314,3 +314,17 @@ val reducedThreeRunSubmasks: List<ULong> =
         622770257920UL,
     )
 
+
+val runsThroughBit: List<Set<ULong>> = popRunsThroughBit()
+
+fun popRunsThroughBit(): List<MutableSet<ULong>> {
+  val runsThroughBit: List<MutableSet<ULong>> = List(40) { mutableSetOf() }
+
+  for (column in columnInfos) {
+    for (bit in column.positions) {
+      runsThroughBit[bit.countTrailingZeroBits()].addAll(column.submasks.filter { (bit and it) == bit })
+    }
+  }
+
+  return runsThroughBit
+}

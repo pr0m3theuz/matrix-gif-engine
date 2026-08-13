@@ -6,6 +6,7 @@ import org.example.model.neighbouringBitsBitmasks
 import org.example.model.openningSpotsLineMask
 import org.example.model.threeRunSubmasks
 import org.junit.jupiter.api.Test
+import kotlin.collections.set
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -98,5 +99,39 @@ class Utils {
       zertzRays[position] =  (ray xor neighbouringBitsBitmasks.getOrDefault(position, 0UL)) or position
 	  }
     logger.info { zertzRays.toString() }
+  }
+
+  @Test
+  fun generateBits() {
+    val linesThroughBit: List<MutableSet<ULong>> = List(40) { mutableSetOf() }
+    val runsThroughBit: List<MutableSet<ULong>> = List(40) { mutableSetOf() }
+
+    for (column in columnInfos) {
+      for (bit in column.positions) {
+        linesThroughBit[bit.countTrailingZeroBits()].add(column.columnMask)
+      }
+    }
+
+    for (column in columnInfos) {
+      for (bit in column.positions) {
+        runsThroughBit[bit.countTrailingZeroBits()].addAll(column.submasks.filter { (bit and it) == bit })
+      }
+    }
+
+
+    println()
+    println(linesThroughBit)
+    println()
+    println(runsThroughBit)
+    println(runsThroughBit.flatten().count())
+  }
+
+
+  @Test
+  fun countRuns4() {
+    println()
+    println(
+      columnInfos.flatMap { it.submasks }.count()
+    )
   }
 }
