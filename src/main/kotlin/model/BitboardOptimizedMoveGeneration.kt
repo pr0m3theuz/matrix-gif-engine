@@ -607,6 +607,71 @@ fun Bitboard.getPunctMoves(
 	}
 }
 
+fun Bitboard.generateCaptureMoves(currentPlayer: Player, movesBuffer: MutableList<PackedMove>) {
+  val occupiedBits = globalOccupancy
+
+  val pieceInReserve =
+      currentPlayer.piecesInReserve.firstOrNull { piece ->
+        piece.extractPieceType() == PieceType.GIPF
+      } ?: currentPlayer.piecesInReserve.firstOrNull { piece -> piece.extractPotential() }
+
+	if (pieceInReserve == null) return
+
+  val playerPieces = if (currentPlayer.name == PlayerName.WHITE) whitePieces else blackPieces
+
+  for (colIndex in columnInfos.indices) {
+    val columnInfo = columnInfos[colIndex]
+    if ((occupiedBits and columnInfo.columnMask) == columnInfo.columnMask) continue
+
+    if (columnInfo.submasks.all { submask -> (submask and playerPieces).countOneBits() < 3 })
+        continue
+
+    // --- START OF LINE MOVE ---
+    val startTargetBit = columnInfo.positions[0]
+    val startPushDirection = columnInfo.pushDirections.first
+
+    if (
+        runsThroughBit[startTargetBit.countTrailingZeroBits()].any {
+          (it and playerPieces).countOneBits() >= 3 && (it and occupiedBits) != it
+        }
+    ) {
+      movesBuffer.add(
+          PackedMove.Single(
+              0u.packPossibleBitMove(
+	              piece = pieceInReserve,
+                  columnInfoIndex = columnInfo.index,
+                  targetBit = startTargetBit,
+                  pushDirection = startPushDirection,
+                  moveType = MoveType.AddPiece,
+              )
+          )
+      )
+    }
+
+    // --- END OF LINE MOVE ---
+    val endTargetBit = columnInfo.positions.last()
+    val endPushDirection = columnInfo.pushDirections.second
+
+    if (
+        runsThroughBit[endTargetBit.countTrailingZeroBits()].any {
+          (it and playerPieces).countOneBits() >= 3 && (it and occupiedBits) != it
+        }
+    ) {
+      movesBuffer.add(
+          PackedMove.Single(
+              0u.packPossibleBitMove(
+	              piece = pieceInReserve,
+                  columnInfoIndex = columnInfo.index,
+                  targetBit = endTargetBit,
+                  pushDirection = endPushDirection,
+                  moveType = MoveType.AddPiece,
+              )
+          )
+      )
+    }
+  }
+}
+
 fun Bitboard.identifyAvailableMoves(
 	currentPlayer: Player,
 	columnInfos: List<ColumnInfo> = org.example.model.columnInfos,
