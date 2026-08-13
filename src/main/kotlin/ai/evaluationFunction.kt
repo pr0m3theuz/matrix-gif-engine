@@ -69,14 +69,22 @@ fun scoreBitboardState(
   //  assess playable pieces & vacant lines and use potentials
   var moves = bitboard.evaluateAvailableMoves(currentPlayer, columnInfos, movesBuffer)
 
-  val countCapturedOpponentGIPFCount =
-      currentPlayer.capturedPieces.count { it.extractPieceType() == PieceType.GIPF }
+  var countCapturedOpponentGIPFCount = 0
+  for (piece in currentPlayer.capturedPieces) {
+    if (piece.extractPieceType() == PieceType.GIPF) {
+      countCapturedOpponentGIPFCount++
+    }
+  }
   val countCapturedOpponentGIPFScore = countCapturedOpponentGIPFCount.let { count ->
     1 shl count shl (count * 8)
   }
 
-  val countCapturedGIPFCount =
-      opponentPlayer.capturedPieces.count { it.extractPieceType() == PieceType.GIPF }
+  var countCapturedGIPFCount = 0
+  for (piece in opponentPlayer.capturedPieces) {
+    if (piece.extractPieceType() == PieceType.GIPF) {
+      countCapturedGIPFCount++
+    }
+  }
   val countCapturedGIPFPieces = countCapturedGIPFCount.let { count ->
     1 shl count shl (count * 8)
   }
@@ -95,31 +103,29 @@ fun scoreBitboardState(
     }
   }
 
-  val countCapturedOpponentPieces =
-      currentPlayer.capturedPieces
-          .sumOf {
-            if (it.extractPieceType() != PieceType.GIPF && it.extractPotential()) {
-              2
-            } else if (it.extractPieceType() != PieceType.GIPF && !it.extractPotential()) {
-              1
-            } else 0
-          }
-          .let { count ->
-            1 shl minOf(count, 30)
-          }
+  var capturedOpponentPiecesSum = 0
+  for (piece in currentPlayer.capturedPieces) {
+    if (piece.extractPieceType() != PieceType.GIPF) {
+      if (piece.extractPotential()) {
+        capturedOpponentPiecesSum += 2
+      } else {
+        capturedOpponentPiecesSum += 1
+      }
+    }
+  }
+  val countCapturedOpponentPieces = 1 shl minOf(capturedOpponentPiecesSum, 30)
 
-  val countCapturedPieces =
-      opponentPlayer.capturedPieces
-          .sumOf {
-            if (it.extractPieceType() != PieceType.GIPF && it.extractPotential()) {
-              2
-            } else if (it.extractPieceType() != PieceType.GIPF && !it.extractPotential()) {
-              1
-            } else 0
-          }
-          .let { count ->
-            1 shl minOf(count, 30)
-          }
+  var capturedPiecesSum = 0
+  for (piece in opponentPlayer.capturedPieces) {
+    if (piece.extractPieceType() != PieceType.GIPF) {
+      if (piece.extractPotential()) {
+        capturedPiecesSum += 2
+      } else {
+        capturedPiecesSum += 1
+      }
+    }
+  }
+  val countCapturedPieces = 1 shl minOf(capturedPiecesSum, 30)
 
   // current player'S available moves
   //  val moves = mutableListOf<PossibleBitMove>()

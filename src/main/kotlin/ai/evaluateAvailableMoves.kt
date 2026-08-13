@@ -23,22 +23,28 @@ fun Bitboard.evaluateAvailableMoves(
 ): Int {
   movesBuffer.clear()
 
-  val seenTypes = mutableSetOf<PieceType>()
+
+  var seenTypesMask = 0
   var playablePiecesInReserve = 0
 
   for (piece in currentPlayer.piecesInReserve) {
     val type = piece.extractPieceType()
     if (type != null) {
-      if (type == PieceType.GIPF && seenTypes.add(type)) {
+      val typeBit = 1 shl type.ordinal
+      if (type == PieceType.GIPF && (seenTypesMask and typeBit) == 0) {
+        seenTypesMask = seenTypesMask or typeBit
         playablePiecesInReserve += 1
 	      break
       }
-	    if (piece.extractPotential() && seenTypes.add(type)) {
+	    if (piece.extractPotential() && (seenTypesMask and typeBit) == 0) {
+        seenTypesMask = seenTypesMask or typeBit
         playablePiecesInReserve += 1
 	      break
       }
     }
   }
+
+
 
   val occupiedBits = globalOccupancy
 
