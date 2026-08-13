@@ -59,7 +59,6 @@ fun qSearch(
 	searchInfo: SearchInfo? = null,
 ): BestPackedMove {
 
-	val initBitboard = bitboard.deepCopy()
 
 	searchInfo?.nodesSearched++
 	if (
@@ -85,7 +84,6 @@ fun qSearch(
 //			)
 //		}
 //
-//		bitboard.diff(initBitboard)
 //
 //		bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -148,7 +146,6 @@ fun qSearch(
 			logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
 		}
 
-		val preMoveBitboardState = bitboard.deepCopy()
 
 		bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -248,7 +245,6 @@ fun qSearch(
 					"No piece was selected!\nPossible move: $moveValue"
 				}
 
-				//        bitboard.diff(preMoveBitboardState)
 
 				bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -275,7 +271,6 @@ fun qSearch(
 					}
 				}
 
-				bitboard.diff(preMoveBitboardState)
 
 				bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -318,7 +313,6 @@ fun qSearch(
 				val isTamskPieceAtCenter = mutableListOf<PackedMove>()
 				bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
 				if (isTamskPieceAtCenter.isNotEmpty()) {
-					val preTamskMoveBitboardState = bitboard.deepCopy()
 
 					if (logger.isDebugEnabled()) {
 						logger.info { "" + ("--- ALPHA-BETA CALLED (TAMSK) ---") }
@@ -340,7 +334,6 @@ fun qSearch(
 						)
 							.score
 
-					bitboard.diff(preTamskMoveBitboardState)
 
 					bitboard.assertPieceCount(
 						currentPlayer = currentPlayer,
@@ -419,7 +412,6 @@ fun qSearch(
 					"ALPHA-BETA ADD PIECE @ depth $depth",
 				)
 
-				//        bitboard.diff(postMoveBitboardState)
 
 				bitboard.assertPieceCount(
 					currentPlayer = currentPlayer,
@@ -436,7 +428,6 @@ fun qSearch(
 						wasIndexOccupied = vacantBitFound != ULong.MAX_VALUE,
 					)
 
-					bitboard.diff(preMoveBitboardState)
 				} else {
 
 					bitboard.undoAddPieceToBitboard(
@@ -445,7 +436,6 @@ fun qSearch(
 						wasIndexOccupied = vacantBitFound != ULong.MAX_VALUE,
 					)
 
-					bitboard.diff(preMoveBitboardState)
 
 					// TODO Add selected piece back to player reserve
 					moveValue.onlyPiece().let { currentPlayer.piecesInReserve.add(it) }
@@ -479,7 +469,6 @@ fun qSearch(
 					move = moveValue,
 				)
 
-				val postUsePotentialBitboardState = bitboard.deepCopy()
 
 				// TODO Handle TAMSK Potential
 				// TODO Check if there is Tamsk Potential Move
@@ -487,9 +476,7 @@ fun qSearch(
 				val isTamskPieceAtCenter = mutableListOf<PackedMove>()
 				bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
 				if (isTamskPieceAtCenter.isNotEmpty()) {
-					val preTamskMoveBitboardState = bitboard.deepCopy()
 
-					bitboard.diff(preTamskMoveBitboardState)
 
 					if (logger.isDebugEnabled()) {
 						logger.info { "" + ("--- ALPHA-BETA USE-POTENTIAL CALLED (TAMSK) ---") }
@@ -511,7 +498,6 @@ fun qSearch(
 						)
 							.score
 
-					bitboard.diff(preTamskMoveBitboardState)
 
 					bitboard.assertPieceCount(
 						currentPlayer = currentPlayer,
@@ -542,7 +528,6 @@ fun qSearch(
 						searchInfo = searchInfo
 					)
 
-				val beforeRecursionBitboardState = bitboard.deepCopy()
 
 				val move =
 					BestPackedMove(
@@ -572,7 +557,6 @@ fun qSearch(
 					logger.info { "" + ("--- ALPHA-BETA COMPLETED (POST USE POTENTIAL) ---") }
 				}
 
-				bitboard.diff(beforeRecursionBitboardState)
 
 				//        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer =
 				// opponentPlayer)
@@ -587,7 +571,6 @@ fun qSearch(
 					"ALPHA-BETA USE POTENTIAL @ depth $depth",
 				)
 
-				bitboard.diff(postUsePotentialBitboardState)
 
 				bitboard.assertPieceCount(
 					currentPlayer = currentPlayer,
@@ -597,7 +580,6 @@ fun qSearch(
 				// TODO undo use piece potential
 				bitboard.undoUsePiecePotential(moveValue)
 
-				//        val bitboardCopy = bitboard.deepCopy()
 				//        bitboardCopy.undoUsePiecePotential(moveValue)
 				//        bitboard.undoUsePiecePotential(moveValue)
 
@@ -638,7 +620,6 @@ fun qSearch(
 		)
 	}
 
-	bitboard.diff(initBitboard)
 
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -659,7 +640,6 @@ private fun bestPiecesToRemove(
 	endTime: Long = Long.MAX_VALUE,
 	searchInfo: SearchInfo? = null,
 ): Triple<List<UInt>, Int, List<UInt>> {
-	val initBitboard = bitboard.deepCopy()
 
 	if (System.currentTimeMillis() >= endTime) {
 		return Triple(emptyList(), Int.MIN_VALUE, emptyList())
@@ -680,7 +660,6 @@ private fun bestPiecesToRemove(
 			searchInfo = searchInfo,
 		)
 
-	bitboard.diff(initBitboard)
 
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -752,7 +731,6 @@ private fun resolveBoardRemovalsQS(
 
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-	val initBitboard = bitboard.deepCopy()
 
 	val removePiecesPowerset: MutableList<PackedMove> = mutableListOf<PackedMove>()
 	bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
@@ -799,8 +777,6 @@ private fun resolveBoardRemovalsQS(
 
 			val newlyStackedPieces = currentPlayer.combinePieces()
 
-			val postPieceRemovalBitboardState = bitboard.deepCopy()
-			bitboard.diff(postPieceRemovalBitboardState)
 
 			bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -815,7 +791,6 @@ private fun resolveBoardRemovalsQS(
 			//              alphaBetaScore = alphaBetaScore.copy(move = null),
 			//          )
 
-			//      bitboard.diff(postPieceRemovalBitboardState)
 
 			if (logger.isDebugEnabled()) {
 				logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
@@ -847,7 +822,6 @@ private fun resolveBoardRemovalsQS(
 				logger.info { "" + ("--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---") }
 			}
 
-			//      bitboard.diff(postPieceRemovalBitboardState)
 
 			//      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -864,7 +838,6 @@ private fun resolveBoardRemovalsQS(
 			)
 			//      bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
 
-			//      bitboard.diff(initBitboard)
 
 			bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -899,7 +872,6 @@ private fun resolveBoardRemovalsQS(
 	}
 	// endregion
 
-	bitboard.diff(initBitboard)
 
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 

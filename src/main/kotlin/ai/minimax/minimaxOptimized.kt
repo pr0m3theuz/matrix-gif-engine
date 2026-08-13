@@ -90,7 +90,6 @@ fun alphaBetaNgMxSearch(
   //  state.assertPieceCount()
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-  val initBitboard = bitboard.deepCopy()
   //  val bitboard = convertBoardToBitboard(state.board)
 
   // TODO Need to score piece removals
@@ -177,7 +176,6 @@ fun alphaBetaNgMxSearch(
       )
     }
 
-    bitboard.diff(initBitboard)
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -212,7 +210,6 @@ fun alphaBetaNgMxSearch(
       )
     }
 
-    bitboard.diff(initBitboard)
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -245,7 +242,6 @@ fun alphaBetaNgMxSearch(
             "ALPHA-BETA MAIN BEGINNING @ depth $depth",
         )
 
-        bitboard.diff(initBitboard)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
       }
@@ -267,7 +263,6 @@ fun alphaBetaNgMxSearch(
             "ALPHA-BETA MAIN BEGINNING @ depth $depth",
         )
 
-        bitboard.diff(initBitboard)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
       }
@@ -289,7 +284,6 @@ fun alphaBetaNgMxSearch(
             "ALPHA-BETA MAIN BEGINNING @ depth $depth",
         )
 
-        bitboard.diff(initBitboard)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
       }
@@ -389,7 +383,6 @@ fun alphaBetaNgMxSearch(
       logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
     }
 
-    val preMoveBitboardState = bitboard.deepCopy()
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -549,7 +542,6 @@ fun alphaBetaNgMxSearch(
           "No piece was selected!\nPossible move: $moveValue"
         }
 
-//                bitboard.diff(preMoveBitboardState)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -576,7 +568,6 @@ fun alphaBetaNgMxSearch(
           }
         }
 
-        bitboard.diff(preMoveBitboardState)
 
         bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -593,7 +584,6 @@ fun alphaBetaNgMxSearch(
         //          "Invalid board state: No vacant bit found for piece deployment."
         //        }
 
-        val postMoveBitboardState = bitboard.deepCopy()
 
         if (logger.isDebugEnabled()) {
           logger.info {
@@ -619,7 +609,6 @@ fun alphaBetaNgMxSearch(
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
-          val preTamskMoveBitboardState = bitboard.deepCopy()
 
           if (logger.isDebugEnabled()) {
             logger.info { "" + ("--- ALPHA-BETA CALLED (TAMSK) ---") }
@@ -641,7 +630,6 @@ fun alphaBetaNgMxSearch(
                   )
                   .score
 
-          bitboard.diff(preTamskMoveBitboardState)
 
           bitboard.assertPieceCount(
               currentPlayer = currentPlayer,
@@ -724,7 +712,6 @@ fun alphaBetaNgMxSearch(
                 wasIndexOccupied = vacantBitFound != ULong.MAX_VALUE,
               )
 
-              bitboard.diff(preMoveBitboardState)
             } else {
 
               bitboard.undoAddPieceToBitboard(
@@ -791,7 +778,6 @@ fun alphaBetaNgMxSearch(
             "ALPHA-BETA ADD PIECE @ depth $depth",
         )
 
-        //        bitboard.diff(postMoveBitboardState)
 
         bitboard.assertPieceCount(
             currentPlayer = currentPlayer,
@@ -808,7 +794,6 @@ fun alphaBetaNgMxSearch(
               wasIndexOccupied = vacantBitFound != ULong.MAX_VALUE,
           )
 
-          bitboard.diff(preMoveBitboardState)
         } else {
 
           bitboard.undoAddPieceToBitboard(
@@ -817,7 +802,6 @@ fun alphaBetaNgMxSearch(
               wasIndexOccupied = vacantBitFound != ULong.MAX_VALUE,
           )
 
-          bitboard.diff(preMoveBitboardState)
 
           // TODO Add selected piece back to player reserve
           moveValue.onlyPiece().let { currentPlayer.piecesInReserve.add(it) }
@@ -867,13 +851,11 @@ fun alphaBetaNgMxSearch(
 
       // region MoveType.UsePotential
       MoveType.UsePotential -> {
-        val preUsePotentialBoardState = bitboard.deepCopy()
 
         bitboard.usePiecePotential(
             move = moveValue,
         )
 
-        val postUsePotentialBitboardState = bitboard.deepCopy()
 
         // TODO Handle TAMSK Potential
         // TODO Check if there is Tamsk Potential Move
@@ -881,9 +863,7 @@ fun alphaBetaNgMxSearch(
         val isTamskPieceAtCenter = mutableListOf<PackedMove>()
         bitboard.getTamskMoves(currentPlayer, isTamskPieceAtCenter)
         if (isTamskPieceAtCenter.isNotEmpty()) {
-          val preTamskMoveBitboardState = bitboard.deepCopy()
 
-          bitboard.diff(preTamskMoveBitboardState)
 
           if (logger.isDebugEnabled()) {
             logger.info { "" + ("--- ALPHA-BETA USE-POTENTIAL CALLED (TAMSK) ---") }
@@ -905,7 +885,6 @@ fun alphaBetaNgMxSearch(
                   )
                   .score
 
-          bitboard.diff(preTamskMoveBitboardState)
 
           bitboard.assertPieceCount(
               currentPlayer = currentPlayer,
@@ -936,7 +915,6 @@ fun alphaBetaNgMxSearch(
                 searchInfo = searchInfo,
             )
 
-        val beforeRecursionBitboardState = bitboard.deepCopy()
 
         if ((index > 3 + captureMoves.size) && depth >= 3 && maxDepth > 3) {
           // todo reduced search
@@ -1014,7 +992,6 @@ fun alphaBetaNgMxSearch(
           logger.info { "" + ("--- ALPHA-BETA COMPLETED (POST USE POTENTIAL) ---") }
         }
 
-        bitboard.diff(beforeRecursionBitboardState)
 
         //        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer =
         // opponentPlayer)
@@ -1029,7 +1006,6 @@ fun alphaBetaNgMxSearch(
             "ALPHA-BETA USE POTENTIAL @ depth $depth",
         )
 
-        bitboard.diff(postUsePotentialBitboardState)
 
         bitboard.assertPieceCount(
             currentPlayer = currentPlayer,
@@ -1039,7 +1015,6 @@ fun alphaBetaNgMxSearch(
         // TODO undo use piece potential
         bitboard.undoUsePiecePotential(moveValue)
 
-        //        val bitboardCopy = bitboard.deepCopy()
         //        bitboardCopy.undoUsePiecePotential(moveValue)
         //        bitboard.undoUsePiecePotential(moveValue)
 
@@ -1095,7 +1070,6 @@ fun alphaBetaNgMxSearch(
     )
   }
 
-  bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   // endregion
@@ -1152,7 +1126,6 @@ fun alphaBetaNgMxSearch(
     )
   }
 
-  bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1178,7 +1151,6 @@ private fun bestPiecesToRemove(
     endTime: Long = Long.MAX_VALUE,
     searchInfo: SearchInfo? = null,
 ): Triple<List<UInt>, Int, List<UInt>> {
-  val initBitboard = bitboard.deepCopy()
 
   if (System.currentTimeMillis() >= endTime) {
     return Triple(emptyList(), Int.MIN_VALUE, emptyList())
@@ -1199,7 +1171,6 @@ private fun bestPiecesToRemove(
           searchInfo = searchInfo,
       )
 
-  bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1271,7 +1242,6 @@ fun resolveBoardRemovals(
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-  val initBitboard = bitboard.deepCopy()
 
   val removePiecesPowerset: MutableList<PackedMove> = mutableListOf<PackedMove>()
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
@@ -1318,8 +1288,6 @@ fun resolveBoardRemovals(
 
       val newlyStackedPieces = currentPlayer.combinePieces()
 
-      val postPieceRemovalBitboardState = bitboard.deepCopy()
-      bitboard.diff(postPieceRemovalBitboardState)
 
       bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1334,7 +1302,6 @@ fun resolveBoardRemovals(
       //              alphaBetaScore = alphaBetaScore.copy(move = null),
       //          )
 
-      //      bitboard.diff(postPieceRemovalBitboardState)
 
       if (logger.isDebugEnabled()) {
         logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
@@ -1366,7 +1333,6 @@ fun resolveBoardRemovals(
         logger.info { "" + ("--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---") }
       }
 
-      //      bitboard.diff(postPieceRemovalBitboardState)
 
       //      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1383,7 +1349,6 @@ fun resolveBoardRemovals(
       )
       //      bitboard.undoRetrieveAndCapturePieces(piecesWithPotentialPowerset)
 
-      //      bitboard.diff(initBitboard)
 
       bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -1418,7 +1383,6 @@ fun resolveBoardRemovals(
   }
   // endregion
 
-  bitboard.diff(initBitboard)
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
