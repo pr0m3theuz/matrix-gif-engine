@@ -5,7 +5,7 @@ package ai.minimax
 import kotlin.test.assertEquals
 import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
 import org.example.ai.humanEvaluation.BestPackedMove
-import org.example.ai.humanEvaluation.alphaBetaPackedMove
+import org.example.ai.humanEvaluation.alphaBetaNgMxSearch
 import org.example.ai.mcts.PackedMove
 import org.example.engine.TranspositionTable
 import org.example.model.*
@@ -482,7 +482,7 @@ class ResolveBoardRemovalsTest {
           BestPackedMove(
               move = removePieces,
               score =
-                  alphaBetaPackedMove(
+                  alphaBetaNgMxSearch(
                           maxDepth = maxDepth,
                           depth = depth.minus(1),
                           bitboard = bitboard.deepCopy(),
@@ -778,7 +778,7 @@ class ResolveBoardRemovalsTest {
 
     val bitboardForTesting = bitboard.deepCopy()
 
-    alphaBetaPackedMove(
+    alphaBetaNgMxSearch(
         maxDepth = maxDepth,
         depth = depth.minus(1),
         bitboard = bitboardForTesting,
