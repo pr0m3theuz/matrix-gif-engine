@@ -145,81 +145,128 @@ fun Bitboard.getZobristHash(
 ): Long {
   var zobristKey: Long = 0L
 
-  for (spot in 0..39) {
-    if ((globalOccupancy shr spot and 1UL) == 0UL) continue
+  var temp = whiteGIPF
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][0][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((whiteGIPF shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][0][spot]
-    }
+  temp = whiteTAMSK
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][1][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((whiteTAMSK shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][1][spot]
-    }
+  temp = whiteZERTZ
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][2][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((whiteZERTZ shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][2][spot]
-    }
+  temp = whiteYINSH
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][3][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((whiteYINSH shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][3][spot]
+  for (layer in 0..7) {
+    temp = whiteDVONNLayer[layer]
+    if (temp == 0UL) break
+    while (temp != 0UL) {
+      val spot = temp.countTrailingZeroBits()
+      zobristKey = zobristKey xor zArray[0][4 + layer][spot]
+      temp = temp and (temp - 1UL)
     }
+  }
 
-    for (layer in 0..7) {
-      if (whiteDVONNLayer[layer] == 0UL) break
-      if ((whiteDVONNLayer[layer] shr spot and 1UL) == 1UL) {
-        zobristKey = zobristKey xor zArray[0][4 + layer][spot]
-      }
+  for (layer in 0..7) {
+    temp = whitePUNCTLayer[layer]
+    if (temp == 0UL) break
+    while (temp != 0UL) {
+      val spot = temp.countTrailingZeroBits()
+      zobristKey = zobristKey xor zArray[0][12 + layer][spot]
+      temp = temp and (temp - 1UL)
     }
-    for (layer in 0..7) {
-      if (whitePUNCTLayer[layer] == 0UL) break
-      if ((whitePUNCTLayer[layer] shr spot and 1UL) == 1UL) {
-        zobristKey = zobristKey xor zArray[0][12 + layer][spot]
-      }
-    }
-    for (layer in 0..7) {
-      if (blackDVONNLayer[layer] == 0UL) break
-      if ((blackDVONNLayer[layer] shr spot and 1UL) == 1UL) {
-        zobristKey = zobristKey xor zArray[1][4 + layer][spot]
-      }
-    }
-    for (layer in 0..7) {
-      if (blackPUNCTLayer[layer] == 0UL) break
-      if ((blackPUNCTLayer[layer] shr spot and 1UL) == 1UL) {
-        zobristKey = zobristKey xor zArray[1][12 + layer][spot]
-      }
-    }
+  }
 
-    if ((whitePotentials shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][20][spot]
+  for (layer in 0..7) {
+    temp = blackDVONNLayer[layer]
+    if (temp == 0UL) break
+    while (temp != 0UL) {
+      val spot = temp.countTrailingZeroBits()
+      zobristKey = zobristKey xor zArray[1][4 + layer][spot]
+      temp = temp and (temp - 1UL)
     }
+  }
 
-    if ((whiteNeutralized shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[0][21][spot]
+  for (layer in 0..7) {
+    temp = blackPUNCTLayer[layer]
+    if (temp == 0UL) break
+    while (temp != 0UL) {
+      val spot = temp.countTrailingZeroBits()
+      zobristKey = zobristKey xor zArray[1][12 + layer][spot]
+      temp = temp and (temp - 1UL)
     }
+  }
 
-    if ((blackGIPF shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][0][spot]
-    }
+  temp = whitePotentials
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][20][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((blackTAMSK shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][1][spot]
-    }
+  temp = whiteNeutralized
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[0][21][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((blackZERTZ shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][2][spot]
-    }
+  temp = blackGIPF
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][0][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((blackYINSH shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][3][spot]
-    }
+  temp = blackTAMSK
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][1][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((blackPotentials shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][20][spot]
-    }
+  temp = blackZERTZ
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][2][spot]
+    temp = temp and (temp - 1UL)
+  }
 
-    if ((blackNeutralized shr spot and 1UL) == 1UL) {
-      zobristKey = zobristKey xor zArray[1][21][spot]
-    }
+  temp = blackYINSH
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][3][spot]
+    temp = temp and (temp - 1UL)
+  }
+
+  temp = blackPotentials
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][20][spot]
+    temp = temp and (temp - 1UL)
+  }
+
+  temp = blackNeutralized
+  while (temp != 0UL) {
+    val spot = temp.countTrailingZeroBits()
+    zobristKey = zobristKey xor zArray[1][21][spot]
+    temp = temp and (temp - 1UL)
   }
 
   if (currentPlayer.name == PlayerName.BLACK) {
