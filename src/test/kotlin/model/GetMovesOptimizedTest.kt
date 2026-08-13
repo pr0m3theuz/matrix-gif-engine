@@ -125,7 +125,7 @@ class GetMovesOptimizedTest {
     return shift(jumps) and emptySquares
   }
 
-  fun getJumpsInDirection(
+  fun getZertzTargets(
       boardMask: ULong,
       potentials: ULong,
       occupied: ULong,
@@ -214,6 +214,121 @@ class GetMovesOptimizedTest {
 
     //    return sourceTargets
   }
+
+  fun getYinshTargets(
+    boardMask: ULong,
+    potentials: ULong,
+    occupied: ULong,
+    emptySquares: ULong,
+    movesBuffer: MutableList<PackedMove>,
+  ) {
+    //    val sourceTargets: MutableList<Pair<ULong, ULong>> = mutableListOf()
+
+    var tempPotentials = potentials
+    while (tempPotentials != 0UL) {
+      val potential = 1UL shl tempPotentials.countTrailingZeroBits()
+      val potentialBitPosition = tempPotentials.countTrailingZeroBits()
+      val potentialMask = rays[potentialBitPosition]
+      val adjacentBits = clusterArray[potentialBitPosition]
+
+      val targets = (emptySquares and potentialMask) or (emptySquares and adjacentBits)
+
+      var tempAdjBits = adjacentBits
+      var tempTargets = targets
+
+      while (tempAdjBits != 0UL) {
+        val adjacentBitPosition = tempAdjBits.countTrailingZeroBits()
+        val adjacentBit = tempAdjBits.takeLowestOneBit()
+
+        val distanceBetweenBits = abs(potentialBitPosition - adjacentBitPosition)
+
+        val emptyAdjacent =
+          if (adjacentBitPosition < potentialBitPosition) {
+            (potential shr distanceBetweenBits) and occupied == 0UL
+          } else {
+            (potential shl distanceBetweenBits) and occupied == 0UL
+          }
+
+        if (!emptyAdjacent) continue
+
+        // for vertical rays
+//        val upperBound =
+//          (openningSpotsLineMask and (adjacentBit - 1UL).inv() and boardMask).takeLowestOneBit()
+//        val lowerBound =
+//          (openningSpotsLineMask and (adjacentBit - 1UL) and boardMask).takeHighestOneBit()
+
+//        val inBoundBits = ((upperBound shl 1) - 1UL) and (lowerBound - 1UL).inv()
+
+        val validTargets =
+//          if (abs(adjacentBitPosition - potentialBitPosition) == 1) {
+//            // lower bound < tempTargets < upper bound & not and adjacent bit
+//            tempTargets and inBoundBits
+//          } else
+            if (adjacentBitPosition < potentialBitPosition) {
+            tempTargets and adjacentBit - 1UL and rays[adjacentBitPosition] and adjacentBits.inv()
+          } else {
+            tempTargets and
+                (adjacentBit or (adjacentBit - 1UL).inv()) and
+                rays[adjacentBitPosition] and adjacentBits.inv()
+          }
+
+        // todo try tempTargets and rays[adjacentBitPosition]
+
+        val tempValidTargets = validTargets // and (adjacentBits.inv())
+        if (tempValidTargets != 0UL) {
+          val target =
+            if (adjacentBitPosition < potentialBitPosition) {
+              validTargets.takeHighestOneBit()
+            } else {
+              validTargets.takeLowestOneBit()
+            }
+          //          sourceTargets.add(Pair(potential, target))
+          movesBuffer.add(
+            PackedMove.Single(
+              0u.packPossibleBitMove(
+                sourceBit = potential,
+                targetBit = target,
+                moveType = MoveType.UsePotential,
+              )
+                .setPieceType(
+                  pieceType = PieceType.YINSH,
+                )
+                .setPieceColor(
+                  pieceColor = PlayerName.WHITE,
+                )
+                .setPotential(potential = true)
+            )
+          )
+
+          tempTargets = tempTargets xor target
+        }
+
+        movesBuffer.add(
+          PackedMove.Single(
+            0u.packPossibleBitMove(
+              sourceBit = potential,
+              targetBit = adjacentBit,
+              moveType = MoveType.UsePotential,
+            )
+              .setPieceType(
+                pieceType = PieceType.YINSH,
+              )
+              .setPieceColor(
+                pieceColor = PlayerName.WHITE,
+              )
+              .setPotential(potential = true)
+          )
+        )
+
+        tempAdjBits = tempAdjBits xor adjacentBit
+      }
+
+      tempPotentials = tempPotentials xor potential
+    }
+
+    //    return sourceTargets
+  }
+
 
   val shiftForward: (ULong) -> ULong = { it shl 1 }
 
@@ -450,7 +565,7 @@ class GetMovesOptimizedTest {
   }
 
   @Test
-  fun `getZertzMoves using shifting`() {
+  fun `getZertzMoves using bit tricks`() {
     repeat(100000) {
       val bitboard =
           Bitboard(
@@ -461,7 +576,7 @@ class GetMovesOptimizedTest {
       val currrentPlayer = Player(name = PlayerName.BLACK)
 
       val movesBuffer = mutableListOf<PackedMove>()
-      getJumpsInDirection(
+      getZertzTargets(
           boardMask = 1UL.shl(40).minus(1UL),
           potentials = 274911494144.toULong(),
           occupied = 893352538030.toULong(),
@@ -499,6 +614,33 @@ class GetMovesOptimizedTest {
     )
 
     val copy = bitboard.deepCopy()
+
+    val move = 318490376u
+
+    copy.usePiecePotential(move)
+    print(move)
+  }
+
+  @Test
+  fun `getYinshMoves using bit tricks`() {
+    val bitboard = Bitboard(
+      whiteGIPF = 1044086047519.toULong(),
+      whiteYINSH = 262144UL,
+      whitePotentials = 262144UL,
+    )
+
+    val copy = bitboard.deepCopy()
+
+    val movesBuffer = mutableListOf<PackedMove>()
+    val boardMask = 1UL.shl(40).minus(1UL)
+
+    getYinshTargets(
+      boardMask,
+      potentials = 262144.toULong(),
+      occupied = bitboard.globalOccupancy,
+      emptySquares = (bitboard.globalOccupancy.inv() and 1UL.shl(40).minus(1UL)),
+      movesBuffer = movesBuffer,
+    )
 
     val move = 318490376u
 
