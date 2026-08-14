@@ -7,6 +7,7 @@ import kotlin.random.Random
 import org.example.ai.mcts.PackedMove
 import org.example.engine.determineWinner
 import org.example.model.*
+import kotlin.math.min
 
 /**
  * The evaluation function does not know which states are which, but it can return a single value
@@ -242,8 +243,343 @@ fun scoreBitboardState(
           scoreClusters(opponentPlayer) +
           scoreRunsOfThree(opponentPlayer))
 
-  val noise = rng.nextInt(-50, 50)
+  val noise = 0 // rng.nextInt(-50, 50)
 
   return (((currentValue + opponentValue) + noise) * 1000) /
       (currentValue + abs(opponentValue) + abs(noise))
+}
+
+
+// OPTIMIZATION 1: Move this OUTSIDE the function (e.g., at the file level or in a Companion Object).
+// This completely removes the severe GC penalty of allocating a new list every evaluation call.
+private val sharedMovesBuffer = ThreadLocal.withInitial { ArrayList<PackedMove>(64) }
+
+fun fasterEvaluation(
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  opponentPlayer: Player,
+  rng: Random,
+): Int {
+
+  // 1. Resolve player sides once (eliminates repeated branches)
+  val isWhite = currentPlayer.name == PlayerName.WHITE
+  val myPieces = if (isWhite) bitboard.whitePieces else bitboard.blackPieces
+  val oppPieces = if (isWhite) bitboard.blackPieces else bitboard.whitePieces
+  val myPotentials = if (isWhite) bitboard.whitePotentials else bitboard.blackPotentials
+  val oppPotentials = if (isWhite) bitboard.blackPotentials else bitboard.whitePotentials
+  val myTAMSK = if (isWhite) bitboard.whiteTAMSK else bitboard.blackTAMSK
+  val oppTAMSK = if (isWhite) bitboard.blackTAMSK else bitboard.whiteTAMSK
+
+  // 2. Tally captured pieces WITHOUT allocations (no .count, no .sumOf, no Iterators)
+  var myCapturedOppGipfCount = 0
+  var myCapturedPoints = 0
+  val myCaptured = currentPlayer.capturedPieces
+  for (i in myCaptured.indices) {
+    val p = myCaptured[i]
+    if (p.extractPieceType() == PieceType.GIPF) {
+      myCapturedOppGipfCount++
+    } else {
+      myCapturedPoints += if (p.extractPotential()) 2 else 1
+    }
+  }
+
+  var oppCapturedMyGipfCount = 0
+  var oppCapturedPoints = 0
+  val oppCaptured = opponentPlayer.capturedPieces
+  for (i in oppCaptured.indices) {
+    val p = oppCaptured[i]
+    if (p.extractPieceType() == PieceType.GIPF) {
+      oppCapturedMyGipfCount++
+    } else {
+      oppCapturedPoints += if (p.extractPotential()) 2 else 1
+    }
+  }
+
+  // 3. Move Generation (Reusing buffer to prevent GC pauses)
+  val movesBuffer = sharedMovesBuffer.get()
+  movesBuffer.clear()
+
+//  val myMovesCount = bitboard.evaluateAvailableMoves(currentPlayer, columnInfos, movesBuffer)
+
+  // 4. Terminal State Check
+  if ( myCapturedOppGipfCount == 3 || oppCapturedMyGipfCount == 3) {
+    val winner = determineWinner(currentPlayer, opponentPlayer, opponentPlayer, bitboard = bitboard)?.first
+    if (winner != null) {
+      return if (winner.name == currentPlayer.name) {
+        Int.MAX_VALUE - 100
+      } else if (winner.name == opponentPlayer.name) {
+        -(Int.MAX_VALUE - 100)
+      } else {
+        0 // draw
+      }
+    }
+  }
+
+  movesBuffer.clear()
+//  val oppMovesCount = bitboard.evaluateAvailableMoves(opponentPlayer, columnInfos, movesBuffer)
+
+  // 5. Precalculate Scores (Simplified bitwise math)
+  val maxMovesBase = 1 shl 30
+//  val myAvailableMovesScore = maxMovesBase shr min(myMovesCount, 30)
+//  val oppAvailableMovesScore = maxMovesBase shr min(oppMovesCount, 30)
+
+  val myCapturedOppGipfScore = 1 shl (myCapturedOppGipfCount * 9)
+  val oppCapturedMyGipfScore = 1 shl (oppCapturedMyGipfCount * 9)
+  val myCapturedPiecesScore = 1 shl min(myCapturedPoints, 30)
+  val oppCapturedPiecesScore = 1 shl min(oppCapturedPoints, 30)
+
+  // 6. Inline calculations for Centre Control & Tamsk
+  // Uses inline absolute value calculation (diff/absDiff) to skip Math.abs overhead.
+  var myCentreWeight = 0
+  var myTamskWeight = 0
+  var oppCentreWeight = 0
+  var oppTamskWeight = 0
+
+  var temp = myPieces
+  while (temp != 0UL) {
+    val k = temp.countTrailingZeroBits()
+    val diff = k - 18
+    myCentreWeight += 128 shl bitDistanceWeights[if (diff < 0) -diff else diff]
+    temp = temp and (temp - 1UL)
+  }
+
+  temp = myTAMSK and myPotentials
+  while (temp != 0UL) {
+    val k = temp.countTrailingZeroBits()
+    val diff = k - 18
+    myTamskWeight += 128 shl bitDistanceWeights[if (diff < 0) -diff else diff]
+    temp = temp and (temp - 1UL)
+  }
+
+  temp = oppPieces
+  while (temp != 0UL) {
+    val k = temp.countTrailingZeroBits()
+    val diff = k - 18
+    oppCentreWeight += 128 shl bitDistanceWeights[if (diff < 0) -diff else diff]
+    temp = temp and (temp - 1UL)
+  }
+
+  temp = oppTAMSK and oppPotentials
+  while (temp != 0UL) {
+    val k = temp.countTrailingZeroBits()
+    val diff = k - 18
+    oppTamskWeight += 128 shl bitDistanceWeights[if (diff < 0) -diff else diff]
+    temp = temp and (temp - 1UL)
+  }
+
+  // 7. Inline Clusters & Runs
+  var myClusters = 0
+  var oppClusters = 0
+  for (i in clusterArray.indices) {
+    val cluster = clusterArray[i]
+    val denom = (1 shl cluster.countOneBits()) - 1
+    if (denom != 0) {
+      val myK = (myPieces and cluster).countOneBits()
+      if (myK > 0) myClusters += (((1 shl myK) - 1) * 1024) / denom
+
+      val oppK = (oppPieces and cluster).countOneBits()
+      if (oppK > 0) oppClusters += (((1 shl oppK) - 1) * 1024) / denom
+    }
+  }
+
+  var myRuns = 0
+  var oppRuns = 0
+  for (i in reducedThreeRunSubmasks.indices) {
+    val mask = reducedThreeRunSubmasks[i]
+    if ((myPieces and mask) == mask) myRuns += 200
+    if ((oppPieces and mask) == mask) oppRuns += 200
+  }
+
+  // 8. Final Calculation
+  val myTotal = 20 +
+      myCapturedOppGipfScore +
+      myCapturedPiecesScore +
+//      myAvailableMovesScore +
+      myPieces.countOneBits() +
+      myCentreWeight +
+      myTamskWeight +
+      myClusters +
+      myRuns
+
+  val oppTotal = 20 +
+      oppCapturedMyGipfScore +
+      oppCapturedPiecesScore +
+//      oppAvailableMovesScore +
+      oppPieces.countOneBits() +
+      oppCentreWeight +
+      oppTamskWeight +
+      oppClusters +
+      oppRuns
+
+  // Returns equivalent of ((currentValue + opponentValue) * 1000) / (currentValue + abs(opponentValue))
+  return ((myTotal - oppTotal) * 1000) / (myTotal + oppTotal)
+}
+
+fun doActionGetTurnPhase(
+  selectedPackedMove: PackedMove,
+  childBitboard: Bitboard,
+  childCurrentPlayer: Player,
+  childNextPlayer: Player
+): TurnPhase? {
+  var turnPhase: TurnPhase? = null
+  when (selectedPackedMove) {
+    is PackedMove.Multiple -> {
+      val retrievedCapturedPieces = mutableListOf<UInt>()
+
+      childBitboard.removeSelectedPieces(
+        player = childCurrentPlayer,
+        piecesToRemove = selectedPackedMove.values.distinct(),
+        movesBuffer = retrievedCapturedPieces,
+      )
+
+      turnPhase = TurnPhase.PieceRemoval
+
+      childCurrentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
+
+      childCurrentPlayer.combinePieces()
+
+      childBitboard.assertPieceCount(
+        currentPlayer = childCurrentPlayer,
+        nextPlayer = childNextPlayer,
+      )
+    }
+
+    is PackedMove.Single -> {
+      val selectedMove = selectedPackedMove.value
+      when (selectedMove.extractMoveType()) {
+        MoveType.AddPiece -> {
+          if (selectedMove.extractSourceBit() == boardCenterSpotMask) {
+            childBitboard.useTamskPotential(selectedMove)
+
+            turnPhase = TurnPhase.ExtraMove
+          } else {
+            turnPhase = TurnPhase.PlayerInputWindow
+
+            val selectedPiece =
+              selectedMove.onlyPiece().let { childCurrentPlayer.selectPiece(it) }
+
+            selectedPiece?.let {
+              childBitboard.addPieceToBitboard(
+                move = selectedMove,
+              )
+            }
+          }
+        }
+
+        MoveType.UsePotential -> {
+          val selectedMove = selectedPackedMove.value
+          childBitboard.usePiecePotential(
+            move = selectedMove,
+          )
+
+          turnPhase = TurnPhase.PlayerInputWindow
+        }
+
+        MoveType.UnusedTamskPotential -> {
+          val unusedTAMSKPotential = childBitboard.removeUnusedTamskPotential(childCurrentPlayer)
+
+          // add the unused TAMSK Potential to the opponent's captured pieces.
+          childNextPlayer.capturedPieces.add(unusedTAMSKPotential)
+        }
+
+        MoveType.RetrieveCapturePieces -> {}
+      }
+    }
+  }
+  return turnPhase
+}
+
+fun scoreActions(
+  selectedPackedMove: PackedMove,
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  nextPlayer: Player,
+  rng: Random,
+): Int {
+  when (selectedPackedMove) {
+    is PackedMove.Multiple -> {
+      val retrievedCapturedPieces = mutableListOf<UInt>()
+
+      bitboard.removeSelectedPieces(
+        player = currentPlayer,
+        piecesToRemove = selectedPackedMove.values.distinct(),
+        movesBuffer = retrievedCapturedPieces,
+      )
+
+      currentPlayer.addRetrievedCapturedPieces(retrievedCapturedPieces)
+
+      currentPlayer.combinePieces()
+
+      bitboard.assertPieceCount(
+        currentPlayer = currentPlayer,
+        nextPlayer = nextPlayer,
+      )
+
+      return scoreBitboardState(
+        bitboard = bitboard,
+        currentPlayer = currentPlayer,
+        opponentPlayer = nextPlayer,
+        rng = rng,
+      )
+    }
+
+    is PackedMove.Single -> {
+      val selectedMove = selectedPackedMove.value
+      when (selectedMove.extractMoveType()) {
+        MoveType.AddPiece -> {
+          if (selectedMove.extractSourceBit() == boardCenterSpotMask) {
+            bitboard.useTamskPotential(selectedMove)
+          } else {
+            val selectedPiece =
+              selectedMove.onlyPiece().let { currentPlayer.selectPiece(it) }
+
+            selectedPiece?.let {
+              bitboard.addPieceToBitboard(
+                move = selectedMove,
+              )
+            }
+          }
+
+          return fasterEvaluation(
+            bitboard = bitboard,
+            currentPlayer = currentPlayer,
+            opponentPlayer = nextPlayer,
+            rng = rng,
+          )
+        }
+
+        MoveType.UsePotential -> {
+          val selectedMove = selectedPackedMove.value
+          bitboard.usePiecePotential(
+            move = selectedMove,
+          )
+
+          return scoreBitboardState(
+            bitboard = bitboard,
+            currentPlayer = currentPlayer,
+            opponentPlayer = nextPlayer,
+            rng = rng,
+          )
+        }
+
+        MoveType.UnusedTamskPotential -> {
+          val unusedTAMSKPotential = bitboard.removeUnusedTamskPotential(currentPlayer)
+
+          // add the unused TAMSK Potential to the opponent's captured pieces.
+          nextPlayer.capturedPieces.add(unusedTAMSKPotential)
+
+          return scoreBitboardState(
+            bitboard = bitboard,
+            currentPlayer = currentPlayer,
+            opponentPlayer = nextPlayer,
+            rng = rng,
+          )
+        }
+
+        MoveType.RetrieveCapturePieces -> {}
+      }
+    }
+  }
+
+  return 0
 }

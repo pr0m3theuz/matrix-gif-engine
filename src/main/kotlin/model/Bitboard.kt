@@ -85,6 +85,28 @@ data class Bitboard(
     )
   }
 
+  fun copyFrom(source: Bitboard) {
+    // 1. Primitive assignments (Zero allocations, very fast)
+    this.whiteGIPF = source.whiteGIPF
+    this.whiteTAMSK = source.whiteTAMSK
+    this.whiteYINSH = source.whiteYINSH
+    this.whiteZERTZ = source.whiteZERTZ
+    this.whitePotentials = source.whitePotentials
+
+    this.blackGIPF = source.blackGIPF
+    this.blackTAMSK = source.blackTAMSK
+    this.blackYINSH = source.blackYINSH
+    this.blackZERTZ = source.blackZERTZ
+    this.blackPotentials = source.blackPotentials
+
+    // 2. Array contents copy (Zero allocations, uses fast JVM memory copying)
+    // We copy the contents OF the source array INTO our existing array reference
+    source.whiteDVONNLayer.copyInto(this.whiteDVONNLayer)
+    source.whitePUNCTLayer.copyInto(this.whitePUNCTLayer)
+    source.blackDVONNLayer.copyInto(this.blackDVONNLayer)
+    source.blackPUNCTLayer.copyInto(this.blackPUNCTLayer)
+  }
+
   fun diff(oldBitboard: Bitboard): Bitboard {
     // --- 0. CONFIGURABLE DEBUGGING ---
     if (logger.isDebugEnabled()) {

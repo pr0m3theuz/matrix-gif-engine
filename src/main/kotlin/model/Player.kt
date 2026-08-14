@@ -131,9 +131,52 @@ data class Player(
         transpositionTable = this.transpositionTable,
         killerMoves = this.killerMoves,
         captureMoves = this.captureMoves,
+        historyTable = this.historyTable,
     )
   }
 
+  fun liteDeepCopy(copyCollector: Boolean = false): Player {
+    return Player(
+      name = this.name,
+      model = this.model,
+      strength = this.strength,
+      piecesInReserve = this.piecesInReserve.toMutableList(),
+      capturedPieces = this.capturedPieces.toMutableList(),
+      timeControl = this.timeControl,
+      collector = if (copyCollector) this.collector else null,
+      transpositionTable = this.transpositionTable,
+      killerMoves = emptyList(),
+      captureMoves = emptyList(),
+      historyTable = emptyList(),
+    )
+  }
+
+  fun copyFrom(source: Player) {
+    // Note: We skip 'val' properties like name, model, strength
+    // because they are immutable and assumed identical between the two player instances.
+
+    // 1. Copy MutableLists WITHOUT triggering Iterator allocations
+    this.piecesInReserve.clear()
+    for (i in 0 until source.piecesInReserve.size) {
+      this.piecesInReserve.add(source.piecesInReserve[i])
+    }
+
+    this.capturedPieces.clear()
+    for (i in 0 until source.capturedPieces.size) {
+      this.capturedPieces.add(source.capturedPieces[i])
+    }
+
+    // 2. Copy nested Arrays (Zero allocations)
+    //  for (i in this.killerMoves.indices) {
+    //    source.killerMoves[i].copyInto(this.killerMoves[i])
+    //  }
+    //  for (i in this.captureMoves.indices) {
+    //    source.captureMoves[i].copyInto(this.captureMoves[i])
+    //  }
+    //  for (i in this.historyTable.indices) {
+    //    source.historyTable[i].copyInto(this.historyTable[i])
+    //  }
+  }
   fun addRetrievedCapturedPieces(pieces: List<UInt>) {
     val preRemovalReserve = piecesInReserve.toList()
     val preCapturedPieces = capturedPieces.toList()
@@ -598,8 +641,8 @@ fun Player.selectMove(
     Model.MCTS -> {
       selectMoveMCTS(
           bitboard = bitboard.deepCopy(),
-          currentPlayer = this.deepCopy(),
-          nextPlayer = opponent.deepCopy(),
+          currentPlayer = this.liteDeepCopy(),
+          nextPlayer = opponent.liteDeepCopy(),
           turnPhase = turnPhase,
           rounds = strength.mctsRounds,
           rng = rng,
