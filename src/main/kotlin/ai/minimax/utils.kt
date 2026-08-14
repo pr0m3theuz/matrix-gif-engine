@@ -102,6 +102,7 @@ fun applyMove(
                 currentPlayer.selectPiece(moveValue.onlyPiece())
                 bitboard.addPieceToBitboard(moveValue)
               }
+
           UndoInfo.AddPiece(
               vacantBitFound = vacantBitFound,
               wasCenterTamsk = moveValue.extractSourceBit() == boardCenterSpotMask,

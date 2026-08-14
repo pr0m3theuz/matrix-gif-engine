@@ -27,7 +27,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
    * pushing a second or third TAMSK-stack onto the central spot during one and the same turn.
    */
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, normalMoveMade = false, turn = turn, rng = rng)
 
     // recombine player pieces
     newState.currentPlayer.combinePieces()
@@ -49,7 +49,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
         }
       } == boardCenterSpotMask
   ) {
-    newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
+    newState = playerMove(newState, TurnPhase.ExtraMove, normalMoveMade = false, turn = turn, rng = rng)
   }
 
   newState.assertPieceCount()
@@ -58,7 +58,11 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
 
   if (availableMoves.isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow,
+	    normalMoveMade = false,
+	    turn = turn,
+	    rng = rng
+    )
 
     newState.assertPieceCount()
   }
@@ -74,7 +78,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
         }
       } == boardCenterSpotMask
   ) {
-    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, normalMoveMade = true, turn = turn, rng = rng)
   }
 
   newState.assertPieceCount()
@@ -82,7 +86,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug? what bug?
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, normalMoveMade = true, turn = turn, rng = rng)
     // recombine player pieces
     newState.currentPlayer.combinePieces()
   }
@@ -94,7 +98,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   return newState
 }
 
-fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): State {
+fun playerMove(state: State, turnPhase: TurnPhase, normalMoveMade: Boolean,  turn: Int, rng: Random): State {
 
   val bitboard = state.bitboard.deepCopy()
 
@@ -104,11 +108,13 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
       measureTimedValue {
         state.currentPlayer.selectMove(
             turnPhase = turnPhase,
+            normalMoveMade = normalMoveMade,
             bitboard = bitboard,
             currentPlayer = state.currentPlayer,
             opponent = state.nextPlayer,
             rng = rng,
             searchInfos = searchInfos,
+
         )
       }
 
@@ -211,9 +217,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
               // board columns were provided for this move."
               //            }
 
-              selectedPiece.let {
-                bitboard.addPieceToBitboard(bestMove)
-              }
+              bitboard.addPieceToBitboard(bestMove)
             }
           }
 

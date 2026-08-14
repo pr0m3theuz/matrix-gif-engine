@@ -9,11 +9,7 @@ import kotlin.time.measureTimedValue
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
-import org.example.ai.humanEvaluation.MAX_HISTORY
-import org.example.ai.humanEvaluation.SearchInfo
-import org.example.ai.humanEvaluation.alphaBetaNgMxSearch
-import org.example.ai.humanEvaluation.resolveBoardRemovals
+import org.example.ai.humanEvaluation.*
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
@@ -137,17 +133,17 @@ data class Player(
 
   fun liteDeepCopy(copyCollector: Boolean = false): Player {
     return Player(
-      name = this.name,
-      model = this.model,
-      strength = this.strength,
-      piecesInReserve = this.piecesInReserve.toMutableList(),
-      capturedPieces = this.capturedPieces.toMutableList(),
-      timeControl = this.timeControl,
-      collector = if (copyCollector) this.collector else null,
-      transpositionTable = this.transpositionTable,
-      killerMoves = emptyList(),
-      captureMoves = emptyList(),
-      historyTable = emptyList(),
+        name = this.name,
+        model = this.model,
+        strength = this.strength,
+        piecesInReserve = this.piecesInReserve.toMutableList(),
+        capturedPieces = this.capturedPieces.toMutableList(),
+        timeControl = this.timeControl,
+        collector = if (copyCollector) this.collector else null,
+        transpositionTable = this.transpositionTable,
+        killerMoves = emptyList(),
+        captureMoves = emptyList(),
+        historyTable = emptyList(),
     )
   }
 
@@ -177,6 +173,7 @@ data class Player(
     //    source.historyTable[i].copyInto(this.historyTable[i])
     //  }
   }
+
   fun addRetrievedCapturedPieces(pieces: List<UInt>) {
     val preRemovalReserve = piecesInReserve.toList()
     val preCapturedPieces = capturedPieces.toList()
@@ -472,22 +469,19 @@ fun Player.updateHistoryMoves(move: UInt, depth: Int) {
   historyTable[pieceIndex][nodeIndex] += (depth * depth)
 
   // 3. Decay the table if it risks dominating the scores
-  if (
-    historyTable[pieceIndex][nodeIndex] >
-    MAX_HISTORY
-  ) {
-    historyTable[pieceIndex][nodeIndex] =
-      historyTable[pieceIndex][nodeIndex] shr 1
+  if (historyTable[pieceIndex][nodeIndex] > MAX_HISTORY) {
+    historyTable[pieceIndex][nodeIndex] = historyTable[pieceIndex][nodeIndex] shr 1
   }
 }
 
 fun Player.selectMove(
     turnPhase: TurnPhase,
+    normalMoveMade: Boolean,
     bitboard: Bitboard,
     currentPlayer: Player,
     opponent: Player,
     rng: Random,
-    searchInfos: MutableList<SearchInfo> = mutableListOf()
+    searchInfos: MutableList<SearchInfo> = mutableListOf(),
 ): PackedMove? {
   return when (model) {
     Model.MINIMAX -> {
@@ -518,6 +512,7 @@ fun Player.selectMove(
                             rng = rng,
                             depth = startingDepth,
                             turnPhase = turnPhase,
+                            normalMoveMade = normalMoveMade,
                             transpositionTable = transpositionTable,
                             endTime = endTime,
                             searchInfo = searchInfo,
@@ -528,7 +523,7 @@ fun Player.selectMove(
               searchInfos.add(searchInfo)
               //	            remainingTime -= elapsed
               bestMove = move
-	            startingDepth += 1
+              startingDepth += 1
               // if there is not enough time remaining break
               //              if (remainingTime < elapsed.times(2)) break
             }
@@ -540,25 +535,27 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while(startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= strength.minimaxDepth) {
               val searchInfo = SearchInfo(startingDepth)
-              val move = alphaBetaNgMxSearch(
-                      maxDepth = strength.minimaxDepth,
-                      bitboard = bitboard.deepCopy(),
-                      currentPlayer = currentPlayer.deepCopy(),
-                      opponentPlayer = opponent.deepCopy(),
-                      alphaBetaScore = AlphaBetaScoreBitPacked(),
-                      rng = rng,
-                      depth = startingDepth,
-                      turnPhase = turnPhase,
-                      transpositionTable = transpositionTable,
-                      searchInfo = searchInfo,
-                  )
-                  .move
+              val move =
+                  alphaBetaNgMxSearch(
+                          maxDepth = strength.minimaxDepth,
+                          bitboard = bitboard.deepCopy(),
+                          currentPlayer = currentPlayer.deepCopy(),
+                          opponentPlayer = opponent.deepCopy(),
+                          alphaBetaScore = AlphaBetaScoreBitPacked(),
+                          rng = rng,
+                          depth = startingDepth,
+                          turnPhase = turnPhase,
+                          normalMoveMade = normalMoveMade,
+                          transpositionTable = transpositionTable,
+                          searchInfo = searchInfo,
+                      )
+                      .move
 
               searchInfos.add(searchInfo)
               bestMove = move
-	            startingDepth += 1
+              startingDepth += 1
             }
 
             bestMove
@@ -588,6 +585,7 @@ fun Player.selectMove(
                             bitboard = bitboard.deepCopy(),
                             alphaBetaScore = AlphaBetaScoreBitPacked(),
                             rng = rng,
+                            normalMoveMade = normalMoveMade,
                             depth = startingDepth,
                             caller = "PLAYER $name selectMove() @ ${startingDepth}",
                             transpositionTable = transpositionTable,
@@ -600,7 +598,7 @@ fun Player.selectMove(
               searchInfos.add(searchInfo)
               //              remainingTime -= elapsed
               bestMove = move
-	            startingDepth += 1
+              startingDepth += 1
               // if there is not enough time remaining break
               //              if (remainingTime < elapsed) break
             }
@@ -612,21 +610,23 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while(startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= strength.minimaxDepth) {
               val searchInfo = SearchInfo(startingDepth)
-              val move = resolveBoardRemovals(
-                      maxDepth = strength.minimaxDepth,
-                      currentPlayer = this.deepCopy(),
-                      opponentPlayer = opponent.deepCopy(),
-                      bitboard = bitboard.deepCopy(),
-                      alphaBetaScore = AlphaBetaScoreBitPacked(),
-                      rng = rng,
-                      depth = startingDepth,
-                      caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
-                      transpositionTable = transpositionTable,
-                      searchInfo = searchInfo,
-                  )
-                  .move
+              val move =
+                  resolveBoardRemovals(
+                          maxDepth = strength.minimaxDepth,
+                          currentPlayer = this.deepCopy(),
+                          opponentPlayer = opponent.deepCopy(),
+                          bitboard = bitboard.deepCopy(),
+                          alphaBetaScore = AlphaBetaScoreBitPacked(),
+                          rng = rng,
+                          normalMoveMade = normalMoveMade,
+                          depth = startingDepth,
+                          caller = "PLAYER $name selectMove() @ ${strength.minimaxDepth}",
+                          transpositionTable = transpositionTable,
+                          searchInfo = searchInfo,
+                      )
+                      .move
 
               searchInfos.add(searchInfo)
               bestMove = move
