@@ -201,10 +201,7 @@ fun qSearch(
 								endTime = endTime,
 								searchInfo = searchInfo,
 							)
-								.score +
-									if (bestPiecesToRetrieveCapture4.isNotEmpty())
-										bestPiecesToRetrieveCapture4Score
-									else 0,
+								.score
 					)
 
 				currentPlayer.uncombinePieces(newlyStackedPieces)
@@ -230,9 +227,13 @@ fun qSearch(
 					nextPlayer = opponentPlayer,
 				)
 
-				if (move.score.unaryMinus() > alphaBetaScore.alpha) {
-					alphaBetaScore.alpha = move.score.unaryMinus()
+				val compositeScore = move.score.unaryMinus() +
+						if (bestPiecesToRetrieveCapture4.isNotEmpty())
+							bestPiecesToRetrieveCapture4Score
+						else 0
 
+				if (compositeScore > alphaBetaScore.alpha) {
+					alphaBetaScore.alpha = compositeScore
 					alphaBetaScore.move = move.move
 				}
 				if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
@@ -392,11 +393,7 @@ fun qSearch(
 								endTime = endTime,
 								searchInfo = searchInfo,
 							)
-								.score +
-									tamskMoveScore +
-									if (bestPiecesToRetrieveCapture2.isNotEmpty())
-										bestPiecesToRetrieveCapture2Score
-									else 0,
+								.score
 					)
 
 				if (logger.isDebugEnabled()) {
@@ -458,8 +455,13 @@ fun qSearch(
 					nextPlayer = opponentPlayer,
 				)
 
-				if (move.score.unaryMinus() > alphaBetaScore.alpha) {
-					alphaBetaScore.alpha = move.score.unaryMinus()
+				val compositeScore = move.score.unaryMinus() + tamskMoveScore +
+						if (bestPiecesToRetrieveCapture2.isNotEmpty())
+							bestPiecesToRetrieveCapture2Score
+						else 0
+
+				if (compositeScore > alphaBetaScore.alpha) {
+					alphaBetaScore.alpha = compositeScore
 					alphaBetaScore.move = move.move
 
 					bound = Bound.EXACT
@@ -561,11 +563,7 @@ fun qSearch(
 								endTime = endTime,
 								searchInfo = searchInfo,
 							)
-								.score +
-									tamskMoveScore +
-									if (bestPiecesToRetrieveCapture3.isNotEmpty())
-										bestPiecesToRetrieveCapture3Score
-									else 0,
+								.score
 					)
 
 				if (logger.isDebugEnabled()) {
@@ -607,8 +605,14 @@ fun qSearch(
 
 				bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-				if (move.score.unaryMinus() > alphaBetaScore.alpha) {
-					alphaBetaScore.alpha = move.score.unaryMinus()
+
+				val compositeScore = move.score.unaryMinus() + tamskMoveScore +
+						if (bestPiecesToRetrieveCapture3.isNotEmpty())
+							bestPiecesToRetrieveCapture3Score
+						else 0
+
+				if (compositeScore > alphaBetaScore.alpha) {
+					alphaBetaScore.alpha = compositeScore
 					alphaBetaScore.move = move.move
 
 					bound = Bound.EXACT
