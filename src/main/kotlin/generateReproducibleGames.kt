@@ -29,65 +29,6 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  * <AGENT-2-DIFFICULTY
  */
 
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M minimax -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M mcts -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M minimax -MS
-// greedy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms greedy -M minimax -MS
-// easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M mcts -MS random
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms random -M mcts -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m mcts -ms easy -M minimax -MS easy
-// /home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java -Xmx20g -jar
-// /var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar
-// -m org.example.GenerateReproducibleGamesKt run -b -g 500 -m minimax -ms easy -M mcts -MS easy
-
-// -b -g 500 -m mcts -ms random -M minimax -MS greedy
-// -b -g 500 -m minimax -ms greedy -M mcts -MS random
-// -b -g 500 -m mcts -ms random -M minimax -MS easy
-// -b -g 500 -m minimax -ms easy -M mcts -MS random
-// -b -g 500 -m mcts -ms easy -M minimax -MS greedy
-// -b -g 500 -m minimax -ms greedy -M mcts -MS easy
-// -b -g 500 -m minimax -ms easy -M minimax -MS greedy
-// -b -g 500 -m minimax -ms greedy -M minimax -MS easy
-// -b -g 500 -m mcts -ms easy -M mcts -MS random
-// -b -g 500 -m mcts -ms random -M mcts -MS easy
-// -b -g 500 -m mcts -ms easy -M minimax -MS easy
-// -b -g 500 -m minimax -ms easy -M mcts -MS easy
-
-// -b -g 500 -m mcts -ms random -M minimax -MS easy
-// -b -g 500 -m minimax -ms easy -M mcts -MS random
-// -b -g 500 -m minimax -ms easy -M minimax -MS greedy
-// -b -g 500 -m minimax -ms greedy -M minimax -MS easy
-// -b -g 500 -m mcts -ms easy -M minimax -MS easy
-// -b -g 500 -m minimax -ms easy -M mcts -MS easy
-
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
 
@@ -526,7 +467,7 @@ fun playOneGame(
 
       if (gameState.turnMoves.size > 2) {
         val stalled =
-            gameState.turnMoves.keys.toList().takeLast(2).all {
+            gameState.turnMoves.keys.toList().takeLast(1).all {
               gameState.turnMoves[it].isNullOrEmpty()
             }
         if (stalled) break

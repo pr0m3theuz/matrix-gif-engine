@@ -21,9 +21,9 @@ fun main() {
   var gameState: State =
       initializeState(
           Model.MINIMAX,
-          Strength.EASY,
-          Model.MINIMAX,
-          Strength.EASY,
+          Strength.GREEDY,
+          Model.MCTS,
+          Strength.RANDOM,
           playerOneTimeControl = false,
           playerTwoTimeControl = false,
           playerOneEnableRAVE = false,
@@ -57,7 +57,7 @@ fun main() {
     if (gameState.turnMoves.size > 2) {
       gameState.turnMoves.keys
           .toList()
-          .takeLast(2)
+          .takeLast(1)
           .all { turns ->
             gameState.turnMoves[turns].isNullOrEmpty()
           }

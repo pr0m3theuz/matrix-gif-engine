@@ -104,7 +104,7 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
 
     if (gameState.turnMoves.size > 2) {
       val stalled =
-          gameState.turnMoves.keys.toList().takeLast(2).all {
+          gameState.turnMoves.keys.toList().takeLast(1).all {
             gameState.turnMoves[it].isNullOrEmpty()
           }
       if (stalled) break
