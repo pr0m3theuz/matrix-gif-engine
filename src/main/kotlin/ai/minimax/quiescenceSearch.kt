@@ -62,6 +62,7 @@ fun qSearch(
 	val initBitboard = bitboard.deepCopy()
 
 	searchInfo?.nodesSearched++
+
 	if (
 		depth <= 0 ||
 		System.currentTimeMillis() >= endTime
@@ -121,13 +122,6 @@ fun qSearch(
 		}
 	}
 
-	val captureMoves = mutableListOf<PackedMove>()
-	bitboard.generateCaptureMoves(currentPlayer, captureMoves)
-
-	val pvMove = ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name
-
-	// endregion
-
 	val standPat = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng)
 
 	if (standPat >= alphaBetaScore.beta) {
@@ -137,6 +131,13 @@ fun qSearch(
 	if (standPat > alphaBetaScore.alpha) {
 		alphaBetaScore.alpha = standPat
 	}
+
+	val captureMoves = mutableListOf<PackedMove>()
+	bitboard.generateCaptureMoves(currentPlayer, captureMoves)
+
+	val pvMove = ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name
+
+	// endregion
 
 	var bound = Bound.ALPHA
 
@@ -235,8 +236,10 @@ fun qSearch(
 				if (compositeScore > alphaBetaScore.alpha) {
 					alphaBetaScore.alpha = compositeScore
 					alphaBetaScore.move = move.move
+					bound = Bound.EXACT
 				}
 				if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
+					bound = Bound.BETA
 					break@outerLoop
 				}
 			}
@@ -572,9 +575,6 @@ fun qSearch(
 
 				bitboard.diff(beforeRecursionBitboardState)
 
-				//        bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer =
-				// opponentPlayer)
-
 				// d. UNDO the piece removals to evaluate the next choice
 				currentPlayer.uncombinePieces(newlyStackedPieces)
 
@@ -595,14 +595,6 @@ fun qSearch(
 				// TODO undo use piece potential
 				bitboard.undoUsePiecePotential(moveValue)
 
-				//        val bitboardCopy = bitboard.deepCopy()
-				//        bitboardCopy.undoUsePiecePotential(moveValue)
-				//        bitboard.undoUsePiecePotential(moveValue)
-
-				//        bitboardCopy.diff(preMoveBitboardState)
-
-				//        bitboard.restorePreviousBoardState(preUsePotentialBoardState)
-
 				bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 
@@ -618,7 +610,6 @@ fun qSearch(
 					bound = Bound.EXACT
 				}
 				if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
-
 					bound = Bound.BETA
 					break@outerLoop
 				}

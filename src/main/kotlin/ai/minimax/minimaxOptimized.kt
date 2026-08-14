@@ -156,7 +156,7 @@ fun alphaBetaNgMxSearch(
   val captureMoves = mutableListOf<PackedMove>()
   bitboard.generateCaptureMoves(currentPlayer, captureMoves)
 
-  if (depth <= 0 && captureMoves.isNotEmpty()) {
+  if (depth <= 0 && captureMoves.isNotEmpty()  && maxDepth > 1) {
      val qMove = qSearch(
         maxDepth = maxDepth,
         depth = maxDepth,
