@@ -53,16 +53,18 @@ class TranspositionTable() {
     this.generation += 1
   }
 
-  fun save(entry: TransitionTableEntry, hash: Long, value: Int, bound: Bound, depth: Int, move: PackedMove) {
+  fun save(entry: TransitionTableEntry, hash: Long, value: Int, bound: Bound, depth: Int, move: PackedMove?) {
     val index = (hash.toInt()) and mask
 
     if (entry.key == hash && entry.depth > depth && bound != Bound.EXACT) return
+
+    val ttMove = move?.let { (it as PackedMove.Single).value } ?: UInt.MAX_VALUE
 
     entry.key = hash
     entry.score = value
     entry.bound = bound
     entry.depth = depth
-    entry.move = (move as PackedMove.Single).value
+    entry.move = ttMove
     entry.generation = this.generation
   }
 

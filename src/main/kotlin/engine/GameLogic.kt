@@ -41,14 +41,12 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   // Handle Tamsk Potential
   while (
       when (newState.currentPlayer.name) {
-        PlayerName.WHITE ->
-            newState.bitboard.whiteTAMSK and
-                newState.bitboard.whitePotentials and
-                boardCenterSpotMask
-        PlayerName.BLACK ->
-            newState.bitboard.blackTAMSK and
-                newState.bitboard.blackPotentials and
-                boardCenterSpotMask
+        PlayerName.WHITE -> {
+          newState.bitboard.whiteTAMSK and newState.bitboard.whitePotentials and boardCenterSpotMask
+        }
+        PlayerName.BLACK -> {
+          newState.bitboard.blackTAMSK and newState.bitboard.blackPotentials and boardCenterSpotMask
+        }
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
@@ -68,14 +66,12 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   // Handle Tamsk Potential
   while (
       when (newState.currentPlayer.name) {
-        PlayerName.WHITE ->
-            newState.bitboard.whiteTAMSK and
-                newState.bitboard.whitePotentials and
-                boardCenterSpotMask
-        PlayerName.BLACK ->
-            newState.bitboard.blackTAMSK and
-                newState.bitboard.blackPotentials and
-                boardCenterSpotMask
+        PlayerName.WHITE -> {
+          newState.bitboard.whiteTAMSK and newState.bitboard.whitePotentials and boardCenterSpotMask
+        }
+        PlayerName.BLACK -> {
+          newState.bitboard.blackTAMSK and newState.bitboard.blackPotentials and boardCenterSpotMask
+        }
       } == boardCenterSpotMask
   ) {
     newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
