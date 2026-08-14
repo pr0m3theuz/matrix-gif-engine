@@ -50,3 +50,10 @@ bin/
 *.log*
 diff.txt
 *.pem
+*.jsonl
+*.json
+*.txt
+*.ods
+*.csv
+jq
+local.properties

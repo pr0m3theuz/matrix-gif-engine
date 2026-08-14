@@ -6,9 +6,9 @@ set -e
 # ==========================================
 # Configuration Variables
 # ==========================================
-JAVA_BIN="/home/peachyfox/Downloads/idea-IU-261.25134.95/jbr/bin/java"
-JVM_OPTS="-Xmx20g"
-JAR_PATH="/var/home/peachyfox/Downloads/comp_4031_dissertation/build/libs/code-1.0-SNAPSHOT-standalone.jar"
+JAVA_BIN="java"
+JVM_OPTS="-Xmx31g"
+JAR_PATH="./build/libs/code-1.0-SNAPSHOT-standalone.jar"
 MAIN_CLASS="org.example.GenerateReproducibleGamesKt"
 
 # Base command string
@@ -19,81 +19,54 @@ CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
 # ==========================================
 
 echo "Starting Run 1/16: MCTS (random) vs Minimax (greedy)..."
-$CMD -b -g 1000 -m mcts -ms random -M minimax -MS greedy
+$CMD -b -g 500 -p 16 -m mcts -ms random -M minimax -MS greedy
 
-sleep 60
+
 
 echo "Starting Run 2/16: Minimax (greedy) vs MCTS (random)..."
-$CMD -b -g 1000 -m minimax -ms greedy -M mcts -MS random
+$CMD -b -g 500 -p 16 -m minimax -ms greedy -M mcts -MS random
 
-sleep 60
+
 
 echo "Starting Run 3/16: MCTS (random) vs Minimax (easy)..."
-$CMD -b -g 1000 -m mcts -ms random -M minimax -MS easy
+$CMD -b -g 500 -p 16 -m mcts -ms random -M minimax -MS easy
 
-sleep 60
+
 
 echo "Starting Run 4/16: Minimax (easy) vs MCTS (random)..."
-$CMD -b -g 1000 -m minimax -ms easy -M mcts -MS random
+$CMD -b -g 500 -p 16 -m minimax -ms easy -M mcts -MS random
 
-sleep 60
+
 
 echo "Starting Run 5/16: MCTS (easy) vs Minimax (greedy)..."
-$CMD -b -g 1000 -m mcts -ms easy -M minimax -MS greedy
+$CMD -b -g 500 -p 16 -m mcts -ms easy -M minimax -MS greedy
 
-sleep 60
+
 
 echo "Starting Run 6/16: Minimax (greedy) vs MCTS (easy)..."
-$CMD -b -g 1000 -m minimax -ms greedy -M mcts -MS easy
+$CMD -b -g 500 -p 16 -m minimax -ms greedy -M mcts -MS easy
 
-sleep 60
+
 
 echo "Starting Run 7/16: Minimax (easy) vs Minimax (greedy)..."
-$CMD -b -g 1000 -m minimax -ms easy -M minimax -MS greedy
+$CMD -b -g 500 -p 16 -m minimax -ms easy -M minimax -MS greedy
 
-sleep 60
-
-echo "Starting Run 8/16: Minimax (greedy) vs Minimax (easy)..."
-$CMD -b -g 1000 -m minimax -ms greedy -M minimax -MS easy
-
-sleep 60
 
 echo "Starting Run 9/16: MCTS (easy) vs MCTS (random)..."
-$CMD -b -g 1000 -m mcts -ms easy -M mcts -MS random
+$CMD -b -g 500 -p 16 -m mcts -ms easy -M mcts -MS random
 
-sleep 60
 
 echo "Starting Run 10/16: MCTS (random) vs MCTS (easy)..."
-$CMD -b -g 1000 -m mcts -ms random -M mcts -MS easy
+$CMD -b -g 500 -p 16 -m mcts -ms random -M mcts -MS easy
 
-sleep 60
+#
 
 echo "Starting Run 11/16: MCTS (easy) vs Minimax (easy)..."
-$CMD -b -g 1000 -m mcts -ms easy -M minimax -MS easy
+$CMD -b -g 500 -p 16 -m mcts -ms easy -M minimax -MS easy
 
-sleep 60
+#
 
 echo "Starting Run 12/16: Minimax (easy) vs MCTS (easy)..."
-$CMD -b -g 1000 -m minimax -ms easy -M mcts -MS easy
-
-sleep 60
-
-echo "Starting Run 13/16: MCTS (random) vs Minimax (greedy)..."
-$CMD -b -g 1000 -m mcts -ms random -M minimax -MS greedy
-
-sleep 60
-
-echo "Starting Run 14/16: Minimax (greedy) vs MCTS (random)..."
-$CMD -b -g 1000 -m minimax -ms greedy -M mcts -MS random
-
-sleep 60
-
-echo "Starting Run 15/16: MCTS (easy) vs Minimax (greedy)..."
-$CMD -b -g 1000 -m mcts -ms easy -M minimax -MS greedy
-
-sleep 60
-
-echo "Starting Run 16/16: Minimax (greedy) vs MCTS (easy)..."
-$CMD -b -g 1000 -m minimax -ms greedy -M mcts -MS easy
+$CMD -b -g 500 -p 16 -m minimax -ms easy -M mcts -MS easy
 
 echo "All experiments completed successfully!"

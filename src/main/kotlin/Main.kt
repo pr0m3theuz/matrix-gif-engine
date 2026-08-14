@@ -14,16 +14,16 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(1)
+  val rng = Random(42)
 
   constructZobristHashKeysTable(rng)
 
   var gameState: State =
       initializeState(
-          Model.MCTS,
+          Model.MINIMAX,
           Strength.EASY,
           Model.MINIMAX,
-          Strength.GREEDY,
+          Strength.EASY,
           playerOneTimeControl = false,
           playerTwoTimeControl = false,
           playerOneEnableRAVE = false,
