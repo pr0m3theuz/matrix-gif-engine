@@ -146,7 +146,7 @@ fun qSearch(
 		//    val mutableState = state.deepCopy()
 		if (logger.isDebugEnabled()) {
 			logger.info { "Move: $index" }
-			logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
+			logger.info { "Bitboard State: ${Json.encodeToString(bitboard)}" }
 		}
 
 		val preMoveBitboardState = bitboard.deepCopy()
@@ -325,7 +325,7 @@ fun qSearch(
 					val preTamskMoveBitboardState = bitboard.deepCopy()
 
 					if (logger.isDebugEnabled()) {
-						logger.info { "" + ("--- ALPHA-BETA CALLED (TAMSK) ---") }
+						logger.info { "--- ALPHA-BETA CALLED (TAMSK) ---" }
 					}
 					tamskMoveScore =
 						qSearch(
@@ -352,7 +352,7 @@ fun qSearch(
 					)
 
 					if (logger.isDebugEnabled()) {
-						logger.info { "" + ("--- ALPHA-BETA COMPLETED (TAMSK) ---") }
+						logger.info { "--- ALPHA-BETA COMPLETED (TAMSK) ---" }
 					}
 				}
 
@@ -400,7 +400,7 @@ fun qSearch(
 					)
 
 				if (logger.isDebugEnabled()) {
-					logger.info { "" + ("--- ALPHA-BETA COMPLETED ---") }
+					logger.info { "--- ALPHA-BETA COMPLETED ---" }
 				}
 
 				// d. UNDO the piece removals to evaluate the next choice
@@ -497,7 +497,7 @@ fun qSearch(
 					bitboard.diff(preTamskMoveBitboardState)
 
 					if (logger.isDebugEnabled()) {
-						logger.info { "" + ("--- ALPHA-BETA USE-POTENTIAL CALLED (TAMSK) ---") }
+						logger.info { "--- ALPHA-BETA USE-POTENTIAL CALLED (TAMSK) ---" }
 					}
 					tamskMoveScore =
 						qSearch(
@@ -524,7 +524,7 @@ fun qSearch(
 					)
 
 					if (logger.isDebugEnabled()) {
-						logger.info { "" + ("--- ALPHA-BETA COMPLETED (TAMSK) ---") }
+						logger.info { "--- ALPHA-BETA COMPLETED (TAMSK) ---" }
 					}
 				}
 
@@ -570,7 +570,7 @@ fun qSearch(
 					)
 
 				if (logger.isDebugEnabled()) {
-					logger.info { "" + ("--- ALPHA-BETA COMPLETED (POST USE POTENTIAL) ---") }
+					logger.info { "--- ALPHA-BETA COMPLETED (POST USE POTENTIAL) ---" }
 				}
 
 				bitboard.diff(beforeRecursionBitboardState)
@@ -680,7 +680,7 @@ private fun bestPiecesToRemove(
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	if (logger.isDebugEnabled()) {
-		logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
+		logger.info { "--- RESOLVE BOARD REMOVALS COMPLETED ---" }
 	}
 	var newlyStackedPieces: List<UInt> = emptyList()
 
@@ -734,8 +734,8 @@ private fun resolveBoardRemovalsQS(
 	searchInfo: SearchInfo? = null,
 ): BestPackedMove {
 	if (logger.isDebugEnabled()) {
-		logger.info { "" + ("--- RESOLVE BOARD REMOVALS CALLED ---") }
-		logger.info { "" + ("Bitboard: ${Json.encodeToString(bitboard)}") }
+		logger.info { "--- RESOLVE BOARD REMOVALS CALLED ---" }
+		logger.info { "Bitboard: ${Json.encodeToString(bitboard)}" }
 		logger.info { "currentPlayer: $currentPlayer" }
 		logger.info { "opponentPlayer: $opponentPlayer" }
 		logger.info { "depth: $depth" }
@@ -780,7 +780,7 @@ private fun resolveBoardRemovalsQS(
 			val retrievedCapturedPieces = mutableListOf<UInt>()
 
 			if (logger.isDebugEnabled()) {
-				logger.debug { "" + ("--- resolveBoardRemovals called removeSelectedPiecesToRemove() ---") }
+				logger.debug { "--- resolveBoardRemovals called removeSelectedPiecesToRemove() ---" }
 			}
 
 			bitboard.removeSelectedPieces(
@@ -813,7 +813,7 @@ private fun resolveBoardRemovalsQS(
 			//      bitboard.diff(postPieceRemovalBitboardState)
 
 			if (logger.isDebugEnabled()) {
-				logger.info { "" + ("--- RESOLVE BOARD REMOVALS COMPLETED ---") }
+				logger.info { "--- RESOLVE BOARD REMOVALS COMPLETED ---" }
 			}
 
 			//      bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
@@ -839,7 +839,7 @@ private fun resolveBoardRemovalsQS(
 				)
 
 			if (logger.isDebugEnabled()) {
-				logger.info { "" + ("--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---") }
+				logger.info { "--- ALPHA-BETA COMPLETED (RESOLVE BOARD REMOVALS POWERSET) ---" }
 			}
 
 			//      bitboard.diff(postPieceRemovalBitboardState)
@@ -885,7 +885,7 @@ private fun resolveBoardRemovalsQS(
 				// ) }
 
 				if (logger.isDebugEnabled()) {
-					logger.info { "" + ("Bitboard State: ${Json.encodeToString(bitboard)}") }
+					logger.info { "Bitboard State: ${Json.encodeToString(bitboard)}" }
 				}
 				break@removalLoop
 				//            return BestBitMove(alphaBetaScore.move, score = alphaBetaScore.alpha)
@@ -899,7 +899,7 @@ private fun resolveBoardRemovalsQS(
 	bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 	if (logger.isDebugEnabled()) {
-		logger.info { "" + ("Bitboard State (NO REMOVALS): ${Json.encodeToString(bitboard)}") }
+		logger.info { "Bitboard State (NO REMOVALS): ${Json.encodeToString(bitboard)}" }
 	}
 	// TODO
 	return BestPackedMove(alphaBetaScore.move, score = alphaBetaScore.alpha)

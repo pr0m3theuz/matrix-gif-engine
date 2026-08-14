@@ -134,7 +134,7 @@ fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): Stat
   }
 
   if (packedMove != null) {
-    // logger.info { "" + ("Player Move: ${Json.encodeToString(bestMove)}") }
+    // logger.info { "Player Move: ${Json.encodeToString(bestMove)}" }
 
     state.currentPlayer.collector?.recordDecision(
         state = state.encodeState(),
@@ -342,13 +342,13 @@ fun determineWinner(
 
   if (printStatement) {
     capturedGIPFPieces?.let {
-      logger.info { "" + ("Captured GIPF Pieces: ${Json.encodeToString(it)}") }
+      logger.info { "Captured GIPF Pieces: ${Json.encodeToString(it)}" }
     }
     bitboardHasAvailableMoves?.let {
-      logger.info { "" + ("Has Available Moves (Bitboard): ${Json.encodeToString(it)}") }
+      logger.info { "Has Available Moves (Bitboard): ${Json.encodeToString(it)}" }
     }
     playerWhoMadeTheLastMove?.let {
-      logger.info { "" + ("Player Made The Last Move: ${Json.encodeToString(it)}") }
+      logger.info { "Player Made The Last Move: ${Json.encodeToString(it)}" }
     }
   }
 

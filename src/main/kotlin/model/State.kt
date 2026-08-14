@@ -100,7 +100,7 @@ fun State.printStateSummary() {
     }
   }
 
-  logger.info { "" + (sb.toString()) }
+  logger.info { sb.toString() }
 }
 
 fun State.assertPieceCount(

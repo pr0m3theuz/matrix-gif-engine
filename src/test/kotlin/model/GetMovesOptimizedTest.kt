@@ -425,7 +425,7 @@ class GetMovesOptimizedTest {
         (movesBuffer.first() as PackedMove.Single).value.toPossibleBitMove(),
     )
 
-    logger.info { "" + (movesBuffer) }
+    logger.info { movesBuffer }
   }
 
   @Test
@@ -529,7 +529,7 @@ class GetMovesOptimizedTest {
       //        movesBuffer.size,
       //    )
       //
-      //    logger.info { "" + (movesBuffer) }
+      //    logger.info { movesBuffer }
     }
   }
 

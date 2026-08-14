@@ -325,7 +325,7 @@ fun scoreLines(player: Player, lines: List<Set<Node>>) {
 
     val grouped = result.groupBy { it.first().piece?.colorName }
 
-    logger.info { "" + (grouped.maxBy { it.value.size }) }
+    logger.info { grouped.maxBy { it.value.size } }
 
     result
   }

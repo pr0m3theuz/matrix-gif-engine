@@ -153,10 +153,10 @@ class BitboardTest {
 
     // 2. Iterate sequentially. (Assume shiftPairs is ordered from insertion edge inward)
     for ((fromMask, toMask) in col.shiftPairs) {
-      logger.info { "" + ("fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("whitePieces   : ${whitePieces.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "whitePieces   : ${whitePieces.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
       // Check the original board state to see if a piece is sitting here
       if ((occupied and fromMask) != 0UL) {
@@ -175,8 +175,8 @@ class BitboardTest {
         break
       }
 
-      logger.info { "" + ("fromMask.inv(): ${fromMask.inv().toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask.inv(): ${fromMask.inv().toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
     }
 
@@ -194,8 +194,8 @@ class BitboardTest {
     var insertionMask = col.shiftPairs.first().first
     updatedWhite = updatedWhite or insertionMask
 
-    logger.info { "" + ("whitePieces : ${whitePieces.toString(2)}") }
-    logger.info { "" + ("updatedWhite: ${updatedWhite.toString(2)}") }
+    logger.info { "whitePieces : ${whitePieces.toString(2)}" }
+    logger.info { "updatedWhite: ${updatedWhite.toString(2)}" }
 
     assertTrue { updatedWhite.toString(2) == "0111001010110101111111101001111110100001" }
     // endregion
@@ -207,10 +207,10 @@ class BitboardTest {
 
     // 2. Iterate sequentially. (Assume shiftPairs is ordered from insertion edge inward)
     for ((toMask, fromMask) in col.shiftPairs.reversed()) {
-      logger.info { "" + ("fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("whitePieces   : ${whitePieces.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "whitePieces   : ${whitePieces.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
       // Check the original board state to see if a piece is sitting here
       if ((occupied and fromMask) != 0UL) {
@@ -229,8 +229,8 @@ class BitboardTest {
         break
       }
 
-      logger.info { "" + ("fromMask.inv(): ${fromMask.inv().toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask.inv(): ${fromMask.inv().toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "updatedWhite  : ${updatedWhite.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
     }
 
@@ -248,8 +248,8 @@ class BitboardTest {
     insertionMask = col.shiftPairs.asReversed().first().second
     updatedWhite = updatedWhite or insertionMask
 
-    logger.info { "" + ("whitePieces : ${whitePieces.toString(2)}") }
-    logger.info { "" + ("updatedWhite: ${updatedWhite.toString(2)}") }
+    logger.info { "whitePieces : ${whitePieces.toString(2)}" }
+    logger.info { "updatedWhite: ${updatedWhite.toString(2)}" }
 
     assertTrue { updatedWhite.toString(2) == "0111001010110111111111101001011110100001" }
     // endregion
@@ -264,9 +264,9 @@ class BitboardTest {
     fun shiftBoard(board: ULong, fromMask: ULong, toMask: ULong): ULong {
       // fromMask == current node
       // if (currentNode is filled) clear it
-      logger.info { "" + ("fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("board         : ${board.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "board         : ${board.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
       return if ((board and fromMask) != 0UL) {
         // Clear the old position using AND, set the new position using OR
@@ -311,8 +311,8 @@ class BitboardTest {
     val insertionMask = col.shiftPairs.first().first
     modifiedBoard = modifiedBoard or insertionMask
 
-    logger.info { "" + ("occupiedSpots : ${occupiedSpots.toString(2)}") }
-    logger.info { "" + ("modifiedBoard : ${modifiedBoard.toString(2)}") }
+    logger.info { "occupiedSpots : ${occupiedSpots.toString(2)}" }
+    logger.info { "modifiedBoard : ${modifiedBoard.toString(2)}" }
     logger.info { "" }
     assertEquals("111001010110101111111101001111110100001", modifiedBoard.toString(2))
   }
@@ -326,9 +326,9 @@ class BitboardTest {
     fun shiftBoard(board: ULong, fromMask: ULong, toMask: ULong): ULong {
       // fromMask == current node
       // if (currentNode is filled) clear it
-      logger.info { "" + ("fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}") }
-      logger.info { "" + ("board         : ${board.toString(radix = 2).padStart(64, '0')}") }
+      logger.info { "fromMask      : ${fromMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "toMask        : ${toMask.toString(radix = 2).padStart(64, '0')}" }
+      logger.info { "board         : ${board.toString(radix = 2).padStart(64, '0')}" }
       logger.info { "" }
       return if ((board and fromMask) != 0UL) {
         // Clear the old position using AND, set the new position using OR
@@ -371,8 +371,8 @@ class BitboardTest {
     val insertionMask = col.shiftPairs.asReversed().first().second
     modifiedBoard = modifiedBoard or insertionMask
 
-    logger.info { "" + ("occupiedSpots : ${occupiedSpots.toString(2)}") }
-    logger.info { "" + ("modifiedBoard : ${modifiedBoard.toString(2)}") }
+    logger.info { "occupiedSpots : ${occupiedSpots.toString(2)}" }
+    logger.info { "modifiedBoard : ${modifiedBoard.toString(2)}" }
     logger.info { "" }
     assertEquals("111001010110111111111101001011110100001", modifiedBoard.toString(2))
   }
@@ -562,8 +562,8 @@ class BitboardTest {
           node.piece?.colorName == PlayerName.WHITE
         }
 
-    logger.info { "" + (Json.encodeToString(blackBoardPieces)) }
-    logger.info { "" + (Json.encodeToString(whiteBoardPieces)) }
+    logger.info { Json.encodeToString(blackBoardPieces) }
+    logger.info { Json.encodeToString(whiteBoardPieces) }
 
     val state =
         State(
@@ -802,7 +802,7 @@ class BitboardTest {
 
     val linesWithFourInARow = testBitboard.evaluateLinesForFourInARow(currentPlayer)
 
-    logger.info { "" + (linesWithFourInARow) }
+    logger.info { linesWithFourInARow }
 
     val playerPiecesWithPotentialPowerset =
         testBitboard
@@ -812,7 +812,7 @@ class BitboardTest {
             )
             .filter { it.isNotEmpty() }
 
-    logger.info { "" + (playerPiecesWithPotentialPowerset) }
+    logger.info { playerPiecesWithPotentialPowerset }
 
     val piecesWithPotentialPowerset = mutableListOf<UInt>()
 
@@ -1008,7 +1008,7 @@ class BitboardTest {
 
     testBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-    logger.info { "" + (Json.encodeToString(testBitboard)) }
+    logger.info { Json.encodeToString(testBitboard) }
   }
 
   @Test
@@ -1674,8 +1674,8 @@ class BitboardTest {
           node.piece?.colorName == PlayerName.WHITE
         }
 
-    logger.info { "" + (Json.encodeToString(blackBoardPieces)) }
-    logger.info { "" + (Json.encodeToString(whiteBoardPieces)) }
+    logger.info { Json.encodeToString(blackBoardPieces) }
+    logger.info { Json.encodeToString(whiteBoardPieces) }
 
     val state =
         State(
@@ -4172,17 +4172,17 @@ class BitboardTest {
 
     val bitList = whiteGIPF.toBitList()
 
-    logger.info { "" + ("Shape: ${Json.encodeToString(bitList.shape)}") }
-    logger.info { "" + (whiteGIPF.toString(2).padStart(41, '0')) }
-    logger.info { "" + (bitList) }
-    logger.info { "" + (array) }
+    logger.info { "Shape: ${Json.encodeToString(bitList.shape)}" }
+    logger.info { whiteGIPF.toString(2).padStart(41, '0') }
+    logger.info { bitList }
+    logger.info { array }
 
     val ndArray = mk.zeros<Int>(47, 41)
 
     ndArray.set(0, whiteGIPF.toBitList())
 
-    logger.info { "" + ("ndArray:") }
-    logger.info { "" + (ndArray) }
+    logger.info { "ndArray:" }
+    logger.info { ndArray }
   }
 
   @Test
@@ -4265,6 +4265,6 @@ class BitboardTest {
 
     assertEquals(5, removablePieces.maxOf { it.retrievedCapturedPiecesBit.size })
 
-    logger.info { "" + (removablePieces) }
+    logger.info { removablePieces }
   }
 }

@@ -93,7 +93,7 @@ fun Bitboard.assertPieceCount(
 				boardStacks
 
 	if (totalBlackPieces > EXPECTED_TOTAL) {
-		logger.info { "" + ("oooooooooooooo") }
+		logger.info { "oooooooooooooo" }
 	}
 
 	check(totalBlackPieces == EXPECTED_TOTAL) {
@@ -235,7 +235,7 @@ fun Bitboard.assertPieceCount(
 				boardStacks
 
 	if (totalWhitePieces > EXPECTED_TOTAL) {
-		logger.info { "" + ("oooooooooooooo") }
+		logger.info { "oooooooooooooo" }
 	}
 
 	check(totalWhitePieces == EXPECTED_TOTAL) {

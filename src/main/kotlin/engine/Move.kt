@@ -697,7 +697,7 @@ fun shiftPiece(currentNode: Node, moveDirection: PushDirection, board: Board, li
       "State corruption: Node at coordinate $sourceCoordinate was expected to be empty, but it still contains a piece."
     }
 
-    logger.info { "" + ("[SHIFT] Grid configuration post-shift step:") }
+    logger.info { "[SHIFT] Grid configuration post-shift step:" }
 //    newBoard.printHexGrid("POST-SHIFT")
 
     return newBoard

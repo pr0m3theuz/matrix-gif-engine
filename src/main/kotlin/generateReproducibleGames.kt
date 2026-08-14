@@ -444,7 +444,7 @@ private fun recordFailure(gameId: Int, seed: Long, e: Throwable) {
     File(FAILURES_LOG).appendText(Json.encodeToString(entry) + "\n")
   }
 
-  logger.error { "" + ("Game $gameId FAILED (seed=$seed): ${e.message} — see $traceFile") }
+  logger.error { "Game $gameId FAILED (seed=$seed): ${e.message} — see $traceFile" }
 }
 
 @Serializable

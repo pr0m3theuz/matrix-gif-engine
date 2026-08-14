@@ -47,10 +47,10 @@ class Utils {
       }
     }
 
-    //    logger.info { "" + (Json.encodeToString(a)) }
-    //    logger.info { "" + (Json.encodeToString(b)) }
-    //    logger.info { "" + (Json.encodeToString(c)) }
-    logger.info { "" + (Json.encodeToString(neighbouringBitsBitmasks)) }
+    //    logger.info { Json.encodeToString(a) }
+    //    logger.info { Json.encodeToString(b) }
+    //    logger.info { Json.encodeToString(c) }
+    logger.info { Json.encodeToString(neighbouringBitsBitmasks) }
   }
 
   @Test
@@ -66,7 +66,7 @@ class Utils {
     // features
     val features = CURRENT_PLAYER_COLOR + 1
 
-    logger.info { "" + (features) }
+    logger.info { features }
     logger.info { "" }
   }
 

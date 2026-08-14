@@ -234,7 +234,7 @@ data class MCTSNode(
         )
 
     //    if (nodeMoves.isEmpty()) {
-    //      logger.info { "" + ("Current node has no children!") }
+    //      logger.info { "Current node has no children!" }
     //    }
 
     this.childrenNodes.add(childNode)
@@ -714,7 +714,7 @@ fun simulateRandomGame(
               playerWhoMadeTheLastMove ?: nextPlayer,
           )
           ?.first
-  //  logger.info { "" + ("Player: ${winner?.name} won") }
+  //  logger.info { "Player: ${winner?.name} won" }
   return winner
 }
 
@@ -726,7 +726,7 @@ fun simulatePlayerTurn(
     simulationActions: MutableList<PackedMove>,
 ) {
   if (logger.isDebugEnabled()) {
-    //		logger.info { "" + ("--- ALPHA-BETA CALLED ---") }
+    //		logger.info { "--- ALPHA-BETA CALLED ---" }
     logger.info { "currentPlayer: $currentPlayer" }
     logger.info { "opponentPlayer: $opponentPlayer" }
     logger.info { "Bitboard: ${Json.encodeToString(bitboard)}" }

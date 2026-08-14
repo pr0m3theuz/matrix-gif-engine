@@ -265,8 +265,8 @@ data class Player(
   fun combinePieces(): List<UInt> {
     // --- 0. CONFIGURABLE DEBUGGING ---
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("--- COMBINE PIECES CALLED ---") }
-      logger.info { "" + ("Reserve size before combining: ${this.piecesInReserve.size}") }
+      logger.info { "--- COMBINE PIECES CALLED ---" }
+      logger.info { "Reserve size before combining: ${this.piecesInReserve.size}" }
     }
 
     // --- 1. SINGLE-PASS PARTITIONING ---
@@ -279,7 +279,7 @@ data class Player(
         }
 
     if (piecesToCombine.isEmpty()) {
-      logger.debug { "" + ("No combinable pieces found. Exiting.") }
+      logger.debug { "No combinable pieces found. Exiting." }
       return emptyList()
     }
 
@@ -352,10 +352,10 @@ data class Player(
 
     if (logger.isDebugEnabled()) {
       logger.info {
-        "" + ("Successfully generated ${newlyStackedPotentials.size} new potential pieces.")
+        "Successfully generated ${newlyStackedPotentials.size} new potential pieces."
       }
-      logger.info { "" + ("Reserve size after combining: ${this.piecesInReserve.size}") }
-      logger.info { "" + ("--- COMBINE PIECES COMPLETED ---") }
+      logger.info { "Reserve size after combining: ${this.piecesInReserve.size}" }
+      logger.info { "--- COMBINE PIECES COMPLETED ---" }
     }
 
     // FIXED: Only return the actual newly formed stacks, omitting the leftover singletons
@@ -365,8 +365,8 @@ data class Player(
   fun uncombinePieces(newlyStackedPieces: List<UInt>) {
     // --- 0. CONFIGURABLE DEBUGGING ---
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("--- UNCOMBINE PIECES CALLED ---") }
-      logger.info { "" + ("Newly stacked pieces count: ${newlyStackedPieces.size}") }
+      logger.info { "--- UNCOMBINE PIECES CALLED ---" }
+      logger.info { "Newly stacked pieces count: ${newlyStackedPieces.size}" }
     }
 
     val preReservePotentials =
@@ -377,7 +377,7 @@ data class Player(
 
     // Early exit for cleaner control flow
     if (newlyStackedPieces.isEmpty()) {
-      logger.debug { "" + ("No newly stacked pieces to process. Exiting.") }
+      logger.debug { "No newly stacked pieces to process. Exiting." }
       return
     }
 
@@ -386,13 +386,13 @@ data class Player(
     //    val piecesToUncombine = newlyStackedPieces.filter { it.extractPotential() }
 
     //    if (newlyStackedPieces.isEmpty()) {
-    //      logger.debug { "" + ("None of the newly stacked pieces are 'potential'. Exiting.") }
+    //      logger.debug { "None of the newly stacked pieces are 'potential'. Exiting." }
     //      return
     //    }
 
     if (logger.isDebugEnabled()) {
-      logger.info { "" + ("Found ${newlyStackedPieces.size} potential piece(s) to uncombine.") }
-      logger.info { "" + ("Reserve size before uncombining: ${this.piecesInReserve.size}") }
+      logger.info { "Found ${newlyStackedPieces.size} potential piece(s) to uncombine." }
+      logger.info { "Reserve size before uncombining: ${this.piecesInReserve.size}" }
     }
 
     // --- 2. GENERATE UNCOMBINED PIECES ---
