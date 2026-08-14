@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Target Bit",
+    "start": 0,
+    "length": 7
+  },
+  {
+    "id": 1785414147139,
+    "name": "Source Bit",
+    "start": 7,
+    "length": 7
+  },
+  {
+    "id": 1785414151126,
+    "name": "Push Direction",
+    "start": 14,
+    "length": 3
+  },
+  {
+    "id": 1785414159672,
+    "name": "Move Type",
+    "start": 17,
+    "length": 2
+  },
+  {
+    "id": 1785414171293,
+    "name": "Column Index",
+    "start": 19,
+    "length": 5
+  },
+  {
+    "id": 1785414174292,
+    "name": "Piece Type",
+    "start": 26,
+    "length": 3
+  },
+  {
+    "id": 1785414177609,
+    "name": "Potential",
+    "start": 25,
+    "length": 1
+  },
+  {
+    "id": 1785414181443,
+    "name": "Piece Color",
+    "start": 29,
+    "length": 1
+  },
+  {
+    "id": 1785414183511,
+    "name": "Neutralized",
+    "start": 24,
+    "length": 1
+  },
+  {
+    "id": 1785414185709,
+    "name": "Retrieve/Capture",
+    "start": 30,
+    "length": 1
+  }
+]
