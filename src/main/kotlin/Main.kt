@@ -49,20 +49,20 @@ fun main() {
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
-    playerWhoMadeTheLastMove = gameState.currentPlayer
-    // start new turn
-    gameState = gameState.rotatePlayers()
+      // break if there are no moves on the last 2 turns as per the rules
+      if (gameState.turnMoves.size > 2) {
+          gameState.turnMoves.keys
+              .toList()
+              .takeLast(1)
+              .all { turns ->
+                  gameState.turnMoves[turns].isNullOrEmpty()
+              }
+              .let { if (it) break }
+      }
 
-    // break if there are no moves on the last 2 turns as per the rules
-    if (gameState.turnMoves.size > 2) {
-      gameState.turnMoves.keys
-          .toList()
-          .takeLast(1)
-          .all { turns ->
-            gameState.turnMoves[turns].isNullOrEmpty()
-          }
-          .let { if (it) break }
-    }
+
+    playerWhoMadeTheLastMove = gameState.currentPlayer
+    gameState = gameState.rotatePlayers()
 
     check(gameState.currentPlayer.name != gameState.nextPlayer.name) {
       "Turn rotation failure: The current player and the next player are both '${gameState.currentPlayer.name}'."

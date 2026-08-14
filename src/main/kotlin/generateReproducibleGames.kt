@@ -462,8 +462,6 @@ fun playOneGame(
       gameState = playerTurn(gameState, turn, rng)
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
-      playerWhoMadeTheLastMove = gameState.currentPlayer
-      gameState = gameState.rotatePlayers()
 
       if (gameState.turnMoves.size > 2) {
         val stalled =
@@ -472,6 +470,9 @@ fun playOneGame(
             }
         if (stalled) break
       }
+
+      playerWhoMadeTheLastMove = gameState.currentPlayer
+      gameState = gameState.rotatePlayers()
 
       check(gameState.currentPlayer.name != gameState.nextPlayer.name) {
         "Turn rotation failure in game $gameId"

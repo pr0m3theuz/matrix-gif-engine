@@ -97,18 +97,18 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
     if (evaluateCapturedPieces(gameState)) break
 
     gameState = playerTurn(gameState, turn, rng)
+
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
+      if (gameState.turnMoves.size > 2) {
+          val stalled =
+              gameState.turnMoves.keys.toList().takeLast(1).all {
+                  gameState.turnMoves[it].isNullOrEmpty()
+              }
+          if (stalled) break
+      }
 
     playerWhoMadeTheLastMove = gameState.currentPlayer
     gameState = gameState.rotatePlayers()
-
-    if (gameState.turnMoves.size > 2) {
-      val stalled =
-          gameState.turnMoves.keys.toList().takeLast(1).all {
-            gameState.turnMoves[it].isNullOrEmpty()
-          }
-      if (stalled) break
-    }
 
     check(gameState.currentPlayer.name != gameState.nextPlayer.name) {
       "Turn rotation failure in game $gameId"
