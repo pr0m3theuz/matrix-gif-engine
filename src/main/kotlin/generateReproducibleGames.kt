@@ -14,6 +14,7 @@ import org.apache.commons.cli.*
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
+import kotlin.time.Clock.System.now
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -345,7 +346,7 @@ private suspend fun runBatch(
 
   val filePrefix =
       "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
-  val file = File(RESULTS_DIR, "${filePrefix}_games_record.jsonl")
+  val file = File(RESULTS_DIR, "${filePrefix}_games_record_${now().toString().replace(":", "-")}.jsonl")
   val lock = file.path
 
   if (!file.exists()) {
