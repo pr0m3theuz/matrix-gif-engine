@@ -15,6 +15,7 @@ data class GameResult(
     val timestamp: Long,
     val turn: Int,
     val winner: Pair<Player, WinCondition>?,
+    val opponent: Player,
     val gameState: State,
 )
 
@@ -28,6 +29,7 @@ fun recordGameResult(
     timestamp: Long,
     state: State,
     winner: Pair<Player, WinCondition>?,
+    opponent: Player,
     turn: Int,
 ) {
   requireNotNull(winner)
@@ -39,6 +41,7 @@ fun recordGameResult(
           timestamp,
           turn,
           winner,
+          opponent,
           state,
       )
 
