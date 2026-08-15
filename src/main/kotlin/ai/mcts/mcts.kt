@@ -111,9 +111,9 @@ data class MCTSNode(
     val winCounts: MutableMap<PlayerName, Int> =
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var rolloutCounts: Int = 0,
-    val unvisitedMoves: MutableList<PackedMove> = mutableListOf(),
+    val unvisitedMoves: MutableList<PackedMove>,
     val useRAVE: Boolean = false,
-    val raveStats: MutableMap<PackedMove, RaveStats> = mutableMapOf(),
+    val raveStats: Map<PackedMove, RaveStats>,
     var raveCounts: Int = 0,
     var raveWins: MutableMap<PlayerName, Int> =
       mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
@@ -285,6 +285,8 @@ data class MCTSNode(
     //      nodeMoves[j + 1] = currentMove
     //    }
 
+
+
     // TODO Ascertain if turn phase works as expected. Create a test for different scenarios.
     val childNode =
         MCTSNode(
@@ -301,6 +303,7 @@ data class MCTSNode(
                 else emptyList(),
             unvisitedMoves = nodeMoves,
             useRAVE = this.useRAVE,
+            raveStats = nodeMoves.associateWith { RaveStats() },
             raveCounts = this.raveStats.getValue(selectedPackedMove).raveCounts,
             raveWins = this.raveStats.getValue(selectedPackedMove).raveWins.toMutableMap(),
             parentQ = this.meanQ,
@@ -590,6 +593,7 @@ fun selectMoveMCTS(
           turnPhase = turnPhase,
           unvisitedMoves = availableMoves.toMutableList(),
           useRAVE = useRAVE,
+          raveStats = availableMoves.associateWith { RaveStats() },
           totalActions = availableMoves.size,
       )
 
@@ -665,10 +669,7 @@ fun selectMoveMCTS(
           if (parentNode.unvisitedMoves.isNotEmpty()) {
             for (unvisitedMove in parentNode.unvisitedMoves) {
               if (unvisitedMove in movesByParentMover) {
-                val stats =
-                    parentNode.raveStats.getOrPut(unvisitedMove) {
-                      RaveStats(0, mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0))
-                    }
+                val stats = parentNode.raveStats.getValue(unvisitedMove)
                 stats.raveCounts += 1
                 stats.raveWins[winner.name] = stats.raveWins.getValue(winner.name) + 1
               }
