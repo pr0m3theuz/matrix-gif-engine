@@ -366,21 +366,21 @@ fun determineWinner(
     Winner(
         it,
         WinCondition.CapturedAllGIPFPieces,
-        if (it == currentPlayer) currentPlayer else nextPlayer,
+        if (it == currentPlayer) nextPlayer else currentPlayer,
     )
   }
       ?: bitboardHasAvailableMoves?.let {
         Winner(
             it,
             WinCondition.HasMovesAvailable,
-            if (it == currentPlayer) currentPlayer else nextPlayer,
+            if (it == currentPlayer) nextPlayer else currentPlayer,
         )
       }
       ?: playerWhoMadeTheLastMove?.let {
         Winner(
             it,
             WinCondition.MadeTheLastMove,
-            if (it == currentPlayer) currentPlayer else nextPlayer,
+            if (it == currentPlayer) nextPlayer else currentPlayer,
         )
       }
 }
