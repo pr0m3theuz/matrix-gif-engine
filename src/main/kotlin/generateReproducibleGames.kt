@@ -471,6 +471,9 @@ fun playOneGame(
         if (stalled) break
       }
 
+      check(turn <= 500) {
+        "Safety guard triggered: Exceeded maximum turn threshold of 500."
+      }
       playerWhoMadeTheLastMove = gameState.currentPlayer
       gameState = gameState.rotatePlayers()
 

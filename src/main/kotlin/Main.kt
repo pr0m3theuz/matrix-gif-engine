@@ -60,7 +60,6 @@ fun main() {
               .let { if (it) break }
       }
 
-
     playerWhoMadeTheLastMove = gameState.currentPlayer
     gameState = gameState.rotatePlayers()
 
@@ -93,7 +92,7 @@ fun main() {
   //    else -> {}
   //  }
 
-  logger.info { "Player: ${winner?.first?.name} won by ${winner?.second?.name}" }
+  logger.info { "Player: ${winner?.winner?.name} won by ${winner?.winCondition?.name}" }
   gameState.turnMoves.keys.toList().takeLast(3).forEach { turns ->
     logger.info { "Turn $turns: ${Json.encodeToString(gameState.turnMoves[turns])}" }
   }

@@ -837,7 +837,7 @@ fun simulateRandomGame(
               opponentPlayer,
               playerWhoMadeTheLastMove ?: nextPlayer,
           )
-          ?.first
+          ?.winner
   //  logger.info { "Player: ${winner?.name} won" }
   return winner
 }

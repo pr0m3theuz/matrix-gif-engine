@@ -1,6 +1,7 @@
 package org.example.engine
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.serialization.Serializable
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
@@ -299,6 +300,13 @@ fun evaluateCapturedPieces(state: State): Boolean {
       } == 3
 }
 
+@Serializable
+data class Winner(
+    val winner: Player,
+    val winCondition: WinCondition,
+    val loser: Player,
+)
+
 fun determineWinner(
     currentPlayer: Player,
     nextPlayer: Player,
@@ -306,7 +314,7 @@ fun determineWinner(
     bitboard: Bitboard? = null,
     state: State? = null,
     printStatement: Boolean = false,
-): Pair<Player, WinCondition>? {
+): Winner? {
   // TODO refactor & test
 
   val capturedGIPFPieces =
@@ -354,9 +362,27 @@ fun determineWinner(
 
   // TODO should number of pieces captured be a win condition
 
-  return capturedGIPFPieces?.let { Pair(it, WinCondition.CapturedAllGIPFPieces) }
-      ?: bitboardHasAvailableMoves?.let { Pair(it, WinCondition.HasMovesAvailable) }
-      ?: playerWhoMadeTheLastMove?.let { Pair(it, WinCondition.MadeTheLastMove) }
+  return capturedGIPFPieces?.let {
+    Winner(
+        it,
+        WinCondition.CapturedAllGIPFPieces,
+        if (it == currentPlayer) currentPlayer else nextPlayer,
+    )
+  }
+      ?: bitboardHasAvailableMoves?.let {
+        Winner(
+            it,
+            WinCondition.HasMovesAvailable,
+            if (it == currentPlayer) currentPlayer else nextPlayer,
+        )
+      }
+      ?: playerWhoMadeTheLastMove?.let {
+        Winner(
+            it,
+            WinCondition.MadeTheLastMove,
+            if (it == currentPlayer) currentPlayer else nextPlayer,
+        )
+      }
 }
 
 enum class WinCondition {
