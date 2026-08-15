@@ -9,12 +9,12 @@ import kotlin.time.Duration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.doActionGetTurnPhase
-import org.example.ai.scoreActions
 import org.example.engine.determineWinner
 import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import kotlin.math.roundToInt
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -75,7 +75,8 @@ data class MCTSNode(
     val unvisitedMoves: MutableList<PackedMove> = mutableListOf(),
     val useRAVE: Boolean = false,
     var raveCounts: Int = 0,
-    var raveWins: Int = 0,
+    var raveWins: MutableMap<PlayerName, Int> =
+        mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var parentQ: Float = 0.5f,
     var meanQ: Float = 0.5f,
     val progressiveWideningConstant: Double = 1.5,
@@ -112,7 +113,7 @@ data class MCTSNode(
 
     val limit = progressiveWideningConstant * rolloutCounts.toDouble().pow(progressiveWideningAlpha)
 
-    return limit.toInt().coerceIn(1, totalActions)
+    return limit.coerceIn(1.0, totalActions.toDouble()).roundToInt()
   }
 
   fun expandNextChild(rng: Random): MCTSNode {
@@ -174,40 +175,40 @@ data class MCTSNode(
 //      )
 //    }
 
-    val scratchBitboard = childBitboard.deepCopy()
-    val scratchCurrentPlayer = nodeCurrentPlayer.liteDeepCopy()
-    val scratchNextPlayer = nodeNextPlayer.liteDeepCopy()
-
-// 2. Pre-calculate scores exactly ONCE per move (O(N) instead of O(N log N))
-    for (i in nodeMoves.indices) {
-      // 3. Reset scratch states (Implement these methods to overwrite data, NOT allocate!)
-      // e.g., scratchBitboard.whitePieces = childBitboard.whitePieces
-      scratchBitboard.copyFrom(childBitboard)
-      scratchCurrentPlayer.copyFrom(nodeCurrentPlayer)
-      scratchNextPlayer.copyFrom(nodeNextPlayer)
-
-      nodeMoves[i].evaluation = scoreActions(
-        selectedPackedMove = nodeMoves[i],
-        bitboard = scratchBitboard,
-        currentPlayer = scratchCurrentPlayer,
-        nextPlayer = scratchNextPlayer,
-        rng = rng
-      )
-    }
-
-    for (i in 1 until nodeMoves.size) {
-      val currentMove = nodeMoves[i]
-      val currentScore = currentMove.evaluation
-      var j = i - 1
-
-      // Shift elements that have a LOWER score to the right
-      while (j >= 0 && nodeMoves[j].evaluation < currentScore) {
-        nodeMoves[j + 1] = nodeMoves[j]
-        j--
-      }
-      // Insert the current move at its correct sorted position
-      nodeMoves[j + 1] = currentMove
-    }
+//    val scratchBitboard = childBitboard.deepCopy()
+//    val scratchCurrentPlayer = nodeCurrentPlayer.liteDeepCopy()
+//    val scratchNextPlayer = nodeNextPlayer.liteDeepCopy()
+//
+//// 2. Pre-calculate scores exactly ONCE per move (O(N) instead of O(N log N))
+//    for (i in nodeMoves.indices) {
+//      // 3. Reset scratch states (Implement these methods to overwrite data, NOT allocate!)
+//      // e.g., scratchBitboard.whitePieces = childBitboard.whitePieces
+//      scratchBitboard.copyFrom(childBitboard)
+//      scratchCurrentPlayer.copyFrom(nodeCurrentPlayer)
+//      scratchNextPlayer.copyFrom(nodeNextPlayer)
+//
+//      nodeMoves[i].evaluation = scoreActions(
+//        selectedPackedMove = nodeMoves[i],
+//        bitboard = scratchBitboard,
+//        currentPlayer = scratchCurrentPlayer,
+//        nextPlayer = scratchNextPlayer,
+//        rng = rng
+//      )
+//    }
+//
+//    for (i in 1 until nodeMoves.size) {
+//      val currentMove = nodeMoves[i]
+//      val currentScore = currentMove.evaluation
+//      var j = i - 1
+//
+//      // Shift elements that have a LOWER score to the right
+//      while (j >= 0 && nodeMoves[j].evaluation < currentScore) {
+//        nodeMoves[j + 1] = nodeMoves[j]
+//        j--
+//      }
+//      // Insert the current move at its correct sorted position
+//      nodeMoves[j + 1] = currentMove
+//    }
 
     // TODO Ascertain if turn phase works as expected. Create a test for different scenarios.
     val childNode =
@@ -262,7 +263,7 @@ data class MCTSNode(
   }
 
   fun updateRAVE(winner: Player) {
-    this.raveWins += if (this.currentPlayer.name == winner.name) 1 else 0
+    this.raveWins[winner.name] = this.winCounts.getValue(winner.name) + 1
     this.raveCounts += 1
   }
 
@@ -279,7 +280,7 @@ data class MCTSNode(
       raveK: Int = 3,
       fpu: Float = 0.0f,
       // see pg 3 for bias constant amounts https://www.ijcai.org/Proceedings/15/Papers/112.pdf
-      //  bias: Double = 10.0.pow(-7),
+        bias: Double = 10.0.pow(-7),
   ): Double {
 
     // First Play Urgency: with zero rollouts, wins/rollouts is undefined (0/0) and the
@@ -287,9 +288,9 @@ data class MCTSNode(
     // caller-supplied baseline value (fpu, typically the parent's Q estimate). This applies
     // unconditionally, independent of useRAVE, since an unvisited node has no RAVE stats either.
     if (childNode.rolloutCounts <= 0) {
-      return fpu.toDouble()
-      // val exploration = sqrt(ln(parentRollouts))
-      // return fpu + temperature * childNode.priorProbability * exploration
+        //  return fpu.toDouble()
+       val exploration = sqrt(ln(parentRollouts))
+       return fpu + temperature * exploration
     }
 
     val wins = childNode.winCounts.getValue(this.currentPlayer.name)
@@ -298,27 +299,30 @@ data class MCTSNode(
 
     val exploration = sqrt(ln(parentRollouts).div(rollouts))
 
-    val ucb = winPercentage + temperature * childNode.priorProbability * exploration
+    val ucb = winPercentage + temperature * exploration
 
     if (!useRAVE || childNode.raveCounts == 0) {
       return ucb
     }
 
-    val betaState = sqrt(raveK / ((3 * parentRollouts) + raveK))
+      val p = childNode.rolloutCounts.toDouble()
+      val pa = childNode.raveCounts.toDouble()
+    val beta = pa / (raveCounts + p + bias * pa * p) // GRAVE
+        //val beta = sqrt(raveK.toDouble() / ((3 * p) + raveK.toDouble())) // Silver & Gelly 2008
     // raveCounts / (raveCounts + parentRollouts + bias * raveCounts + parentRollouts)
 
     val sameMover = childNode.currentPlayer.name == this.currentPlayer.name
-    val amaf = childNode.raveWins.toDouble() / childNode.raveCounts
-    val rawWP = if (sameMover) amaf else 1.0 - amaf
+    val amaf = childNode.raveWins.getValue(this.currentPlayer.name).toDouble() / childNode.raveCounts
+//    val rawWP = if (sameMover) amaf else 1.0 - amaf
     // val mean = winPercentage
 
-    val uctRAVE = (((1.0 - betaState) * winPercentage) + (betaState * rawWP))
+    val uctRAVE = (((1.0 - beta) * winPercentage) + (beta * amaf))
 
-    return uctRAVE + temperature * childNode.priorProbability * exploration
+    return uctRAVE + temperature * exploration
   }
 
-  fun selectChildNodeToExplore(): MCTSNode {
-    val totalRollouts = childrenNodes.sumOf { it.rolloutCounts.toDouble() }
+/*  fun selectChildNodeToExplore(): MCTSNode {
+    val totalRollouts = this.rolloutCounts.toDouble()
 
     val selectableNodes = this.getUnlockedActionCount()
 
@@ -368,7 +372,7 @@ data class MCTSNode(
     }
 
     return bestChildNode
-  }
+  }*/
 
   fun updateMeanQ() {
     var totalVisitedQ = 0.0f
@@ -410,7 +414,7 @@ data class MCTSNode(
     }
 
     // 2. PUCT SELECTION: Otherwise, pick the best existing child via PUCT / RAVE
-    val totalRollouts = childrenNodes.sumOf { it.rolloutCounts.toDouble() }
+    val totalRollouts = this.rolloutCounts.toDouble()
     var bestScore = -Double.MAX_VALUE
     var bestChildNode: MCTSNode? = null
 
@@ -465,40 +469,40 @@ fun selectMoveMCTS(
 //    )
 //  }
 
-  val scratchBitboard = bitboard.deepCopy()
-  val scratchCurrentPlayer = currentPlayer.liteDeepCopy()
-  val scratchNextPlayer = nextPlayer.liteDeepCopy()
-
-// 2. Pre-calculate scores exactly ONCE per move (O(N) instead of O(N log N))
-  for (i in availableMoves.indices) {
-    // 3. Reset scratch states (Implement these methods to overwrite data, NOT allocate!)
-    // e.g., scratchBitboard.whitePieces = childBitboard.whitePieces
-    scratchBitboard.copyFrom(bitboard)
-    scratchCurrentPlayer.copyFrom(currentPlayer)
-    scratchNextPlayer.copyFrom(nextPlayer)
-
-    availableMoves[i].evaluation = scoreActions(
-      selectedPackedMove = availableMoves[i],
-      bitboard = scratchBitboard,
-      currentPlayer = scratchCurrentPlayer,
-      nextPlayer = scratchNextPlayer,
-      rng = rng
-    )
-  }
-
-  for (i in 1 until availableMoves.size) {
-    val currentMove = availableMoves[i]
-    val currentScore = currentMove.evaluation
-    var j = i - 1
-
-    // Shift elements that have a LOWER score to the right
-    while (j >= 0 && availableMoves[j].evaluation < currentScore) {
-      availableMoves[j + 1] = availableMoves[j]
-      j--
-    }
-    // Insert the current move at its correct sorted position
-    availableMoves[j + 1] = currentMove
-  }
+//  val scratchBitboard = bitboard.deepCopy()
+//  val scratchCurrentPlayer = currentPlayer.liteDeepCopy()
+//  val scratchNextPlayer = nextPlayer.liteDeepCopy()
+//
+//// 2. Pre-calculate scores exactly ONCE per move (O(N) instead of O(N log N))
+//  for (i in availableMoves.indices) {
+//    // 3. Reset scratch states (Implement these methods to overwrite data, NOT allocate!)
+//    // e.g., scratchBitboard.whitePieces = childBitboard.whitePieces
+//    scratchBitboard.copyFrom(bitboard)
+//    scratchCurrentPlayer.copyFrom(currentPlayer)
+//    scratchNextPlayer.copyFrom(nextPlayer)
+//
+//    availableMoves[i].evaluation = scoreActions(
+//      selectedPackedMove = availableMoves[i],
+//      bitboard = scratchBitboard,
+//      currentPlayer = scratchCurrentPlayer,
+//      nextPlayer = scratchNextPlayer,
+//      rng = rng
+//    )
+//  }
+//
+//  for (i in 1 until availableMoves.size) {
+//    val currentMove = availableMoves[i]
+//    val currentScore = currentMove.evaluation
+//    var j = i - 1
+//
+//    // Shift elements that have a LOWER score to the right
+//    while (j >= 0 && availableMoves[j].evaluation < currentScore) {
+//      availableMoves[j + 1] = availableMoves[j]
+//      j--
+//    }
+//    // Insert the current move at its correct sorted position
+//    availableMoves[j + 1] = currentMove
+//  }
 
   val rootMCTSNode =
       MCTSNode(
@@ -631,7 +635,7 @@ fun selectMoveMCTS(
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
   for (child in rootMCTSNode.childrenNodes) {
-    val winPercentage = child.winPercentage(nextPlayer)
+    val winPercentage = child.winPercentage(currentPlayer)
     if (winPercentage > bestPercentage) {
       bestPercentage = winPercentage
       bestMove = child.move
