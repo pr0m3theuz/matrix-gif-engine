@@ -101,7 +101,7 @@ fun qSearch(
 			hash = bitboard.getZobristHash(currentPlayer),
 		)
 
-	if (!isPVNode && ttFound) {
+	if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
 		if (ttEntry.bound == Bound.EXACT) {
 
 			return BestPackedMove(
@@ -114,7 +114,7 @@ fun qSearch(
 				score = ttEntry.score, // Fail-high
 			)
 		}
-		if (ttEntry.bound == Bound.ALPHA && ttEntry.score >= alphaBetaScore.alpha) {
+		if (ttEntry.bound == Bound.ALPHA && ttEntry.score <= alphaBetaScore.alpha) {
 
 			return BestPackedMove(
 				score = ttEntry.score, // Fail-low
@@ -171,7 +171,7 @@ fun qSearch(
 						bitboard,
 						maxDepth,
 						depth.minus(1),
-						AlphaBetaScoreBitPacked(),
+						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA ADD PIECE",
 						logger.isDebugEnabled(),
 						rng,
@@ -189,7 +189,7 @@ fun qSearch(
 					BestPackedMove(
 						move = packedMove,
 						score =
-							qSearch(
+							-qSearch(
 								maxDepth = maxDepth,
 								depth = depth.minus(1),
 								bitboard = bitboard,
@@ -228,7 +228,7 @@ fun qSearch(
 					nextPlayer = opponentPlayer,
 				)
 
-				val compositeScore = move.score.unaryMinus() +
+				val compositeScore = move.score +
 						if (bestPiecesToRetrieveCapture4.isNotEmpty())
 							bestPiecesToRetrieveCapture4Score
 						else 0
@@ -334,7 +334,7 @@ fun qSearch(
 							bitboard = bitboard,
 							currentPlayer = currentPlayer,
 							opponentPlayer = opponentPlayer,
-							alphaBetaScore = AlphaBetaScoreBitPacked(),
+							alphaBetaScore = alphaBetaScore.deepCopy(),
 							rng = rng,
 							isPVNode = isPVNode && moveValue == ttEntry.move,
 							turnPhase = TurnPhase.ExtraMove,
@@ -365,7 +365,7 @@ fun qSearch(
 						bitboard,
 						maxDepth,
 						depth.minus(1),
-						AlphaBetaScoreBitPacked(),
+						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA ADD PIECE",
 						logger.isDebugEnabled(),
 						rng,
@@ -383,7 +383,7 @@ fun qSearch(
 					BestPackedMove(
 						move = packedMove,
 						score =
-							qSearch(
+							-qSearch(
 								maxDepth = maxDepth,
 								depth = depth.minus(1),
 								bitboard = bitboard,
@@ -458,7 +458,7 @@ fun qSearch(
 					nextPlayer = opponentPlayer,
 				)
 
-				val compositeScore = move.score.unaryMinus() + tamskMoveScore +
+				val compositeScore = move.score + tamskMoveScore +
 						if (bestPiecesToRetrieveCapture2.isNotEmpty())
 							bestPiecesToRetrieveCapture2Score
 						else 0
@@ -506,7 +506,7 @@ fun qSearch(
 							bitboard = bitboard,
 							currentPlayer = currentPlayer,
 							opponentPlayer = opponentPlayer,
-							alphaBetaScore = AlphaBetaScoreBitPacked(),
+							alphaBetaScore = alphaBetaScore.deepCopy(),
 							rng = rng,
 							isPVNode = isPVNode && moveValue == ttEntry.move,
 							turnPhase = TurnPhase.ExtraMove,
@@ -538,7 +538,7 @@ fun qSearch(
 						bitboard,
 						maxDepth,
 						depth.minus(1),
-						AlphaBetaScoreBitPacked(),
+						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA USE POTENTIAL",
 						logger.isDebugEnabled(),
 						rng = rng,
@@ -553,7 +553,7 @@ fun qSearch(
 					BestPackedMove(
 						move = packedMove,
 						score =
-							qSearch(
+							-qSearch(
 								maxDepth = maxDepth,
 								depth = depth.minus(1),
 								bitboard = bitboard,
@@ -598,7 +598,7 @@ fun qSearch(
 				bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
 
-				val compositeScore = move.score.unaryMinus() + tamskMoveScore +
+				val compositeScore = move.score + tamskMoveScore +
 						if (bestPiecesToRetrieveCapture3.isNotEmpty())
 							bestPiecesToRetrieveCapture3Score
 						else 0
@@ -622,16 +622,16 @@ fun qSearch(
 		}
 	}
 
-	alphaBetaScore.move?.let {
-		transpositionTable.save(
-			entry = ttEntry,
-			hash = bitboard.getZobristHash(currentPlayer),
-			bound = bound,
-			depth = maxDepth - depth,
-			move = it,
-			value = alphaBetaScore.alpha,
-		)
-	}
+//	alphaBetaScore.move?.let {
+//		transpositionTable.save(
+//			entry = ttEntry,
+//			hash = bitboard.getZobristHash(currentPlayer),
+//			bound = bound,
+//			depth = 0,
+//			move = it,
+//			value = alphaBetaScore.alpha,
+//		)
+//	}
 
 	bitboard.diff(initBitboard)
 
@@ -657,7 +657,7 @@ private fun bestPiecesToRemove(
 	val initBitboard = bitboard.deepCopy()
 
 	if (System.currentTimeMillis() >= endTime) {
-		return Triple(emptyList(), Int.MIN_VALUE, emptyList())
+		return Triple(emptyList(), 0, emptyList())
 	}
 
 	val resolveBoardRemovals =
