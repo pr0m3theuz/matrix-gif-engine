@@ -12,10 +12,11 @@ import org.example.engine.Bound
 import org.example.engine.TranspositionTable
 import org.example.engine.getZobristHash
 import org.example.model.*
+import kotlin.math.min
 
 val MAX_HISTORY: Int = 100000
 const val INFINITY: Int = 2_000_000_000
-const val MAX_Q_DEPTH: Int = 4
+const val MAX_Q_DEPTH: Int = 2
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -204,7 +205,7 @@ fun alphaBetaNgMxSearch(
         score = -qMove.score,
     )
   }
-  // endregion
+// endregion
 
   // region Evaluate State
   if (availableMoves.isEmpty() || depth <= 0 || System.currentTimeMillis() >= endTime) {
@@ -230,8 +231,8 @@ fun alphaBetaNgMxSearch(
           hash = initialHash,
       )
 
-  val ttAlpha = alphaBetaScore.alpha + forcedRemovalScore
-  val ttBeta = alphaBetaScore.beta + forcedRemovalScore
+  val ttAlpha = alphaBetaScore.alpha //+ forcedRemovalScore
+  val ttBeta = alphaBetaScore.beta //+ forcedRemovalScore
 
   if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
     if (ttEntry.bound == Bound.EXACT) {
@@ -285,17 +286,17 @@ fun alphaBetaNgMxSearch(
       900000
     } else if (move == killer1) {
       800000
-    } else if (captureMoves.isNotEmpty()) {
-      if (
-        captureMoves.any {
-          val capture = (it as PackedMove.Single).value
-          capture.extractTargetBit() == move.extractTargetBit() &&
-              capture.extractPushDirection() == move.extractPushDirection() &&
-              capture.extractMoveType() == move.extractMoveType()
-        }
-      ) {
-        450000
-      } else 0
+//    } else if (captureMoves.isNotEmpty()) {
+//      if (
+//        captureMoves.any {
+//          val capture = (it as PackedMove.Single).value
+//          capture.extractTargetBit() == move.extractTargetBit() &&
+//              capture.extractPushDirection() == move.extractPushDirection() &&
+//              capture.extractMoveType() == move.extractMoveType()
+//        }
+//      ) {
+//        450000
+//      } else 0
     } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
             // potential
@@ -381,14 +382,14 @@ fun alphaBetaNgMxSearch(
             nextPlayer = opponentPlayer,
         )
 
-        if ((index > 3 && !captureMoves.any { (it as PackedMove.Single).value == moveValue }) && maxDepth > 2) {
+        if ((index > 5) && maxDepth > 2) {
           val move =
               BestPackedMove(
                   move = packedMove,
                   score =
                       -alphaBetaNgMxSearch(
                               maxDepth = maxDepth,
-                              depth = depth - 1 - 1,
+                              depth = min(1, depth - 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
@@ -635,7 +636,7 @@ fun alphaBetaNgMxSearch(
         )
 
         //  TODO Late Move Reduction
-        if ((index > 3 && !captureMoves.any { (it as PackedMove.Single).value == moveValue }) && maxDepth > 2) {
+        if ((index > 5) && maxDepth > 2) {
           // todo reduced search
           val move =
               BestPackedMove(
@@ -643,7 +644,7 @@ fun alphaBetaNgMxSearch(
                   score =
                       -alphaBetaNgMxSearch(
                               maxDepth = maxDepth,
-                              depth = depth - 1 - 1,
+                              depth = min(1, depth - 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
@@ -898,7 +899,7 @@ fun alphaBetaNgMxSearch(
 
         val beforeRecursionBitboardState = bitboard.deepCopy()
 
-        if ((index > 3 && !captureMoves.any { (it as PackedMove.Single).value == moveValue }) && maxDepth > 2) {
+        if ((index > 5) && maxDepth > 2) {
           // todo reduced search
           val move =
               BestPackedMove(
@@ -906,7 +907,7 @@ fun alphaBetaNgMxSearch(
                   score =
                       -alphaBetaNgMxSearch(
                               maxDepth = maxDepth,
-                              depth = depth - 1 - 1,
+                              depth = min(1, depth - 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
