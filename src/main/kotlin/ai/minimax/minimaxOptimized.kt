@@ -135,7 +135,7 @@ fun alphaBetaNgMxSearch(
             opponentPlayer,
             bitboard,
             maxDepth,
-            depth,
+            depth - 1,
             alphaBetaScore.deepCopy(),
             "ALPHA-BETA MAIN BEGINNING",
             logger.isDebugEnabled(),
@@ -366,7 +366,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth,
+                depth - 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA ADD PIECE",
                 logger.isDebugEnabled(),
@@ -585,7 +585,7 @@ fun alphaBetaNgMxSearch(
           tamskMoveScore =
               alphaBetaNgMxSearch(
                       maxDepth = maxDepth,
-                      depth = depth,
+                      depth = depth - 1,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
@@ -619,7 +619,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth,
+                depth - 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA ADD PIECE",
                 logger.isDebugEnabled(),
@@ -851,7 +851,7 @@ fun alphaBetaNgMxSearch(
           tamskMoveScore =
               alphaBetaNgMxSearch(
                       maxDepth = maxDepth,
-                      depth = depth,
+                      depth = depth - 1,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
@@ -886,7 +886,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth,
+                depth - 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA USE POTENTIAL",
                 logger.isDebugEnabled(),
