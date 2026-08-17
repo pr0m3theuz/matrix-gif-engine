@@ -450,7 +450,7 @@ fun playOneGame(
   try {
     while (!evaluateCapturedPieces(gameState)) {
       turn++
-      gameState.turnMoves[turn] = mutableListOf()
+//      gameState.turnMoves[turn] = mutableListOf()
       gameState.turnDuration[turn] = mutableListOf()
       gameState.turnSearchInfo[turn] = mutableListOf()
 
