@@ -782,9 +782,9 @@ fun selectMoveMCTS(
       model = Model.MCTS,
       strength = currentPlayer.strength,
       turnPhase = turnPhases,
-      branchingCounts = branchingCounts,
-      totalActions = totalActions,
-      depths = depth,
+      branchingCounts = mutableListOf(branchingCounts.average().roundToInt()),
+      totalActions = mutableListOf(totalActions.average().roundToInt()),
+      depths = mutableListOf(depth.average().roundToInt()),
     )
   }
 
