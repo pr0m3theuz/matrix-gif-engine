@@ -6,6 +6,7 @@ import kotlin.time.Duration
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.doActionGetTurnPhase
+import org.example.ai.humanEvaluation.SearchInfo
 import org.example.engine.determineWinner
 import org.example.model.*
 import org.example.toBitList
@@ -521,14 +522,15 @@ data class MCTSNode(
 }
 
 fun selectMoveMCTS(
-    bitboard: Bitboard,
-    currentPlayer: Player,
-    nextPlayer: Player,
-    rounds: IntRange = 0..9999,
-    turnPhase: TurnPhase,
-    rng: Random,
-    duration: Duration = Duration.ZERO,
-    useRAVE: Boolean = false,
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  nextPlayer: Player,
+  rounds: IntRange = 0..9999,
+  turnPhase: TurnPhase,
+  rng: Random,
+  duration: Duration = Duration.ZERO,
+  useRAVE: Boolean = false,
+  searchInfos: MutableList<SearchInfo>? = null,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -752,6 +754,42 @@ fun selectMoveMCTS(
       }
     }
   }
+
+  fun collectMctsStats(root_node: MCTSNode, minVisits: Int = 1): SearchInfo {
+    val branchingCounts: MutableList<Int> = mutableListOf()
+    val turnPhases: MutableList<TurnPhase> = mutableListOf()
+    val totalActions: MutableList<Int> = mutableListOf()
+    val depth: MutableList<Int> = mutableListOf()
+
+    fun traverse (node: MCTSNode, currentDepth: Int) {
+      depth.add(currentDepth)
+      turnPhases.add(node.turnPhase)
+      totalActions.add(node.totalActions)
+      // Filter children with meaningful search volume
+      val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
+
+      if (activeChildren.isNotEmpty()) {
+        branchingCounts.add(activeChildren.size)
+        for (child in activeChildren) {
+          traverse(child, currentDepth + 1)
+        }
+      }
+    }
+
+    traverse(root_node, 0)
+
+    return SearchInfo(
+      model = Model.MCTS,
+      turnPhase = turnPhases,
+      branchingCounts = branchingCounts,
+      totalActions = totalActions,
+      depths = depth,
+    )
+  }
+
+  searchInfos?.add(
+    collectMctsStats(rootMCTSNode)
+  )
 
   var bestMove: PackedMove? = null
   var bestPercentage = -1f

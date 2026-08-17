@@ -61,10 +61,8 @@ fun qSearch(
 
 	val initBitboard = bitboard.deepCopy()
 
-	searchInfo?.nodesSearched++
-
 	if (
-		depth <= 0 ||
+		depth >= maxDepth ||
 		System.currentTimeMillis() >= endTime
 	) {
 		// score = evaluate s for original player
@@ -101,7 +99,7 @@ fun qSearch(
 			hash = bitboard.getZobristHash(currentPlayer),
 		)
 
-	if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
+	if (!isPVNode && ttFound && ttEntry.depth >= depth) {
 		if (ttEntry.bound == Bound.EXACT) {
 
 			return BestPackedMove(
@@ -122,7 +120,7 @@ fun qSearch(
 		}
 	}
 
-	val standPat = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng)
+	val standPat = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng) + 50
 
 	if (standPat >= alphaBetaScore.beta) {
 		return BestPackedMove(score = alphaBetaScore.beta)
@@ -134,6 +132,13 @@ fun qSearch(
 
 	val captureMoves = mutableListOf<PackedMove>()
 	bitboard.generateCaptureMoves(currentPlayer, captureMoves)
+
+	searchInfo?.nodesSearched?.getOrNull(currentPlayer.strength.minimaxDepth + depth + 1)?.let {
+		searchInfo.nodesSearched.add(currentPlayer.strength.minimaxDepth + depth + 1, 0)
+	}
+	searchInfo?.nodesSearched[currentPlayer.strength.minimaxDepth + depth + 1] += 1
+
+	searchInfo?.totalActions?.add(captureMoves.size)
 
 	val pvMove = ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name
 
@@ -170,7 +175,7 @@ fun qSearch(
 						opponentPlayer,
 						bitboard,
 						maxDepth,
-						depth.minus(1),
+						depth + 1,
 						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA ADD PIECE",
 						logger.isDebugEnabled(),
@@ -191,7 +196,7 @@ fun qSearch(
 						score =
 							-qSearch(
 								maxDepth = maxDepth,
-								depth = depth.minus(1),
+								depth = depth + 1,
 								bitboard = bitboard,
 								currentPlayer = opponentPlayer,
 								opponentPlayer = currentPlayer,
@@ -330,7 +335,7 @@ fun qSearch(
 					tamskMoveScore =
 						qSearch(
 							maxDepth = maxDepth,
-							depth = depth.minus(1),
+							depth = depth + 1,
 							bitboard = bitboard,
 							currentPlayer = currentPlayer,
 							opponentPlayer = opponentPlayer,
@@ -364,7 +369,7 @@ fun qSearch(
 						opponentPlayer,
 						bitboard,
 						maxDepth,
-						depth.minus(1),
+						depth + 1,
 						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA ADD PIECE",
 						logger.isDebugEnabled(),
@@ -385,7 +390,7 @@ fun qSearch(
 						score =
 							-qSearch(
 								maxDepth = maxDepth,
-								depth = depth.minus(1),
+								depth = depth + 1,
 								bitboard = bitboard,
 								currentPlayer = opponentPlayer,
 								opponentPlayer = currentPlayer,
@@ -502,7 +507,7 @@ fun qSearch(
 					tamskMoveScore =
 						qSearch(
 							maxDepth = maxDepth,
-							depth = depth.minus(1),
+							depth = depth + 1,
 							bitboard = bitboard,
 							currentPlayer = currentPlayer,
 							opponentPlayer = opponentPlayer,
@@ -537,7 +542,7 @@ fun qSearch(
 						opponentPlayer,
 						bitboard,
 						maxDepth,
-						depth.minus(1),
+						depth + 1,
 						alphaBetaScore.deepCopy(),
 						"ALPHA-BETA USE POTENTIAL",
 						logger.isDebugEnabled(),
@@ -555,7 +560,7 @@ fun qSearch(
 						score =
 							-qSearch(
 								maxDepth = maxDepth,
-								depth = depth.minus(1),
+								depth = depth + 1,
 								bitboard = bitboard,
 								currentPlayer = opponentPlayer,
 								opponentPlayer = currentPlayer,
@@ -825,7 +830,7 @@ private fun resolveBoardRemovalsQS(
 					score =
 						qSearch(
 							maxDepth = maxDepth,
-							depth = depth.minus(1),
+							depth = depth + 1,
 							bitboard = bitboard,
 							currentPlayer = opponentPlayer,
 							opponentPlayer = currentPlayer,

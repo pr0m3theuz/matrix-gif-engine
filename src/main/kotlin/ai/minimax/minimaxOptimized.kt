@@ -2,6 +2,7 @@
 
 package org.example.ai.humanEvaluation
 
+import kotlin.math.min
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -12,7 +13,7 @@ import org.example.engine.Bound
 import org.example.engine.TranspositionTable
 import org.example.engine.getZobristHash
 import org.example.model.*
-import kotlin.math.min
+import kotlin.math.max
 
 val MAX_HISTORY: Int = 100000
 const val INFINITY: Int = 2_000_000_000
@@ -27,8 +28,12 @@ data class BestPackedMove(
 
 @Serializable
 data class SearchInfo(
-    var depth: Int,
-    var nodesSearched: Int = 0,
+    var model: Model,
+    var turnPhase: MutableList<TurnPhase> = mutableListOf(),
+    var depths: MutableList<Int> = mutableListOf(),
+    var nodesSearched: MutableList<Int> = mutableListOf(),
+    val branchingCounts: MutableList<Int> = mutableListOf(),
+    val totalActions: MutableList<Int> = mutableListOf(),
 )
 
 data class AlphaBetaScoreBitPacked(
@@ -110,11 +115,6 @@ fun alphaBetaNgMxSearch(
   // TODO enforce PieceRemovalRules & handle intersecting lines
   // TODO if linesWithFourInARow is empty, return/skip
 
-  searchInfo?.nodesSearched++
-
-  if (System.currentTimeMillis() >= endTime) {
-    return BestPackedMove()
-  }
 
   /**
    * A regular move and an extra move are considered one single turn, whether the extra move is made
@@ -136,7 +136,7 @@ fun alphaBetaNgMxSearch(
             opponentPlayer,
             bitboard,
             maxDepth,
-            depth - 1,
+            depth,
             alphaBetaScore.deepCopy(),
             "ALPHA-BETA MAIN BEGINNING",
             logger.isDebugEnabled(),
@@ -149,7 +149,8 @@ fun alphaBetaNgMxSearch(
         Triple(emptyList(), 0, emptyList())
       }
 
-  val forcedRemovalScore = if (bestPiecesToRetrieveCapture1.isNotEmpty()) bestPiecesToRetrieveCapture1Score else 0
+  val forcedRemovalScore =
+      if (bestPiecesToRetrieveCapture1.isNotEmpty()) bestPiecesToRetrieveCapture1Score else 0
 
   fun rollbackInitialRemovals() {
     if (bestPiecesToRetrieveCapture1.isNotEmpty()) {
@@ -183,9 +184,10 @@ fun alphaBetaNgMxSearch(
   val captureMoves = mutableListOf<PackedMove>()
   bitboard.generateCaptureMoves(currentPlayer, captureMoves)
 
-  if (depth <= 0 && captureMoves.isNotEmpty() && currentPlayer.strength != Strength.GREEDY) {
+  if (depth >= maxDepth && captureMoves.isNotEmpty() && currentPlayer.strength != Strength.GREEDY) {
     val qMove =
         qSearch(
+            turnPhase = TurnPhase.PlayerInputWindow,
             maxDepth = MAX_Q_DEPTH,
             depth = MAX_Q_DEPTH,
             bitboard = bitboard,
@@ -205,10 +207,10 @@ fun alphaBetaNgMxSearch(
         score = -qMove.score,
     )
   }
-// endregion
+  // endregion
 
   // region Evaluate State
-  if (availableMoves.isEmpty() || depth <= 0 || System.currentTimeMillis() >= endTime) {
+  if (availableMoves.isEmpty() || depth >= maxDepth || System.currentTimeMillis() >= endTime) {
     // score = evaluate s for original player
     // return [null, score]
 
@@ -225,16 +227,27 @@ fun alphaBetaNgMxSearch(
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   // endregion
 
+  searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0)
+
+  searchInfo?.nodesSearched[depth] += 1
+  searchInfo?.depths?.add(depth)
+
+  if (System.currentTimeMillis() >= endTime) {
+    return BestPackedMove()
+  }
+  searchInfo?.totalActions?.add(availableMoves.size)
+
+
   // region Transposition Table & Move Ordering
   val (ttFound, ttEntry) =
       transpositionTable.probe(
           hash = initialHash,
       )
 
-  val ttAlpha = alphaBetaScore.alpha //+ forcedRemovalScore
-  val ttBeta = alphaBetaScore.beta //+ forcedRemovalScore
+  val ttAlpha = alphaBetaScore.alpha // + forcedRemovalScore
+  val ttBeta = alphaBetaScore.beta // + forcedRemovalScore
 
-  if (!isPVNode && ttFound && ttEntry.depth >= (maxDepth - depth)) {
+  if (!isPVNode && ttFound && ttEntry.depth >= depth) {
     if (ttEntry.bound == Bound.EXACT) {
       rollbackInitialRemovals()
 
@@ -277,8 +290,8 @@ fun alphaBetaNgMxSearch(
     val move = (it as PackedMove.Single).value
     val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
     val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
-//    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
-//    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
+    //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
+    //    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
 
     if (pvMove && move == ttEntry.move) {
       1000000
@@ -286,17 +299,17 @@ fun alphaBetaNgMxSearch(
       900000
     } else if (move == killer1) {
       800000
-//    } else if (captureMoves.isNotEmpty()) {
-//      if (
-//        captureMoves.any {
-//          val capture = (it as PackedMove.Single).value
-//          capture.extractTargetBit() == move.extractTargetBit() &&
-//              capture.extractPushDirection() == move.extractPushDirection() &&
-//              capture.extractMoveType() == move.extractMoveType()
-//        }
-//      ) {
-//        450000
-//      } else 0
+      //    } else if (captureMoves.isNotEmpty()) {
+      //      if (
+      //        captureMoves.any {
+      //          val capture = (it as PackedMove.Single).value
+      //          capture.extractTargetBit() == move.extractTargetBit() &&
+      //              capture.extractPushDirection() == move.extractPushDirection() &&
+      //              capture.extractMoveType() == move.extractMoveType()
+      //        }
+      //      ) {
+      //        450000
+      //      } else 0
     } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
             // potential
@@ -367,7 +380,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth - 1,
+                depth + 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA ADD PIECE",
                 logger.isDebugEnabled(),
@@ -382,14 +395,14 @@ fun alphaBetaNgMxSearch(
             nextPlayer = opponentPlayer,
         )
 
-        if ((index > 5) && maxDepth > 2) {
+        if ((index > 5) && maxDepth >= 2) {
           val move =
               BestPackedMove(
                   move = packedMove,
                   score =
                       -alphaBetaNgMxSearch(
                               maxDepth = maxDepth,
-                              depth = min(1, depth - 1),
+                              depth = max(maxDepth, depth + 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
@@ -437,7 +450,7 @@ fun alphaBetaNgMxSearch(
                 score =
                     -alphaBetaNgMxSearch(
                             maxDepth = maxDepth,
-                            depth = depth.minus(1),
+                            depth = depth + 1,
                             bitboard = bitboard,
                             currentPlayer = opponentPlayer,
                             opponentPlayer = currentPlayer,
@@ -586,7 +599,7 @@ fun alphaBetaNgMxSearch(
           tamskMoveScore =
               alphaBetaNgMxSearch(
                       maxDepth = maxDepth,
-                      depth = depth - 1,
+                      depth = depth + 1,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
@@ -620,7 +633,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth - 1,
+                depth + 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA ADD PIECE",
                 logger.isDebugEnabled(),
@@ -636,15 +649,16 @@ fun alphaBetaNgMxSearch(
         )
 
         //  TODO Late Move Reduction
-        if ((index > 5) && maxDepth > 2) {
+        if ((index > 5) && maxDepth >= 2) {
           // todo reduced search
           val move =
               BestPackedMove(
                   move = packedMove,
                   score =
                       -alphaBetaNgMxSearch(
+                              turnPhase = TurnPhase.PlayerInputWindow,
                               maxDepth = maxDepth,
-                              depth = min(1, depth - 1),
+                              depth = max(maxDepth, depth + 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
@@ -711,8 +725,9 @@ fun alphaBetaNgMxSearch(
                 move = packedMove,
                 score =
                     -alphaBetaNgMxSearch(
+                            turnPhase = TurnPhase.PlayerInputWindow,
                             maxDepth = maxDepth,
-                            depth = depth.minus(1),
+                            depth = depth + 1,
                             bitboard = bitboard,
                             currentPlayer = opponentPlayer,
                             opponentPlayer = currentPlayer,
@@ -852,7 +867,7 @@ fun alphaBetaNgMxSearch(
           tamskMoveScore =
               alphaBetaNgMxSearch(
                       maxDepth = maxDepth,
-                      depth = depth - 1,
+                      depth = depth + 1,
                       bitboard = bitboard,
                       currentPlayer = currentPlayer,
                       opponentPlayer = opponentPlayer,
@@ -887,7 +902,7 @@ fun alphaBetaNgMxSearch(
                 opponentPlayer,
                 bitboard,
                 maxDepth,
-                depth - 1,
+                depth + 1,
                 alphaBetaScore.deepCopy(),
                 "ALPHA-BETA USE POTENTIAL",
                 logger.isDebugEnabled(),
@@ -899,15 +914,16 @@ fun alphaBetaNgMxSearch(
 
         val beforeRecursionBitboardState = bitboard.deepCopy()
 
-        if ((index > 5) && maxDepth > 2) {
+        if ((index > 5) && maxDepth >= 2) {
           // todo reduced search
           val move =
               BestPackedMove(
                   move = packedMove,
                   score =
                       -alphaBetaNgMxSearch(
+                              turnPhase = TurnPhase.PlayerInputWindow,
                               maxDepth = maxDepth,
-                              depth = min(1, depth - 1),
+                              depth = max(maxDepth, depth + 1),
                               bitboard = bitboard,
                               currentPlayer = opponentPlayer,
                               opponentPlayer = currentPlayer,
@@ -954,8 +970,9 @@ fun alphaBetaNgMxSearch(
                 move = packedMove,
                 score =
                     -alphaBetaNgMxSearch(
+                            turnPhase = TurnPhase.PlayerInputWindow,
                             maxDepth = maxDepth,
-                            depth = depth.minus(1),
+                            depth = depth + 1,
                             bitboard = bitboard,
                             currentPlayer = opponentPlayer,
                             opponentPlayer = currentPlayer,
@@ -1059,7 +1076,7 @@ fun alphaBetaNgMxSearch(
         entry = ttEntry,
         hash = bitboard.getZobristHash(currentPlayer),
         bound = bound,
-        depth = maxDepth - depth,
+        depth = depth,
         move = it,
         value = alphaBetaScore.alpha,
     )
@@ -1200,6 +1217,11 @@ fun resolveBoardRemovals(
       }
     }
   }
+
+  searchInfo?.depths?.add(depth)
+  searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
+  searchInfo?.totalActions?.add(removePiecesPowerset.size)
+
   if (removePiecesPowerset.isNotEmpty()) {
     removalLoop@ for ((index, removePieces) in removePiecesPowerset.withIndex()) {
       // 1. Generate your powerset of choices for these lines
@@ -1213,6 +1235,11 @@ fun resolveBoardRemovals(
        * return of a list containing different combinations of bit positions
        */
       require(removePieces is PackedMove.Multiple)
+
+      searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0)
+
+      searchInfo?.nodesSearched[depth] += 1
+      searchInfo?.depths?.add(depth)
 
       val retrievedCapturedPieces = mutableListOf<UInt>()
 
@@ -1236,19 +1263,6 @@ fun resolveBoardRemovals(
 
       bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
-      // b. Recurse! Call resolveBoardRemovals() again for the SAME player
-      //    to handle any chain reactions caused by the removal
-      //      val bestPiecesToRemove =
-      //          resolveBoardRemovals(
-      //              currentPlayer = currentPlayer,
-      //              opponentPlayer = opponentPlayer,
-      //              bitboard = bitboard,
-      //              depth = depth,
-      //              alphaBetaScore = alphaBetaScore.copy(move = null),
-      //          )
-
-      //      bitboard.diff(postPieceRemovalBitboardState)
-
       if (logger.isDebugEnabled()) {
         logger.info { "--- RESOLVE BOARD REMOVALS COMPLETED ---" }
       }
@@ -1261,8 +1275,9 @@ fun resolveBoardRemovals(
               move = removePieces,
               score =
                   -alphaBetaNgMxSearch(
+                          turnPhase = TurnPhase.PlayerInputWindow,
                           maxDepth = maxDepth,
-                          depth = depth.minus(1),
+                          depth = depth,
                           bitboard = bitboard,
                           currentPlayer = opponentPlayer,
                           opponentPlayer = currentPlayer,
