@@ -19,8 +19,7 @@ data class State(
   @Transient val board: Board = Board(emptySet()),
   val bitboard: Bitboard,
   @Transient val lines: Lines? = null,
-  @Transient
-    val turnMoves: MutableMap<Int, MutableList<PackedMove>> = mutableMapOf(), // moves per turn
+  val turnMoves: MutableMap<Int, MutableList<PackedMove>> = mutableMapOf(), // moves per turn
   val turnDuration: MutableMap<Int, MutableList<Long>> = mutableMapOf(), // moves per turn
   val turnSearchInfo: MutableMap<Int, MutableList<MutableList<SearchInfo>>> = mutableMapOf(),
   @Transient val collector: ExperienceCollector? = ExperienceCollector(),
