@@ -780,6 +780,7 @@ fun selectMoveMCTS(
 
     return SearchInfo(
       model = Model.MCTS,
+      strength = currentPlayer.strength,
       turnPhase = turnPhases,
       branchingCounts = branchingCounts,
       totalActions = totalActions,

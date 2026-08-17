@@ -29,6 +29,7 @@ data class BestPackedMove(
 @Serializable
 data class SearchInfo(
     var model: Model,
+    var strength: Strength,
     var turnPhase: MutableList<TurnPhase> = mutableListOf(),
     var depths: MutableList<Int> = mutableListOf(),
     var nodesSearched: MutableList<Int> = mutableListOf(),

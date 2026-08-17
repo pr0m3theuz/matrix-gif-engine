@@ -507,6 +507,7 @@ fun Player.selectMove(
             while (System.nanoTime() < endTime /*&& startingDepth <= strength.minimaxDepth*/) {
               val searchInfo = SearchInfo(
                 model = Model.MINIMAX,
+                strength = this.strength,
               )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -546,6 +547,7 @@ fun Player.selectMove(
             while(startingDepth <= strength.minimaxDepth) {
               val searchInfo = SearchInfo(
                 model = Model.MINIMAX,
+                strength = this.strength,
               )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -586,6 +588,7 @@ fun Player.selectMove(
             ) {
               val searchInfo = SearchInfo(
                 model = Model.MINIMAX,
+                strength = this.strength,
               )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -625,6 +628,7 @@ fun Player.selectMove(
             while(startingDepth <= strength.minimaxDepth) {
               val searchInfo = SearchInfo(
                 model = Model.MINIMAX,
+                strength = this.strength,
               )
               searchInfo.turnPhase.add(turnPhase)
 
