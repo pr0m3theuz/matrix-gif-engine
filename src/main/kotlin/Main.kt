@@ -8,6 +8,7 @@ import org.example.engine.constructZobristHashKeysTable
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
+import org.example.engine.recordRawSearchDataJson
 import org.example.engine.recordSearchStatsCSV
 import org.example.model.*
 
@@ -93,6 +94,7 @@ fun main() {
   println("Effective Branching Factor: $avgEbf")
 
   recordSearchStatsCSV(File("output/results/search_stats.csv"), "search_stats.csv", 1, gameState)
+  recordRawSearchDataJson(File("output/results/raw_search_data.json"), "raw_search_data.json", 1, gameState)
   //  when (winner?.name) {
   //    gameState.currentPlayer.name -> {
   //      gameState.currentPlayer.collector?.endEpisode(1)

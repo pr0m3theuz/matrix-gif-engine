@@ -117,4 +117,32 @@ class BranchingFactorStatsTest {
     // 64^(1/3) = 4.0
     assertEquals(4.0, row[5].toDouble(), 0.0001) // eff_branching_factor
   }
+
+  @Test
+  fun `test recordRawSearchDataJson file output format`() {
+    val tempFile = File.createTempFile("raw_search_data_test", ".json")
+    tempFile.deleteOnExit()
+
+    val state = initializeState()
+    val searchInfo = SearchInfo(
+        model = Model.MCTS,
+        strength = Strength.EASY,
+        totalNodesEvaluated = 64.0,
+        totalAvailableMovesEvaluated = 320.0,
+        maxDepthReached = 3.0,
+    )
+    state.turnSearchInfo[1] = mutableListOf(mutableListOf(searchInfo))
+
+    recordRawSearchDataJson(
+        jsonFile = tempFile,
+        lock = "testLock",
+        gameId = 100,
+        state = state,
+    )
+
+    assertTrue(tempFile.exists())
+    val content = tempFile.readText()
+    assertTrue(content.contains("\"gameId\": 100"))
+    assertTrue(content.contains("\"model\": \"MCTS\""))
+  }
 }

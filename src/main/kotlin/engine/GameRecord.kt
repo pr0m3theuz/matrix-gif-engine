@@ -28,6 +28,12 @@ data class TurnSearchStats(
     val effBranchingFactor: Double,
 )
 
+@Serializable
+data class RawGameSearchData(
+    val gameId: Int,
+    val turnSearchInfo: Map<Int, List<List<SearchInfo>>>,
+)
+
 val RESULTS_DIR = "output/results"
 
 fun calculateTurnSearchStats(gameId: Int, turn: Int, searchInfos: List<SearchInfo>): TurnSearchStats? {
@@ -82,6 +88,29 @@ fun recordSearchStatsCSV(
   }
 }
 
+fun recordRawSearchDataJson(
+    jsonFile: File,
+    lock: String,
+    gameId: Int,
+    state: State,
+) {
+  try {
+    synchronized(lock) {
+      if (jsonFile.parentFile != null && !jsonFile.parentFile.exists()) {
+        jsonFile.parentFile.mkdirs()
+      }
+      val rawData = RawGameSearchData(
+          gameId = gameId,
+          turnSearchInfo = state.turnSearchInfo,
+      )
+      val jsonPretty = Json { prettyPrint = true }
+      jsonFile.writeText(jsonPretty.encodeToString(rawData))
+    }
+  } catch (e: Exception) {
+    logger.error { "Failed to export raw search data JSON for game $gameId: ${e.message}" }
+  }
+}
+
 fun recordGameResult(
     file: File,
     lock: String,
@@ -120,4 +149,11 @@ fun recordGameResult(
     file.path + "_search_stats.csv"
   }
   recordSearchStatsCSV(File(csvFilePath), lock, gameId, state)
+
+  val rawJsonFilePath = if (file.path.endsWith(".jsonl")) {
+    file.path.substringBeforeLast(".jsonl") + "_raw_search_data.json"
+  } else {
+    file.path + "_raw_search_data.json"
+  }
+  recordRawSearchDataJson(File(rawJsonFilePath), lock, gameId, state)
 }
