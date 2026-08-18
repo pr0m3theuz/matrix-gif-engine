@@ -80,6 +80,11 @@ fun main() {
           printStatement = true,
       )
 
+  println( "Average Branching Factor: " +
+  gameState.turnSearchInfo.values.flatten().flatten().fold(0.0) {acc, infos ->
+    acc + infos.totalActions.first()
+  }.div(turn.toDouble() - 1.0).toString()
+  )
   //  when (winner?.name) {
   //    gameState.currentPlayer.name -> {
   //      gameState.currentPlayer.collector?.endEpisode(1)

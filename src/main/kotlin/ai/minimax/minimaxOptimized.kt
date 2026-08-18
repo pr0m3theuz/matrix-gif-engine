@@ -28,13 +28,14 @@ data class BestPackedMove(
 
 @Serializable
 data class SearchInfo(
-    var model: Model,
-    var strength: Strength,
-    var turnPhase: MutableList<TurnPhase> = mutableListOf(),
-    var depths: MutableList<Int> = mutableListOf(),
-    var nodesSearched: MutableList<Int> = mutableListOf(),
-    val branchingCounts: MutableList<Int> = mutableListOf(),
-    val totalActions: MutableList<Int> = mutableListOf(),
+  var model: Model,
+  var strength: Strength,
+  var turnPhase: MutableList<TurnPhase> = mutableListOf(),
+  var depths: MutableList<Double> = mutableListOf(),
+  var nodesSearched: MutableList<Double> = mutableListOf(),
+  val branchingCounts: MutableList<Double> = mutableListOf(),
+  val totalActions: MutableList<Double> = mutableListOf(),
+  val totalActionsSum: MutableList<Double> = mutableListOf(),
 )
 
 data class AlphaBetaScoreBitPacked(
@@ -228,15 +229,15 @@ fun alphaBetaNgMxSearch(
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   // endregion
 
-  searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0)
+  searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0.0)
 
   searchInfo?.nodesSearched[depth] += 1
-  searchInfo?.depths?.add(depth)
+  searchInfo?.depths?.add(depth.toDouble())
 
   if (System.currentTimeMillis() >= endTime) {
     return BestPackedMove()
   }
-  searchInfo?.totalActions?.add(availableMoves.size)
+  searchInfo?.totalActions?.add(availableMoves.size.toDouble())
 
 
   // region Transposition Table & Move Ordering
@@ -1219,9 +1220,9 @@ fun resolveBoardRemovals(
     }
   }
 
-  searchInfo?.depths?.add(depth)
+  searchInfo?.depths?.add(depth.toDouble())
   searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
-  searchInfo?.totalActions?.add(removePiecesPowerset.size)
+  searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
 
   if (removePiecesPowerset.isNotEmpty()) {
     removalLoop@ for ((index, removePieces) in removePiecesPowerset.withIndex()) {
@@ -1237,10 +1238,10 @@ fun resolveBoardRemovals(
        */
       require(removePieces is PackedMove.Multiple)
 
-      searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0)
+      searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0.0)
 
       searchInfo?.nodesSearched[depth] += 1
-      searchInfo?.depths?.add(depth)
+      searchInfo?.depths?.add(depth.toDouble())
 
       val retrievedCapturedPieces = mutableListOf<UInt>()
 

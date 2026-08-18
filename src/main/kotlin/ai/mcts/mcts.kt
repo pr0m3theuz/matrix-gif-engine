@@ -117,7 +117,7 @@ data class MCTSNode(
     val raveStats: Map<PackedMove, RaveStats>,
     var raveCounts: Int = 0,
     var raveWins: MutableMap<PlayerName, Int> =
-      mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
+        mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var parentQ: Float = 0.5f,
     var meanQ: Float = 0.5f, // from Facebook's ELF Go
     val progressiveWideningConstant: Double = 1.5,
@@ -177,7 +177,8 @@ data class MCTSNode(
       if (this.useRAVE) {
         val stats = this.raveStats[move]
         if (stats != null && stats.raveCounts > 0) {
-          exploitation = stats.raveWins.getValue(this.currentPlayer.name).toDouble() / stats.raveCounts
+          exploitation =
+              stats.raveWins.getValue(this.currentPlayer.name).toDouble() / stats.raveCounts
         }
       }
 
@@ -285,8 +286,6 @@ data class MCTSNode(
     //      // Insert the current move at its correct sorted position
     //      nodeMoves[j + 1] = currentMove
     //    }
-
-
 
     // TODO Ascertain if turn phase works as expected. Create a test for different scenarios.
     val childNode =
@@ -522,15 +521,15 @@ data class MCTSNode(
 }
 
 fun selectMoveMCTS(
-  bitboard: Bitboard,
-  currentPlayer: Player,
-  nextPlayer: Player,
-  rounds: IntRange = 0..9999,
-  turnPhase: TurnPhase,
-  rng: Random,
-  duration: Duration = Duration.ZERO,
-  useRAVE: Boolean = false,
-  searchInfos: MutableList<SearchInfo>? = null,
+    bitboard: Bitboard,
+    currentPlayer: Player,
+    nextPlayer: Player,
+    rounds: IntRange = 0..9999,
+    turnPhase: TurnPhase,
+    rng: Random,
+    duration: Duration = Duration.ZERO,
+    useRAVE: Boolean = false,
+    searchInfos: MutableList<SearchInfo>? = null,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -657,8 +656,7 @@ fun selectMoveMCTS(
 
         // Check if actions appear in the simulation for the PARENT node's context
         if (parentNode != null) {
-          val movesByParentMover =
-              simulationActionsByPlayer.getValue(parentNode.currentPlayer.name)
+          val movesByParentMover = simulationActionsByPlayer.getValue(parentNode.currentPlayer.name)
 
           // Check if this sibling's action appears in the simulation
           for (siblingNode in parentNode.childrenNodes) {
@@ -756,20 +754,20 @@ fun selectMoveMCTS(
   }
 
   fun collectMctsStats(root_node: MCTSNode, minVisits: Int = 1): SearchInfo {
-    val branchingCounts: MutableList<Int> = mutableListOf()
+    val branchingCounts: MutableList<Double> = mutableListOf()
     val turnPhases: MutableList<TurnPhase> = mutableListOf()
-    val totalActions: MutableList<Int> = mutableListOf()
-    val depth: MutableList<Int> = mutableListOf()
+    val totalActions: MutableList<Double> = mutableListOf()
+    val depth: MutableList<Double> = mutableListOf()
 
-    fun traverse (node: MCTSNode, currentDepth: Int) {
-      depth.add(currentDepth)
+    fun traverse(node: MCTSNode, currentDepth: Int) {
+      depth.add(currentDepth.toDouble())
       turnPhases.add(node.turnPhase)
-      totalActions.add(node.totalActions)
+      totalActions.add(node.totalActions.toDouble())
       // Filter children with meaningful search volume
       val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
 
       if (activeChildren.isNotEmpty()) {
-        branchingCounts.add(activeChildren.size)
+        branchingCounts.add(activeChildren.size.toDouble())
         for (child in activeChildren) {
           traverse(child, currentDepth + 1)
         }
@@ -779,18 +777,31 @@ fun selectMoveMCTS(
     traverse(root_node, 0)
 
     return SearchInfo(
-      model = Model.MCTS,
-      strength = currentPlayer.strength,
-      turnPhase = turnPhases,
-      branchingCounts = mutableListOf(branchingCounts.average().roundToInt()),
-      totalActions = mutableListOf(totalActions.average().roundToInt()),
-      depths = mutableListOf(depth.average().roundToInt()),
+        model = Model.MCTS,
+        strength = currentPlayer.strength,
+        branchingCounts =
+            listOf<Double>(
+                    branchingCounts.average(),
+                    branchingCounts.count().toDouble(),
+                    branchingCounts.min(),
+                    branchingCounts.max(),
+                )
+                .filter { !it.isNaN() }
+                .toMutableList(),
+        totalActions =
+          listOf<Double>(
+                totalActions.average(),
+                totalActions.sum(),
+                totalActions.min(),
+                totalActions.max(),
+            ).filter { !it.isNaN() }
+              .toMutableList(),
+        depths =  listOf<Double>(depth.average(), depth.min(), depth.max()).filter { !it.isNaN() }
+          .toMutableList(),
     )
   }
 
-  searchInfos?.add(
-    collectMctsStats(rootMCTSNode)
-  )
+  searchInfos?.add(collectMctsStats(rootMCTSNode))
 
   var bestMove: PackedMove? = null
   var bestPercentage = -1f

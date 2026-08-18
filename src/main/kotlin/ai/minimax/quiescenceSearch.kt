@@ -134,11 +134,11 @@ fun qSearch(
 	bitboard.generateCaptureMoves(currentPlayer, captureMoves)
 
 	searchInfo?.nodesSearched?.getOrNull(currentPlayer.strength.minimaxDepth + depth + 1)?.let {
-		searchInfo.nodesSearched.add(currentPlayer.strength.minimaxDepth + depth + 1, 0)
+		searchInfo.nodesSearched.add(currentPlayer.strength.minimaxDepth + depth + 1, 0.0)
 	}
 	searchInfo?.nodesSearched[currentPlayer.strength.minimaxDepth + depth + 1] += 1
 
-	searchInfo?.totalActions?.add(captureMoves.size)
+	searchInfo?.totalActions?.add(captureMoves.size.toDouble())
 
 	val pvMove = ttEntry.move != 0u && ttEntry.move.extractPieceColor() == currentPlayer.name
 
