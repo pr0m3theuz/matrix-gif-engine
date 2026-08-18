@@ -776,9 +776,16 @@ fun selectMoveMCTS(
 
     traverse(root_node, 0)
 
+    val nodesCount = totalActions.size.toDouble()
+    val totalAvailableMovesSum = totalActions.sum()
+    val maxDepthVal = depth.maxOrNull() ?: 0.0
+
     return SearchInfo(
         model = Model.MCTS,
         strength = currentPlayer.strength,
+        totalNodesEvaluated = nodesCount,
+        totalAvailableMovesEvaluated = totalAvailableMovesSum,
+        maxDepthReached = maxDepthVal,
         branchingCounts =
             listOf<Double>(
                     branchingCounts.average(),

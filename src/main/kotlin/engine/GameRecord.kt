@@ -3,6 +3,7 @@ package org.example.engine
 import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.example.ai.humanEvaluation.SearchInfo
 import org.example.model.Player
 import org.example.model.State
 
@@ -18,7 +19,68 @@ data class GameResult(
     val gameState: State,
 )
 
+data class TurnSearchStats(
+    val gameId: Int,
+    val turn: Int,
+    val model: String,
+    val depth: Double,
+    val avgBranchingFactor: Double,
+    val effBranchingFactor: Double,
+)
+
 val RESULTS_DIR = "output/results"
+
+fun calculateTurnSearchStats(gameId: Int, turn: Int, searchInfos: List<SearchInfo>): TurnSearchStats? {
+  if (searchInfos.isEmpty()) return null
+  val model = searchInfos.first().model.name
+  val totalNodes = searchInfos.sumOf { it.computedNodesEvaluated }
+  val totalAvailableMoves = searchInfos.sumOf { it.computedAvailableMovesEvaluated }
+  val maxDepth = searchInfos.maxOfOrNull { it.computedMaxDepth } ?: 0.0
+
+  val avgBranchingFactor = if (totalNodes > 0.0) totalAvailableMoves / totalNodes else 0.0
+  val effBranchingFactor = if (totalNodes > 0.0 && maxDepth > 0.0) Math.pow(totalNodes, 1.0 / maxDepth) else 0.0
+
+  return TurnSearchStats(
+      gameId = gameId,
+      turn = turn,
+      model = model,
+      depth = maxDepth,
+      avgBranchingFactor = avgBranchingFactor,
+      effBranchingFactor = effBranchingFactor,
+  )
+}
+
+fun recordSearchStatsCSV(
+    csvFile: File,
+    lock: String,
+    gameId: Int,
+    state: State,
+) {
+  try {
+    synchronized(lock) {
+      if (csvFile.parentFile != null && !csvFile.parentFile.exists()) {
+        csvFile.parentFile.mkdirs()
+      }
+      val isNew = !csvFile.exists() || csvFile.length() == 0L
+      csvFile.appendText(
+          buildString {
+            if (isNew) {
+              appendLine("gameId,turn,model,depth,avg_branching_factor,eff_branching_factor")
+            }
+            for ((turn, infoLists) in state.turnSearchInfo.entries.sortedBy { it.key }) {
+              val searchInfos = infoLists.flatten()
+              val stats = calculateTurnSearchStats(gameId, turn, searchInfos)
+              if (stats != null) {
+                appendLine("${stats.gameId},${stats.turn},${stats.model},${stats.depth},${stats.avgBranchingFactor},${stats.effBranchingFactor}")
+              }
+            }
+          }
+      )
+    }
+  } catch (e: Exception) {
+    logger.error { "Failed to log search stats CSV for game $gameId: ${e.message}" }
+  }
+}
 
 fun recordGameResult(
     file: File,
@@ -51,4 +113,11 @@ fun recordGameResult(
     file.appendText("Could not serialize gameState: ${serializationFailure.message}")
     logger.error { "Crash at turn $turn in game $gameId — state dumped to $file" }
   }
+
+  val csvFilePath = if (file.path.endsWith(".jsonl")) {
+    file.path.substringBeforeLast(".jsonl") + "_search_stats.csv"
+  } else {
+    file.path + "_search_stats.csv"
+  }
+  recordSearchStatsCSV(File(csvFilePath), lock, gameId, state)
 }
