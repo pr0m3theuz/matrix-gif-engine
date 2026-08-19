@@ -2,20 +2,27 @@
 
 package org.example.model
 
+import org.example.engine.TranspositionTable
+
 fun initializeState(
   playerOne: Player,
   playerTwo: Player
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
+  // Create players
+  val whitePlayer = playerOne.copy()
+
+  val blackPlayer = playerTwo.copy()
+
   // Create pieces
-  val whitePieces = createPlayerPieces(playerOne)
-  val blackPieces = createPlayerPieces(playerTwo)
+  val whitePieces = createPlayerPieces(whitePlayer)
+  val blackPieces = createPlayerPieces(blackPlayer)
 
-  playerOne.piecesInReserve.addAll(whitePieces)
-  playerTwo.piecesInReserve.addAll(blackPieces)
+  whitePlayer.piecesInReserve.addAll(whitePieces)
+  blackPlayer.piecesInReserve.addAll(blackPieces)
 
-  val players = listOf<Player>(playerOne, playerTwo)
+  val players = listOf<Player>(whitePlayer, blackPlayer)
 
   // Create Nodes
   val nodes =
@@ -42,8 +49,8 @@ fun initializeState(
   // Create lines
 
   return State(
-    currentPlayer = playerOne,
-      nextPlayer = playerTwo,
+      currentPlayer = whitePlayer,
+      nextPlayer = blackPlayer,
       //		whitePlayer = whitePlayer,
       //		blackPlayer = blackPlayer,
       board = board,

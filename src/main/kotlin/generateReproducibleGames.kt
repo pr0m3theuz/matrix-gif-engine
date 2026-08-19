@@ -193,7 +193,7 @@ class GameRunner : CliktCommand(name = "matrx-gipf") {
   }
 }
 
-suspend fun main(args: Array<String>) = GameRunner().main(args)
+fun main(args: Array<String>) = GameRunner().main(args)
 
 private suspend fun runBatch(
   totalGames: Int,
