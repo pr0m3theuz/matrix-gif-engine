@@ -119,7 +119,7 @@ data class MCTSNode(
     var raveWins: MutableMap<PlayerName, Int> =
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var parentQ: Float = 0.5f,
-    var meanQ: Float = 0.5f, // from Facebook's ELF Go
+    var meanQ: Float = 0.5f, // from Facebook's ELF Go/Batch MCTS
     val progressiveWideningConstant: Double = 1.5,
     val progressiveWideningAlpha: Double = 0.4,
     val totalActions: Int,

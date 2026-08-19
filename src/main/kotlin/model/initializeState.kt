@@ -2,49 +2,20 @@
 
 package org.example.model
 
-import org.example.engine.TranspositionTable
-
 fun initializeState(
-    playerOneModel: Model = Model.MINIMAX,
-    playerOneStrength: Strength = Strength.EASY,
-    playerTwoModel: Model = Model.MINIMAX,
-    playerTwoStrength: Strength = Strength.EASY,
-    playerOneTimeControl: Boolean = false,
-    playerTwoTimeControl: Boolean = false,
-    playerOneEnableRAVE: Boolean = false,
-    playerTwoEnableRAVE: Boolean = false,
+  playerOne: Player,
+  playerTwo: Player
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
-  // Create players
-  val whitePlayer =
-      Player(
-          name = PlayerName.WHITE,
-          model = playerOneModel,
-          strength = playerOneStrength,
-          timeControl = playerOneTimeControl,
-          useRAVE = playerOneEnableRAVE,
-          transpositionTable = TranspositionTable(),
-      )
-
-  val blackPlayer =
-      Player(
-          name = PlayerName.BLACK,
-          model = playerTwoModel,
-          strength = playerTwoStrength,
-          timeControl = playerTwoTimeControl,
-          useRAVE = playerTwoEnableRAVE,
-          transpositionTable = TranspositionTable(),
-      )
-
   // Create pieces
-  val whitePieces = createPlayerPieces(whitePlayer)
-  val blackPieces = createPlayerPieces(blackPlayer)
+  val whitePieces = createPlayerPieces(playerOne)
+  val blackPieces = createPlayerPieces(playerTwo)
 
-  whitePlayer.piecesInReserve.addAll(whitePieces)
-  blackPlayer.piecesInReserve.addAll(blackPieces)
+  playerOne.piecesInReserve.addAll(whitePieces)
+  playerTwo.piecesInReserve.addAll(blackPieces)
 
-  val players = listOf<Player>(whitePlayer, blackPlayer)
+  val players = listOf<Player>(playerOne, playerTwo)
 
   // Create Nodes
   val nodes =
@@ -71,8 +42,8 @@ fun initializeState(
   // Create lines
 
   return State(
-      currentPlayer = whitePlayer,
-      nextPlayer = blackPlayer,
+    currentPlayer = playerOne,
+      nextPlayer = playerTwo,
       //		whitePlayer = whitePlayer,
       //		blackPlayer = blackPlayer,
       board = board,

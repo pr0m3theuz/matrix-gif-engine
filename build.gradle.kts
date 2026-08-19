@@ -32,6 +32,7 @@ dependencies {
 
 	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
 	implementation("commons-cli:commons-cli:1.11.0")
+	implementation("com.github.ajalt.clikt:clikt:5.1.0")
 }
 
 tasks.test {

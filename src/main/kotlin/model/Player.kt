@@ -69,7 +69,7 @@ enum class Strength(
   MEDIUM(
       difficulty = 3,
       minimaxDepth = 5,
-      mctsRounds = 0..2499,
+      mctsRounds = 0..249,
       duration = 5.seconds,
   ),
   HARD(
@@ -106,6 +106,10 @@ data class Player(
     val capturedPieces: MutableList<UInt> = mutableListOf(),
     @EncodeDefault val timeControl: Boolean = false,
     @EncodeDefault val useRAVE: Boolean = false,
+    @EncodeDefault val enableFPU: Boolean = false,
+    @EncodeDefault val enablePW: Boolean = false,
+    @EncodeDefault val iterations: Int = 999,
+    @EncodeDefault val depth: Int = 3,
     @Transient val collector: ExperienceCollector? = ExperienceCollector(),
     @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
     @Transient val killerMoves: List<UIntArray> = List(2) { UIntArray(64) },
@@ -123,6 +127,11 @@ data class Player(
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
         timeControl = this.timeControl,
+        useRAVE = this.useRAVE,
+        enableFPU = this.enableFPU,
+        enablePW = this.enablePW,
+        iterations = this.iterations,
+        depth = this.depth,
         collector = if (copyCollector) this.collector else null,
         transpositionTable = this.transpositionTable,
         killerMoves = this.killerMoves,
@@ -139,6 +148,11 @@ data class Player(
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
         timeControl = this.timeControl,
+        useRAVE = this.useRAVE,
+        enableFPU = this.enableFPU,
+        enablePW = this.enablePW,
+        iterations = this.iterations,
+        depth = this.depth,
         collector = if (copyCollector) this.collector else null,
         transpositionTable = this.transpositionTable,
         killerMoves = emptyList(),
@@ -153,12 +167,12 @@ data class Player(
 
     // 1. Copy MutableLists WITHOUT triggering Iterator allocations
     this.piecesInReserve.clear()
-    for (i in 0 until source.piecesInReserve.size) {
+    for (i in source.piecesInReserve.indices) {
       this.piecesInReserve.add(source.piecesInReserve[i])
     }
 
     this.capturedPieces.clear()
-    for (i in 0 until source.capturedPieces.size) {
+    for (i in source.capturedPieces.indices) {
       this.capturedPieces.add(source.capturedPieces[i])
     }
 
@@ -538,7 +552,7 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while (startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= this.depth) {
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
@@ -622,7 +636,7 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while (startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= this.depth) {
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
@@ -661,7 +675,7 @@ fun Player.selectMove(
           currentPlayer = this.liteDeepCopy(),
           nextPlayer = opponent.liteDeepCopy(),
           turnPhase = turnPhase,
-          rounds = strength.mctsRounds,
+          rounds = 0..this.iterations,
           rng = rng,
           duration = if (timeControl) strength.duration else Duration.ZERO,
           useRAVE = this.useRAVE,

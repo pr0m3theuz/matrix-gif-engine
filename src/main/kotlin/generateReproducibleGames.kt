@@ -1,5 +1,19 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example
 
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.parameters.groups.OptionGroup
+import com.github.ajalt.clikt.parameters.groups.provideDelegate
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.help
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.int
+import com.github.ajalt.clikt.parameters.types.long
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
@@ -8,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.commons.cli.*
@@ -15,6 +30,7 @@ import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
 import kotlin.time.Clock.System.now
+import kotlin.time.Instant
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -32,129 +48,166 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
 
-suspend fun main(args: Array<String>) = coroutineScope {
-  File("output").mkdirs()
-  File(FAILURES_DIR).mkdirs()
+class AgentOptions(name: String, prefix: String, shortPrefix: String) : OptionGroup(name) {
+  val model by option("-$shortPrefix", "--$prefix-model", help = "AI Model for $name")
+    .enum<Model> { it.name.lowercase() }
+    .default(Model.NEURAL_NETWORK)
 
-  val options = createCLIOptions()
+  val strength by option("-${shortPrefix}s", "--$prefix-strength", help = "Strength of $name")
+    .enum<Strength> { it.name.lowercase() }
+    .default(Strength.RANDOM)
 
-  val parser: CommandLineParser = DefaultParser()
-  val cmd: CommandLine =
-      try {
-        parser.parse(options, args)
-      } catch (e: ParseException) {
-        println("Error parsing arguments: ${e.message}")
-        val formatter = HelpFormatter.builder().get()
-        formatter.printHelp(
-            "Command line syntax:",
-            "Batch runner for MATRX GIPF with reproducible failures.",
-            options,
-            "",
-            true,
-        )
-        return@coroutineScope
-      }
+  val timeControl by option("-${shortPrefix}tc", "--$prefix-time-control", help = "Enable time control for $name")
+    .flag(default = false)
 
-  if (cmd.hasOption("help")) {
-    val formatter = HelpFormatter.builder().get()
-    formatter.printHelp(
-        "Command line syntax:",
-        "Batch runner for MATRX GIPF with reproducible failures.",
-        options,
-        "",
-        true,
+  val useRAVE by option("-${shortPrefix}rv", "--$prefix-mcts-rave", help = "Enable MCTS RAVE for $name")
+    .flag(default = false)
+
+  val enableFPU by option("-${shortPrefix}fpu", "--$prefix-fpu", help = "Enable First Play Urgency for $name")
+    .flag(default = false)
+
+  val enablePW by option("-${shortPrefix}pw", "--$prefix-progressive-widening", help = "Enable Progressive Widening for $name")
+    .flag(default = false)
+
+  val iterations by option("-${shortPrefix}i", "--$prefix-mcts-iterations", help = "MCTS iteration limit for $name")
+    .int()
+    .default(999)
+
+  val depth by option("-${shortPrefix}dp", "--$prefix-depth", help = "Search depth for $name")
+    .int()
+    .default(3)
+
+  fun toPlayer(playerName: PlayerName): Player =
+    Player(
+      name = playerName,
+      model = model,
+      strength = strength,
+      timeControl = timeControl,
+      useRAVE = useRAVE,
+      enableFPU = enableFPU,
+      enablePW = enablePW,
+      iterations = iterations,
+      depth = depth,
     )
-    return@coroutineScope
-  }
+}
 
-  val playerOneModel = getModel(cmd.getOptionValue("agent-1-model"))
-  val playerOneStrength = getStrength(cmd.getOptionValue("agent-1-strength"))
+class GameRunner : CliktCommand(name = "matrx-gipf") {
+  override fun help(context: Context) = "Batch runner and replay tool for MATRX GIPF."
 
-  val playerTwoModel = getModel(cmd.getOptionValue("agent-2-model"))
-  val playerTwoStrength = getStrength(cmd.getOptionValue("agent-2-strength"))
+  private val batch by option("-b", "--batch", help = "Run in batch mode").flag(default = false)
+  private val replay by option("-r", "--replay", help = "Replay a single failed game").flag(default = false)
+  private val totalGames by option("-g", "--total-games", help = "Total number of games").int().default(500)
+  private val gameId by option("-G", "--game-id", help = "ID of the game to replay").int()
+  private val parallelism by option("-p", "--parallelism", help = "Number of parallel threads").int()
+  private val seed by option("-s", "--seed", help = "Base seed for reproducibility").long()
+  private val verbose by option("-v", "--verbose", help = "Print full state summaries each turn").flag(default = false)
 
-  val playerOneTimeControl = cmd.hasOption("player-one-time-control")
-  val playerOneEnableRAVE = cmd.hasOption("player-one-mcts-rave")
+  private val agent1 by AgentOptions("Agent 1 (White)", "agent-1", "m")
+  private val agent2 by AgentOptions("Agent 2 (Black)", "agent-2", "M")
 
-  val playerTwoTimeControl = cmd.hasOption("player-two-time-control")
-  val playerTwoEnableRAVE = cmd.hasOption("player-two-mcts-rave")
+  override fun run() = runBlocking {
+    File("output").mkdirs()
+    File(FAILURES_DIR).mkdirs()
+    File(RESULTS_DIR).mkdirs()
 
-  if (cmd.hasOption("replay")) {
-    val gameId =
-        cmd.getOptionValue("game-id").toIntOrNull() ?: error("Usage: replay <game-Id> [seed>")
-    val seed = cmd.getOptionValue("seed")?.toLongOrNull() ?: error("Usage: replay <game-Id> [seed>")
+    val playerOne = agent1.toPlayer(PlayerName.WHITE)
+    val playerTwo = agent2.toPlayer(PlayerName.BLACK)
 
-    val verbose = cmd.getOptionValue("verbose").toBooleanStrictOrNull() ?: false
-
-    logger.info { "Replaying game $gameId with seed $seed (verbose mode)" }
-
-    playOneGame(
-        gameId,
-        seed,
-        verbose = verbose,
-        timestamp = 0L,
-        playerOneModel = playerOneModel,
-        playerOneStrength = playerOneStrength,
-        playerTwoModel = playerTwoModel,
-        playerTwoStrength = playerTwoStrength,
-        playerOneTimeControl = playerOneTimeControl,
-        playerTwoTimeControl = playerTwoTimeControl,
-        playerOneEnableRAVE = playerOneEnableRAVE,
-        playerTwoEnableRAVE = playerTwoEnableRAVE,
-    )
+    val startTimestamp = System.currentTimeMillis()
+    val startIso = Instant.fromEpochMilliseconds(startTimestamp).toString()
 
     logger.info {
-      "Replay finished without throwing — if you were chasing a crash, " +
-          "check whether all randomness in your game logic is seed-derived."
+      """
+      ============================== EXECUTION CONFIGURATION ==============================
+      Start Time: $startIso ($startTimestamp ms)
+      Mode:       ${if (replay) "Replay" else "Batch"}
+
+      [Agent 1 (White)]
+        Model:                ${playerOne.model}
+        Strength:             ${playerOne.strength}
+        Time Control:         ${playerOne.timeControl}
+        MCTS RAVE:            ${playerOne.useRAVE}
+        MCTS Iterations:      ${playerOne.iterations}
+        Depth:                ${playerOne.depth}
+        Progressive Widening: ${playerOne.enablePW}
+        First Play Urgency:   ${playerOne.enableFPU}
+
+      [Agent 2 (Black)]
+        Model:                ${playerTwo.model}
+        Strength:             ${playerTwo.strength}
+        Time Control:         ${playerTwo.timeControl}
+        MCTS RAVE:            ${playerTwo.useRAVE}
+        MCTS Iterations:      ${playerTwo.iterations}
+        Depth:                ${playerTwo.depth}
+        Progressive Widening: ${playerTwo.enablePW}
+        First Play Urgency:   ${playerTwo.enableFPU}
+      =====================================================================================
+      """.trimIndent()
     }
-  } else {
-    // 3. Extract values with fallbacks
-    val totalGames = cmd.getOptionValue("total-games")?.toIntOrNull() ?: 5000
 
-    val cores = Runtime.getRuntime().availableProcessors()
-    val parallelism =
-        cmd.getOptionValue("parallelism")?.toIntOrNull() ?: (cores - 2).coerceAtLeast(1)
+    val totalExecutionMs = measureTimeMillis {
+      if (replay) {
+        val targetGameId = gameId ?: error("Error: --game-id (-G) is required when running in replay mode.")
+        val targetSeed = seed ?: error("Error: --seed (-s) is required when running in replay mode.")
 
-    // Base seed makes the ENTIRE run reproducible, not just individual games.
-    // Print it so you can re-run the exact same batch later if needed.
-    val baseSeed = cmd.getOptionValue("seed")?.toLongOrNull() ?: System.currentTimeMillis()
+        logger.info { "Replaying game $targetGameId with seed $targetSeed (verbose: $verbose)" }
 
-    runBatch(
-        totalGames = totalGames,
-        parallelism = parallelism,
-        baseSeed = baseSeed,
-        playerOneModel = playerOneModel,
-        playerOneStrength = playerOneStrength,
-        playerTwoModel = playerTwoModel,
-        playerTwoStrength = playerTwoStrength,
-        playerOneTimeControl = playerOneTimeControl,
-        playerTwoTimeControl = playerTwoTimeControl,
-        playerOneEnableRAVE = playerOneEnableRAVE,
-        playerTwoEnableRAVE = playerTwoEnableRAVE,
-    )
+        playOneGame(
+          gameId = targetGameId,
+          seed = targetSeed,
+          verbose = verbose,
+          timestamp = startTimestamp,
+          playerOne = playerOne,
+          playerTwo = playerTwo,
+        )
+
+        logger.info {
+          "Replay finished without throwing — if you were chasing a crash, " +
+          "check whether all randomness in your game logic is seed-derived."
+        }
+      } else {
+        val cores = Runtime.getRuntime().availableProcessors()
+        val actualParallelism = parallelism ?: (cores - 2).coerceAtLeast(1)
+        val baseSeed = seed ?: startTimestamp
+
+        runBatch(
+          totalGames = totalGames,
+          parallelism = actualParallelism,
+          baseSeed = baseSeed,
+          playerOne = playerOne,
+          playerTwo = playerTwo,
+        )
+      }
+    }
+
+    val finishIso = Instant.fromEpochMilliseconds(System.currentTimeMillis()).toString()
+    logger.info {
+      """
+      ================================ RUN SUMMARY ================================
+      Start Time:     $startIso
+      End Time:       $finishIso
+      Total Duration: ${totalExecutionMs}ms (${"%.2f".format(totalExecutionMs / 1000.0)}s)
+      =============================================================================
+      """.trimIndent()
+    }
   }
 }
 
+suspend fun main(args: Array<String>) = GameRunner().main(args)
+
 private suspend fun runBatch(
-    totalGames: Int,
-    parallelism: Int,
-    baseSeed: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean,
-    playerTwoTimeControl: Boolean,
-    playerOneEnableRAVE: Boolean,
-    playerTwoEnableRAVE: Boolean,
+  totalGames: Int,
+  parallelism: Int,
+  baseSeed: Long,
+  playerOne: Player,
+  playerTwo: Player,
 ) = coroutineScope {
   logger.info {
     "Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed"
   }
   logger.info { "(save baseSeed if you want to reproduce this exact batch later)" }
 
-  val filePrefix =
-      "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
+  val filePrefix = "agent-1_${playerOne.model}_${playerOne.strength}_agent-2_${playerTwo.model}_${playerTwo.strength}"
   val file = File(RESULTS_DIR, "${filePrefix}_games_record_${now().toString().replace(":", "-")}.jsonl")
   val lock = file.path
 
@@ -176,21 +229,16 @@ private suspend fun runBatch(
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
               playOneGame(
-                  file = file,
-                  fileLock = lock,
-                  gameId = gameId,
-                  seed = gameSeed,
-                  verbose = false,
-                  timestamp = startTime,
-                  playerOneModel = playerOneModel,
-                  playerOneStrength = playerOneStrength,
-                  playerTwoModel = playerTwoModel,
-                  playerTwoStrength = playerTwoStrength,
-                  playerOneTimeControl = playerOneTimeControl,
-                  playerTwoTimeControl = playerTwoTimeControl,
-                  playerOneEnableRAVE = playerOneEnableRAVE,
-                  playerTwoEnableRAVE = playerTwoEnableRAVE,
+                file = file,
+                fileLock = lock,
+                gameId = gameId,
+                seed = gameSeed,
+                verbose = false,
+                timestamp = startTime,
+                playerOne = playerOne,
+                playerTwo = playerTwo,
               )
+
               val n = completed.incrementAndGet()
               if (n % 10 == 0) {
                 val secs = (System.currentTimeMillis() - startTime) / 1000.0
@@ -214,9 +262,9 @@ private suspend fun runBatch(
   }
   if (failed.get() > 0) {
     logger.info { "Failures logged to $FAILURES_LOG — replay any of them with:" }
-    logger.info {
-      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
-    }
+//    logger.info {
+//      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
+//    }
   }
 }
 
@@ -286,31 +334,12 @@ fun playOneGame(
     seed: Long,
     verbose: Boolean,
     timestamp: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean = false,
-    playerTwoTimeControl: Boolean = false,
-    playerOneEnableRAVE: Boolean = false,
-    playerTwoEnableRAVE: Boolean = false,
+    playerOne: Player,
+    playerTwo: Player,
 ) {
   val rng = Random(seed)
 
-  // NOTE: adapt these calls to actually accept `rng` once your game logic
-  // is updated to take an explicit Random parameter instead of a global one.
-  var gameState: State =
-      initializeState(
-          playerOneModel,
-          playerOneStrength,
-          playerTwoModel,
-          playerTwoStrength,
-          playerOneTimeControl,
-          playerTwoTimeControl,
-          playerOneEnableRAVE,
-          playerTwoEnableRAVE,
-      )
-
+  var gameState: State = initializeState(playerOne = playerOne, playerTwo = playerTwo)
   var turn = 0
   var playerWhoMadeTheLastMove: Player? = null
 
@@ -391,31 +420,14 @@ fun playOneGame(
     seed: Long,
     verbose: Boolean,
     timestamp: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean,
-    playerTwoTimeControl: Boolean,
-    playerOneEnableRAVE: Boolean,
-    playerTwoEnableRAVE: Boolean,
+    playerOne: Player,
+    playerTwo: Player,
 ) {
   val rng = Random(seed)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
-  var gameState: State =
-      initializeState(
-          playerOneModel,
-          playerOneStrength,
-          playerTwoModel,
-          playerTwoStrength,
-          playerOneTimeControl,
-          playerTwoTimeControl,
-          playerOneEnableRAVE,
-          playerTwoEnableRAVE,
-      )
-
+  var gameState: State = initializeState(playerOne = playerOne, playerTwo = playerTwo)
   var turn = 0
   var playerWhoMadeTheLastMove: Player? = null
 

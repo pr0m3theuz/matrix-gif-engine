@@ -21,12 +21,11 @@ CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
 # ==========================================
 # Matrix Parameters
 # ==========================================
-# Strengths mapped to durations:
-# EASY (1.5s), MEDIUM (5.0s), HARD (10.0s)
-STRENGTHS=("easy")
+# MCTS iteration budgets across difficulty tiers
+ITERATION_COUNTS=(100 250 500 1000)
 RAVE_MODES=("standard" "rave")
 
-TOTAL_RUNS=$((${#STRENGTHS[@]} * ${#STRENGTHS[@]} * ${#RAVE_MODES[@]} * ${#RAVE_MODES[@]}))
+TOTAL_RUNS=$((${#ITERATION_COUNTS[@]} * ${#ITERATION_COUNTS[@]} * ${#RAVE_MODES[@]} * ${#RAVE_MODES[@]}))
 RUN_COUNT=1
 
 # ==========================================
@@ -34,25 +33,25 @@ RUN_COUNT=1
 # ==========================================
 echo "Starting matrix run ($TOTAL_RUNS total configurations)..."
 
-for s1 in "${STRENGTHS[@]}"; do
-  for s2 in "${STRENGTHS[@]}"; do
+for i1 in "${ITERATION_COUNTS[@]}"; do
+  for i2 in "${ITERATION_COUNTS[@]}"; do
     for r1 in "${RAVE_MODES[@]}"; do
       for r2 in "${RAVE_MODES[@]}"; do
 
         # Configure Agent 1 flags (White)
-        A1_FLAGS="-m mcts -ms $s1 -mtc"
+        A1_FLAGS="-m mcts -mi $i1"
         if [ "$r1" == "rave" ]; then
           A1_FLAGS="$A1_FLAGS -mrv"
         fi
 
         # Configure Agent 2 flags (Black)
-        A2_FLAGS="-M mcts -MS $s2 -MTC"
+        A2_FLAGS="-M mcts -MI $i2"
         if [ "$r2" == "rave" ]; then
           A2_FLAGS="$A2_FLAGS -MRV"
         fi
 
         echo "----------------------------------------------------"
-        echo "[$RUN_COUNT/$TOTAL_RUNS] Agent 1 (MCTS, $s1, $r1) vs Agent 2 (MCTS, $s2, $r2)"
+        echo "[$RUN_COUNT/$TOTAL_RUNS] Agent 1 (MCTS, ${i1} iters, $r1) vs Agent 2 (MCTS, ${i2} iters, $r2)"
         echo "----------------------------------------------------"
 
         $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
@@ -62,5 +61,3 @@ for s1 in "${STRENGTHS[@]}"; do
     done
   done
 done
-
-echo "All time-control matrix experiments completed successfully!"

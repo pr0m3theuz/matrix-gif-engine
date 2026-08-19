@@ -21,29 +21,30 @@ CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
 # ==========================================
 # Matrix Parameters
 # ==========================================
-# Strengths spanning:
-# EASY (1.5s, Depth 3 / ~999 rounds)
-# MEDIUM (5.0s, Depth 5 / ~2499 rounds)
-# HARD (10.0s, Depth 7 / ~4999 rounds)
-STRENGTHS=("easy")
+# Minimax Depths: EASY (3), MEDIUM (5), HARD (7)
+MM_DEPTHS=(3 5 7)
+
+# MCTS Iterations: EASY (~999)
+MCTS_ITERATIONS=(100 250 500)
+
 RAVE_OPTIONS=(false true)
 
-# 3 strengths * 3 strengths * 2 (RAVE on/off) * 2 match directions = 36 runs
-TOTAL_RUNS=$((${#STRENGTHS[@]} * ${#STRENGTHS[@]} * ${#RAVE_OPTIONS[@]} * 2))
+# Depths * Iterations * RAVE on/off * 2 match directions
+TOTAL_RUNS=$((${#MM_DEPTHS[@]} * ${#MCTS_ITERATIONS[@]} * ${#RAVE_OPTIONS[@]} * 2))
 RUN_COUNT=1
 
-echo "Starting Minimax vs MCTS Time Control Matrix ($TOTAL_RUNS total configurations)..."
+echo "Starting Minimax vs MCTS Matrix ($TOTAL_RUNS total configurations)..."
 
 # ==========================================
 # Matchups: Minimax (White) vs MCTS (Black)
 # ==========================================
-for mm_strength in "${STRENGTHS[@]}"; do
-  for mcts_strength in "${STRENGTHS[@]}"; do
+for depth in "${MM_DEPTHS[@]}"; do
+  for iters in "${MCTS_ITERATIONS[@]}"; do
     for rave in "${RAVE_OPTIONS[@]}"; do
 
-      A1_FLAGS="-m minimax -ms $mm_strength -mtc"
-      A2_FLAGS="-M mcts -MS $mcts_strength -MTC"
-      
+      A1_FLAGS="-m minimax -mdp $depth"
+      A2_FLAGS="-M mcts -MI $iters"
+
       if [ "$rave" = true ]; then
         A2_FLAGS="$A2_FLAGS -MRV"
         RAVE_LABEL="RAVE"
@@ -52,7 +53,7 @@ for mm_strength in "${STRENGTHS[@]}"; do
       fi
 
       echo "----------------------------------------------------"
-      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax ($mm_strength) vs MCTS ($mcts_strength, $RAVE_LABEL)"
+      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax (Depth $depth) vs MCTS ($iters iters, $RAVE_LABEL)"
       echo "----------------------------------------------------"
 
       $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
@@ -64,11 +65,11 @@ done
 # ==========================================
 # Matchups: MCTS (White) vs Minimax (Black)
 # ==========================================
-for mcts_strength in "${STRENGTHS[@]}"; do
-  for mm_strength in "${STRENGTHS[@]}"; do
+for iters in "${MCTS_ITERATIONS[@]}"; do
+  for depth in "${MM_DEPTHS[@]}"; do
     for rave in "${RAVE_OPTIONS[@]}"; do
 
-      A1_FLAGS="-m mcts -ms $mcts_strength -mtc"
+      A1_FLAGS="-m mcts -mi $iters"
       if [ "$rave" = true ]; then
         A1_FLAGS="$A1_FLAGS -mrv"
         RAVE_LABEL="RAVE"
@@ -76,10 +77,10 @@ for mcts_strength in "${STRENGTHS[@]}"; do
         RAVE_LABEL="Standard"
       fi
 
-      A2_FLAGS="-M minimax -MS $mm_strength -MTC"
+      A2_FLAGS="-M minimax -Mdp $depth"
 
       echo "----------------------------------------------------"
-      echo "[$RUN_COUNT/$TOTAL_RUNS] MCTS ($mcts_strength, $RAVE_LABEL) vs Minimax ($mm_strength)"
+      echo "[$RUN_COUNT/$TOTAL_RUNS] MCTS ($iters iters, $RAVE_LABEL) vs Minimax (Depth $depth)"
       echo "----------------------------------------------------"
 
       $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
