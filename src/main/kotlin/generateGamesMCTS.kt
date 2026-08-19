@@ -1,22 +1,19 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.Path
+import kotlin.random.Random
+import kotlin.time.Clock.System.now
+import kotlin.time.Duration
+import kotlin.time.measureTimedValue
+import kotlinx.coroutines.*
 import org.example.engine.ExperienceCollector
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
 import org.example.model.*
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.io.path.Path
-import kotlin.random.Random
-import kotlin.system.measureTimeMillis
-import kotlin.time.Clock.System.now
-import kotlin.time.Duration
-import kotlin.time.measureTimedValue
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -25,31 +22,32 @@ suspend fun main() = coroutineScope {
   val cores = Runtime.getRuntime().availableProcessors()
   val dispatcher = Dispatchers.Default.limitedParallelism((cores - 2).coerceAtLeast(1))
   val completed = AtomicInteger(0)
-    val failed = AtomicInteger(0)
-    val startTime = System.currentTimeMillis()
+  val failed = AtomicInteger(0)
+  val startTime = System.currentTimeMillis()
 
-  val (jobs: List<Deferred<Any?>>, elapsedMs: Duration) = measureTimedValue {
-      (1..totalGames).map { gameId ->
-        async(dispatcher) {
-          try {
-            val collectors = playOneGame(gameId)
-            val n = completed.incrementAndGet()
-            if (n % 100 == 0) {
+  val (jobs: List<Deferred<Any?>>, elapsedMs: Duration) =
+      measureTimedValue {
+        (1..totalGames).map { gameId ->
+          async(dispatcher) {
+            try {
+              val collectors = playOneGame(gameId)
+              val n = completed.incrementAndGet()
+              if (n % 100 == 0) {
                 val secs = (System.currentTimeMillis() - startTime) / 1000.0
                 val rate = n / secs
                 val etaSecs = ((totalGames - n) / rate).toLong()
                 logger.info {
-                    "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
+                  "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
                 }
-            }
-            collectors
-          } catch (e: Exception) {
+              }
+              collectors
+            } catch (e: Exception) {
               failed.incrementAndGet()
               logger.info { "Game $gameId failed: ${e.message}" }
+            }
           }
         }
       }
-  }
 
   val experiences = jobs.awaitAll()
 
@@ -59,34 +57,58 @@ suspend fun main() = coroutineScope {
           .reduce { acc, buffer -> acc + buffer }
           .toBuffer()
 
-//  val agentOneExperiences = experiences.filterIsInstance<List<ExperienceCollector>>().map { it[1] }
-//  val agentTwoExperiences = experiences.filterIsInstance<List<ExperienceCollector>>().map { it[2] }
+  //  val agentOneExperiences = experiences.filterIsInstance<List<ExperienceCollector>>().map {
+  // it[1] }
+  //  val agentTwoExperiences = experiences.filterIsInstance<List<ExperienceCollector>>().map {
+  // it[2] }
 
   // .reduce { acc, buffer -> acc + buffer }
   //
-    stateBuffer.serialize(
-          Path(
-            "state_experience_mcts_${totalGames}_games_${
+  stateBuffer.serialize(
+      Path(
+          "state_experience_mcts_${totalGames}_games_${
               now().toString().replace(
                 ":",
-                "-"
+                "-",
               )
             }.h5",
-          )
-    )
+      )
+  )
 
-    logger.info {
-        "Done. ${completed.get()} succeeded, ${failed.get()} failed, ${(System.currentTimeMillis() - startTime)/1000.0}s elapsed."
-    }
+  logger.info {
+    "Done. ${completed.get()} succeeded, ${failed.get()} failed, ${(System.currentTimeMillis() - startTime)/1000.0}s elapsed."
+  }
 }
 
 fun playOneGame(gameId: Int): ExperienceCollector? {
   val rng = Random(1)
+
   var gameState: State =
       initializeState(
-          playerOneModel = Model.MCTS,
-          playerTwoModel = Model.MCTS,
+          Player(
+              name = PlayerName.WHITE,
+              model = Model.MCTS,
+              strength = Strength.EASY,
+              timeControl = false,
+              useRAVE = false,
+              enableFPU = true,
+              enablePW = true,
+              iterations = 1000,
+              depth = 3,
+          ),
+          Player(
+              name = PlayerName.BLACK,
+              model = Model.MCTS,
+              strength = Strength.EASY,
+              timeControl = false,
+              useRAVE = false,
+              enableFPU = true,
+              enablePW = true,
+              iterations = 1000,
+              depth = 3,
+          ),
       )
+
   var turn = 0
   var playerWhoMadeTheLastMove: Player? = null
 
@@ -99,13 +121,13 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
     gameState = playerTurn(gameState, turn, rng)
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
-      if (gameState.turnMoves.size > 2) {
-          val stalled =
-              gameState.turnMoves.keys.toList().takeLast(1).all {
-                  gameState.turnMoves[it].isNullOrEmpty()
-              }
-          if (stalled) break
-      }
+    if (gameState.turnMoves.size > 2) {
+      val stalled =
+          gameState.turnMoves.keys.toList().takeLast(1).all {
+            gameState.turnMoves[it].isNullOrEmpty()
+          }
+      if (stalled) break
+    }
 
     playerWhoMadeTheLastMove = gameState.currentPlayer
     gameState = gameState.rotatePlayers()
@@ -117,12 +139,13 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
 
   val winner =
       determineWinner(
-          gameState.currentPlayer,
-          gameState.nextPlayer,
-          playerWhoMadeTheLastMove,
-          state = gameState,
-          printStatement = false, // turn this off in batch runs
-      )?.winner
+              gameState.currentPlayer,
+              gameState.nextPlayer,
+              playerWhoMadeTheLastMove,
+              state = gameState,
+              printStatement = false, // turn this off in batch runs
+          )
+          ?.winner
 
   when (winner?.name) {
     gameState.currentPlayer.name -> {
@@ -137,13 +160,13 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
   }
 
   // IMPORTANT: unique identifier per game so parallel saves don't clobber each other
-//  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
+  //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
   gameState.collector?.endEpisode(0)
   return gameState.collector
 
-//  return listOf<ExperienceCollector?>(
-//      gameState.collector,
-//      gameState.currentPlayer.collector,
-//      gameState.nextPlayer.collector,
-//  )
+  //  return listOf<ExperienceCollector?>(
+  //      gameState.collector,
+  //      gameState.currentPlayer.collector,
+  //      gameState.nextPlayer.collector,
+  //  )
 }

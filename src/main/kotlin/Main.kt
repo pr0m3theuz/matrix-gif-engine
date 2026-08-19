@@ -1,16 +1,11 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package org.example
 
+import java.io.File
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
-import org.example.engine.GameResult
-import java.io.File
-import org.example.engine.calculateTurnSearchStats
-import org.example.engine.constructZobristHashKeysTable
-import org.example.engine.determineWinner
-import org.example.engine.evaluateCapturedPieces
-import org.example.engine.playerTurn
-import org.example.engine.recordRawSearchDataJson
-import org.example.engine.recordSearchStatsCSV
+import org.example.engine.*
 import org.example.model.*
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -25,14 +20,28 @@ fun main() {
 
   var gameState: State =
       initializeState(
-          Model.MINIMAX,
-          Strength.EASY,
-          Model.MCTS,
-          Strength.MEDIUM,
-          playerOneTimeControl = false,
-          playerTwoTimeControl = false,
-          playerOneEnableRAVE = false,
-          playerTwoEnableRAVE = false,
+          Player(
+              name = PlayerName.WHITE,
+              model = Model.MCTS,
+              strength = Strength.EASY,
+              timeControl = false,
+              useRAVE = false,
+              enableFPU = true,
+              enablePW = true,
+              iterations = 1000,
+              depth = 3,
+          ),
+          Player(
+              name = PlayerName.BLACK,
+              model = Model.MCTS,
+              strength = Strength.EASY,
+              timeControl = false,
+              useRAVE = false,
+              enableFPU = true,
+              enablePW = true,
+              iterations = 1000,
+              depth = 3,
+          ),
       )
 
   var turn = 0
@@ -54,16 +63,16 @@ fun main() {
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
-      // break if there are no moves on the last 2 turns as per the rules
-      if (gameState.turnMoves.size > 2) {
-          gameState.turnMoves.keys
-              .toList()
-              .takeLast(1)
-              .all { turns ->
-                  gameState.turnMoves[turns].isNullOrEmpty()
-              }
-              .let { if (it) break }
-      }
+    // break if there are no moves on the last 2 turns as per the rules
+    if (gameState.turnMoves.size > 2) {
+      gameState.turnMoves.keys
+          .toList()
+          .takeLast(1)
+          .all { turns ->
+            gameState.turnMoves[turns].isNullOrEmpty()
+          }
+          .let { if (it) break }
+    }
 
     playerWhoMadeTheLastMove = gameState.currentPlayer
     gameState = gameState.rotatePlayers()
@@ -85,17 +94,25 @@ fun main() {
           printStatement = true,
       )
 
-  val allTurnStats = gameState.turnSearchInfo.mapNotNull { (t, infoLists) ->
-    calculateTurnSearchStats(1, t, infoLists.flatten())
-  }
-  val avgAbf = if (allTurnStats.isNotEmpty()) allTurnStats.map { it.avgBranchingFactor }.average() else 0.0
-  val avgEbf = if (allTurnStats.isNotEmpty()) allTurnStats.map { it.effBranchingFactor }.average() else 0.0
+  val allTurnStats =
+      gameState.turnSearchInfo.mapNotNull { (t, infoLists) ->
+        calculateTurnSearchStats(1, t, infoLists.flatten())
+      }
+  val avgAbf =
+      if (allTurnStats.isNotEmpty()) allTurnStats.map { it.avgBranchingFactor }.average() else 0.0
+  val avgEbf =
+      if (allTurnStats.isNotEmpty()) allTurnStats.map { it.effBranchingFactor }.average() else 0.0
 
   println("Average Branching Factor: $avgAbf")
   println("Effective Branching Factor: $avgEbf")
 
   recordSearchStatsCSV(File("output/results/search_stats.csv"), "search_stats.csv", 1, 1, gameState)
-  recordRawSearchDataJson(File("output/results/raw_search_data.json"), "raw_search_data.json", 1, gameState)
+  recordRawSearchDataJson(
+      File("output/results/raw_search_data.json"),
+      "raw_search_data.json",
+      1,
+      gameState,
+  )
   //  when (winner?.name) {
   //    gameState.currentPlayer.name -> {
   //      gameState.currentPlayer.collector?.endEpisode(1)
