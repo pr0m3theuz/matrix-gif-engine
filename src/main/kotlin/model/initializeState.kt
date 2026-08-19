@@ -11,9 +11,9 @@ fun initializeState(
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
   // Create players
-  val whitePlayer = playerOne.copy()
+  val whitePlayer = playerOne.deepCopy()
 
-  val blackPlayer = playerTwo.copy()
+  val blackPlayer = playerTwo.deepCopy()
 
   // Create pieces
   val whitePieces = createPlayerPieces(whitePlayer)
