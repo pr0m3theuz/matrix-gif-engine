@@ -541,51 +541,6 @@ fun selectMoveMCTS(
     return availableMoves.random(rng)
   }
 
-  //  availableMoves.sortByDescending { action ->
-  //    scoreActions(
-  //      selectedPackedMove = action,
-  //      bitboard = bitboard.deepCopy(),
-  //      currentPlayer = currentPlayer.liteDeepCopy(),
-  //      nextPlayer = nextPlayer.liteDeepCopy(),
-  //      rng = rng,
-  //    )
-  //  }
-
-  //  val scratchBitboard = bitboard.deepCopy()
-  //  val scratchCurrentPlayer = currentPlayer.liteDeepCopy()
-  //  val scratchNextPlayer = nextPlayer.liteDeepCopy()
-  //
-  //// 2. Pre-calculate scores exactly ONCE per move (O(N) instead of O(N log N))
-  //  for (i in availableMoves.indices) {
-  //    // 3. Reset scratch states (Implement these methods to overwrite data, NOT allocate!)
-  //    // e.g., scratchBitboard.whitePieces = childBitboard.whitePieces
-  //    scratchBitboard.copyFrom(bitboard)
-  //    scratchCurrentPlayer.copyFrom(currentPlayer)
-  //    scratchNextPlayer.copyFrom(nextPlayer)
-  //
-  //    availableMoves[i].evaluation = scoreActions(
-  //      selectedPackedMove = availableMoves[i],
-  //      bitboard = scratchBitboard,
-  //      currentPlayer = scratchCurrentPlayer,
-  //      nextPlayer = scratchNextPlayer,
-  //      rng = rng
-  //    )
-  //  }
-  //
-  //  for (i in 1 until availableMoves.size) {
-  //    val currentMove = availableMoves[i]
-  //    val currentScore = currentMove.evaluation
-  //    var j = i - 1
-  //
-  //    // Shift elements that have a LOWER score to the right
-  //    while (j >= 0 && availableMoves[j].evaluation < currentScore) {
-  //      availableMoves[j + 1] = availableMoves[j]
-  //      j--
-  //    }
-  //    // Insert the current move at its correct sorted position
-  //    availableMoves[j + 1] = currentMove
-  //  }
-
   val rootMCTSNode =
       MCTSNode(
           bitboard = bitboard,
@@ -783,28 +738,13 @@ fun selectMoveMCTS(
     return SearchInfo(
         model = Model.MCTS,
         strength = currentPlayer.strength,
+        turnPhase = turnPhases,
         totalNodesEvaluated = nodesCount,
         totalAvailableMovesEvaluated = totalAvailableMovesSum,
         maxDepthReached = maxDepthVal,
-        branchingCounts =
-            listOf<Double>(
-                    branchingCounts.average(),
-                    branchingCounts.count().toDouble(),
-                    branchingCounts.min(),
-                    branchingCounts.max(),
-                )
-                .filter { !it.isNaN() }
-                .toMutableList(),
-        totalActions =
-          listOf<Double>(
-                totalActions.average(),
-                totalActions.sum(),
-                totalActions.min(),
-                totalActions.max(),
-            ).filter { !it.isNaN() }
-              .toMutableList(),
-        depths =  listOf<Double>(depth.average(), depth.min(), depth.max()).filter { !it.isNaN() }
-          .toMutableList(),
+        branchingCounts = branchingCounts,
+        totalActions = totalActions,
+        depths =  depth,
     )
   }
 

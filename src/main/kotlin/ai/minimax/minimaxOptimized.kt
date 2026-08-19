@@ -1255,15 +1255,14 @@ fun resolveBoardRemovals(
     }
   }
 
-  searchInfo?.depths?.add(depth.toDouble())
-  searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
-  searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
-
   if (removePiecesPowerset.isNotEmpty()) {
     removalLoop@ for ((index, removePieces) in removePiecesPowerset.withIndex()) {
       // 1. Generate your powerset of choices for these lines
       // 2. Loop through each choice in the powerset:
       // a. Apply the piece removals to the board
+      searchInfo?.depths?.add(depth.toDouble())
+      searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
+      searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
 
       /**
        * TODO causes stack overflow error, but an empty list is necessary as a player can leave the

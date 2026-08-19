@@ -59,6 +59,7 @@ fun calculateTurnSearchStats(gameId: Int, turn: Int, searchInfos: List<SearchInf
 fun recordSearchStatsCSV(
     csvFile: File,
     lock: String,
+    seed: Long,
     gameId: Int,
     state: State,
 ) {
@@ -71,13 +72,13 @@ fun recordSearchStatsCSV(
       csvFile.appendText(
           buildString {
             if (isNew) {
-              appendLine("gameId,turn,model,depth,avg_branching_factor,eff_branching_factor")
+              appendLine("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
             }
             for ((turn, infoLists) in state.turnSearchInfo.entries.sortedBy { it.key }) {
               val searchInfos = infoLists.flatten()
               val stats = calculateTurnSearchStats(gameId, turn, searchInfos)
               if (stats != null) {
-                appendLine("${stats.gameId},${stats.turn},${stats.model},${stats.depth},${stats.avgBranchingFactor},${stats.effBranchingFactor}")
+                appendLine("${seed},${stats.turn},${stats.model},${stats.depth},${stats.avgBranchingFactor},${stats.effBranchingFactor}")
               }
             }
           }
@@ -103,7 +104,7 @@ fun recordRawSearchDataJson(
           gameId = gameId,
           turnSearchInfo = state.turnSearchInfo,
       )
-      val jsonPretty = Json { prettyPrint = true }
+      val jsonPretty = Json { prettyPrint = false }
       jsonFile.writeText(jsonPretty.encodeToString(rawData))
     }
   } catch (e: Exception) {
@@ -148,12 +149,12 @@ fun recordGameResult(
   } else {
     file.path + "_search_stats.csv"
   }
-  recordSearchStatsCSV(File(csvFilePath), lock, gameId, state)
+  recordSearchStatsCSV(File(csvFilePath), lock, seed, gameId, state)
 
-  val rawJsonFilePath = if (file.path.endsWith(".jsonl")) {
-    file.path.substringBeforeLast(".jsonl") + "_raw_search_data.json"
-  } else {
-    file.path + "_raw_search_data.json"
-  }
-  recordRawSearchDataJson(File(rawJsonFilePath), lock, gameId, state)
+//  val rawJsonFilePath = if (file.path.endsWith(".jsonl")) {
+//    file.path.substringBeforeLast(".jsonl") + "_raw_search_data.json"
+//  } else {
+//    file.path + "_raw_search_data.json"
+//  }
+//  recordRawSearchDataJson(File(rawJsonFilePath), lock, gameId, state)
 }

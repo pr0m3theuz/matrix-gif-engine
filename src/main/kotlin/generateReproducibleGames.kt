@@ -399,6 +399,8 @@ data class FailureRecord(
     val stackTrace: String,
 )
 
+private const val MAX_TURNS_THRESHOLD = 1000
+
 /**
  * Plays one game. If [verbose] is true, prints full state summaries each turn — use this only for
  * single-game replay, never in a parallel batch (output would interleave into garbage across
@@ -466,15 +468,17 @@ fun playOneGame(
 
 
       if (gameState.turnMoves.size > 2) {
-        val stalled =
-            gameState.turnMoves.keys.toList().takeLast(1).all {
-              gameState.turnMoves[it].isNullOrEmpty()
-            }
-        if (stalled) break
+        gameState.turnMoves.keys
+          .toList()
+          .takeLast(1)
+          .all { turns ->
+            gameState.turnMoves[turns].isNullOrEmpty()
+          }
+          .let { if (it) break }
       }
 
-      check(turn <= 250) {
-        "Safety guard triggered: Exceeded maximum turn threshold of 250."
+      check(value = turn <= MAX_TURNS_THRESHOLD) {
+        "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
       playerWhoMadeTheLastMove = gameState.currentPlayer
       gameState = gameState.rotatePlayers()
