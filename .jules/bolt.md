@@ -1,3 +1,5 @@
-## 2026-08-11 - Fast Bitboard Iteration for Zobrist Hashing
-**Learning:** `getZobristHash` previously iterated over all 40 spots on the board and checked bits for every single piece type per spot. Since bitboard operations on sparse arrays are common, replacing naive loops over board size with iteration over set bits (`countTrailingZeroBits()` and `temp and (temp - 1UL)`) yields massive speedups (around 7x faster on near-full boards, and up to 10x faster on empty/typical boards).
-**Action:** When implementing operations that depend on bit positions across many layers/piece types, always prefer iterating over set bits for each layer using Brian Kernighan's algorithm over iterating through all board indices.
+## 2024-06-25 - Avoid Re-constructing Bitboards for Empty Checks
+
+**Learning:** In bitboard programming, there is a common anti-pattern where a loop uses `countTrailingZeroBits()` and `bitboard and (bitboard - 1UL)` to iterate over all set bits and recreate the exact same bitmask by ORing `(1UL shl bitIndex)`. If the goal is simply to verify that a bitboard is empty (e.g. `occupiedIndices == 0UL`), it's significantly faster to evaluate the boolean condition `bitboard == 0UL` directly, skipping the loop entirely.
+
+**Action:** Whenever identifying available moves along a path (e.g. for DVONN or PUNCT potentials), avoid looping over blocking pieces just to check if the path is empty. Instead, test the bitwise AND of the occupancy and path mask directly against `0UL`.
