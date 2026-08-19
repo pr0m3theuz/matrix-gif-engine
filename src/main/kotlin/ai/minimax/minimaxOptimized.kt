@@ -36,7 +36,37 @@ data class SearchInfo(
   val branchingCounts: MutableList<Double> = mutableListOf(),
   val totalActions: MutableList<Double> = mutableListOf(),
   val totalActionsSum: MutableList<Double> = mutableListOf(),
-)
+  var totalNodesEvaluated: Double = 0.0,
+  var totalAvailableMovesEvaluated: Double = 0.0,
+  var maxDepthReached: Double = 0.0,
+) {
+  val computedNodesEvaluated: Double
+    get() = if (totalNodesEvaluated > 0.0) totalNodesEvaluated
+            else if (nodesSearched.isNotEmpty()) nodesSearched.sum()
+            else totalActions.size.toDouble()
+
+  val computedAvailableMovesEvaluated: Double
+    get() = if (totalAvailableMovesEvaluated > 0.0) totalAvailableMovesEvaluated
+            else totalActions.sum()
+
+  val computedMaxDepth: Double
+    get() = if (maxDepthReached > 0.0) maxDepthReached
+            else (depths.maxOrNull() ?: 0.0)
+
+  val averageBranchingFactor: Double
+    get() {
+      val nodes = computedNodesEvaluated
+      val moves = computedAvailableMovesEvaluated
+      return if (nodes > 0.0) moves / nodes else 0.0
+    }
+
+  val effectiveBranchingFactor: Double
+    get() {
+      val nodes = computedNodesEvaluated
+      val depth = computedMaxDepth
+      return if (nodes > 0.0 && depth > 0.0) Math.pow(nodes, 1.0 / depth) else 0.0
+    }
+}
 
 data class AlphaBetaScoreBitPacked(
     var move: PackedMove? = null,
@@ -229,15 +259,20 @@ fun alphaBetaNgMxSearch(
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
   // endregion
 
-  searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0.0)
-
-  searchInfo?.nodesSearched[depth] += 1
-  searchInfo?.depths?.add(depth.toDouble())
+  if (searchInfo != null) {
+    while (searchInfo.nodesSearched.size <= depth) {
+      searchInfo.nodesSearched.add(0.0)
+    }
+    searchInfo.nodesSearched[depth] += 1.0
+    searchInfo.depths.add(depth.toDouble())
+    if (System.currentTimeMillis() < endTime) {
+      searchInfo.totalActions.add(availableMoves.size.toDouble())
+    }
+  }
 
   if (System.currentTimeMillis() >= endTime) {
     return BestPackedMove()
   }
-  searchInfo?.totalActions?.add(availableMoves.size.toDouble())
 
 
   // region Transposition Table & Move Ordering
@@ -1220,15 +1255,14 @@ fun resolveBoardRemovals(
     }
   }
 
-  searchInfo?.depths?.add(depth.toDouble())
-  searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
-  searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
-
   if (removePiecesPowerset.isNotEmpty()) {
     removalLoop@ for ((index, removePieces) in removePiecesPowerset.withIndex()) {
       // 1. Generate your powerset of choices for these lines
       // 2. Loop through each choice in the powerset:
       // a. Apply the piece removals to the board
+      searchInfo?.depths?.add(depth.toDouble())
+      searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
+      searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
 
       /**
        * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
@@ -1238,10 +1272,13 @@ fun resolveBoardRemovals(
        */
       require(removePieces is PackedMove.Multiple)
 
-      searchInfo?.nodesSearched?.getOrNull(depth) ?: searchInfo?.nodesSearched?.add(0.0)
-
-      searchInfo?.nodesSearched[depth] += 1
-      searchInfo?.depths?.add(depth.toDouble())
+      if (searchInfo != null) {
+        while (searchInfo.nodesSearched.size <= depth) {
+          searchInfo.nodesSearched.add(0.0)
+        }
+        searchInfo.nodesSearched[depth] += 1.0
+        searchInfo.depths.add(depth.toDouble())
+      }
 
       val retrievedCapturedPieces = mutableListOf<UInt>()
 

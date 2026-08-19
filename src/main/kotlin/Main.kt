@@ -2,10 +2,15 @@ package org.example
 
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
+import org.example.engine.GameResult
+import java.io.File
+import org.example.engine.calculateTurnSearchStats
 import org.example.engine.constructZobristHashKeysTable
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerTurn
+import org.example.engine.recordRawSearchDataJson
+import org.example.engine.recordSearchStatsCSV
 import org.example.model.*
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
@@ -14,16 +19,16 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(42)
+  val rng = Random(-7046031041489946050)
 
   constructZobristHashKeysTable(rng)
 
   var gameState: State =
       initializeState(
           Model.MINIMAX,
-          Strength.GREEDY,
+          Strength.EASY,
           Model.MCTS,
-          Strength.RANDOM,
+          Strength.MEDIUM,
           playerOneTimeControl = false,
           playerTwoTimeControl = false,
           playerOneEnableRAVE = false,
@@ -80,11 +85,17 @@ fun main() {
           printStatement = true,
       )
 
-  println( "Average Branching Factor: " +
-  gameState.turnSearchInfo.values.flatten().flatten().fold(0.0) {acc, infos ->
-    acc + infos.totalActions.first()
-  }.div(turn.toDouble() - 1.0).toString()
-  )
+  val allTurnStats = gameState.turnSearchInfo.mapNotNull { (t, infoLists) ->
+    calculateTurnSearchStats(1, t, infoLists.flatten())
+  }
+  val avgAbf = if (allTurnStats.isNotEmpty()) allTurnStats.map { it.avgBranchingFactor }.average() else 0.0
+  val avgEbf = if (allTurnStats.isNotEmpty()) allTurnStats.map { it.effBranchingFactor }.average() else 0.0
+
+  println("Average Branching Factor: $avgAbf")
+  println("Effective Branching Factor: $avgEbf")
+
+  recordSearchStatsCSV(File("output/results/search_stats.csv"), "search_stats.csv", 1, 1, gameState)
+  recordRawSearchDataJson(File("output/results/raw_search_data.json"), "raw_search_data.json", 1, gameState)
   //  when (winner?.name) {
   //    gameState.currentPlayer.name -> {
   //      gameState.currentPlayer.collector?.endEpisode(1)
