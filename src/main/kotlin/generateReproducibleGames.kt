@@ -267,7 +267,7 @@ data class FailureRecord(
     val stackTrace: String,
 )
 
-private const val MAX_TURNS_THRESHOLD = 1000
+private const val MAX_TURNS_THRESHOLD = 500
 
 /**
  * Plays one game. If [verbose] is true, prints full state summaries each turn — use this only for
@@ -320,7 +320,7 @@ fun playOneGame(
   try {
     while (!evaluateCapturedPieces(gameState)) {
       turn++
-//      gameState.turnMoves[turn] = mutableListOf()
+      gameState.turnMoves[turn] = mutableListOf()
       gameState.turnDuration[turn] = mutableListOf()
       gameState.turnSearchInfo[turn] = mutableListOf()
 
@@ -339,7 +339,7 @@ fun playOneGame(
         gameState.turnMoves.keys
           .toList()
           .takeLast(1)
-          .all { turns ->
+          .any { turns ->
             gameState.turnMoves[turns].isNullOrEmpty()
           }
           .let { if (it) break }
@@ -348,6 +348,7 @@ fun playOneGame(
       check(value = turn <= MAX_TURNS_THRESHOLD) {
         "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
+
       playerWhoMadeTheLastMove = gameState.currentPlayer
       gameState = gameState.rotatePlayers()
 
