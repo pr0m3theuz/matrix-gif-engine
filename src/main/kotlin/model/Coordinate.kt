@@ -11,6 +11,9 @@ data class Coordinate(
 //	fun equals(other: Coordinate): Boolean {
 //		return column == other.column && row == other.row
 //	}
+	override fun toString(): String {
+		return "$column$row"
+	}
 
 	fun deepCopy(): Coordinate {
 		val string = Json.encodeToString(serializer(), this)

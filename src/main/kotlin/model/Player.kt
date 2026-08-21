@@ -23,6 +23,7 @@ enum class PlayerName {
 }
 
 enum class Model {
+  HUMAN,
   MINIMAX,
   MCTS,
   NEURAL_NETWORK,
@@ -308,8 +309,7 @@ data class Player(
 
       if (logger.isDebugEnabled()) {
         logger.info {
-          "" +
-              ("  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover.")
+          "  -> Processing Type: $type | Total: $count | Forming $pairs pairs, $remainder leftover."
         }
       }
 
@@ -489,14 +489,18 @@ fun Player.updateHistoryMoves(move: UInt, depth: Int) {
 }
 
 fun Player.selectMove(
-    turnPhase: TurnPhase,
-    bitboard: Bitboard,
-    currentPlayer: Player,
-    opponent: Player,
-    rng: Random,
-    searchInfos: MutableList<SearchInfo> = mutableListOf(),
+  turnPhase: TurnPhase,
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  opponent: Player,
+  rng: Random,
+  searchInfos: MutableList<SearchInfo> = mutableListOf(),
+  playerSelectedMove: () -> PackedMove = { PackedMove.Single(0u) },
 ): PackedMove? {
   return when (model) {
+    Model.HUMAN -> {
+      playerSelectedMove()
+    }
     Model.MINIMAX -> {
       when (turnPhase) {
         TurnPhase.PlayerInputWindow,
