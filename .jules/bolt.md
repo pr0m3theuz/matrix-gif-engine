@@ -1,3 +1,3 @@
-## 2026-08-11 - Fast Bitboard Iteration for Zobrist Hashing
-**Learning:** `getZobristHash` previously iterated over all 40 spots on the board and checked bits for every single piece type per spot. Since bitboard operations on sparse arrays are common, replacing naive loops over board size with iteration over set bits (`countTrailingZeroBits()` and `temp and (temp - 1UL)`) yields massive speedups (around 7x faster on near-full boards, and up to 10x faster on empty/typical boards).
-**Action:** When implementing operations that depend on bit positions across many layers/piece types, always prefer iterating over set bits for each layer using Brian Kernighan's algorithm over iterating through all board indices.
+## 2024-05-18 - [O(1) Transposition Table Lookup]
+ **Learning:** The Transposition Table in this project was previously using a completely unoptimized O(N) linear search over a large 1-million item array in its probe function. For an engine with deep MCTS and minimax tree search where TT probes occur millions of times, this kind of loop is an engine-killing bottleneck.
+ **Action:** Always ensure large internal caches or tables (like TT) in Kotlin use O(1) mathematical lookup (like bitwise AND mask for power-of-two arrays) instead of linear scan. Ensure `hash.toInt() and mask` is used.

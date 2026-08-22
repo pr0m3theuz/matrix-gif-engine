@@ -504,7 +504,7 @@ fun playOneGame(
   //    else -> {}
   //  }
 
-  recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn)
+  recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, gameState.nextPlayer, turn)
   //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
 }
 
