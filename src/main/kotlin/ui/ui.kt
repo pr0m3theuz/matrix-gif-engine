@@ -4,17 +4,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 fun main() = application {
+	val state = rememberWindowState(size = DpSize(1200.dp, 1000.dp))
+
 	Window(
+		state = state,
 		onCloseRequest = ::exitApplication,
 		title = "MATRX GIPF"
 	) { App(window = this.window) }
@@ -22,8 +28,6 @@ fun main() = application {
 
 @Composable
 fun App(window: ComposeWindow) {
-
-
 
 	val coroutineScope = rememberCoroutineScope()
 
@@ -44,8 +48,7 @@ fun MainApp(
 	MainScreen(
 		window = window,
 		uiState = uiState,
-		onEvent = { event -> viewModel.onEvent(event) },
-	)
+	) { event -> viewModel.onEvent(event) }
 }
 
 
@@ -76,6 +79,5 @@ object IBMColorBlindPalette {
 		return colors[kotlin.math.abs(hashCode) % colors.size]
 	}
 }
-
 
 

@@ -14,6 +14,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -33,7 +34,6 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -96,11 +96,11 @@ fun MainScreen(
             verticalArrangement = Arrangement.SpaceAround,
         ) {
           if (uiState.status == GameStatus.Init) {
-            configurePlayers(onEvent)
+            MainMenuScreen(onEvent)
           }
 
           if (uiState.status == GameStatus.Running && uiState.gameState != null) {
-            gameScreen(uiState, uiState.gameState, onEvent)
+            GameScreen(uiState, uiState.gameState, onEvent)
           }
         }
       }
@@ -113,7 +113,28 @@ fun MainScreen(
 }
 
 @Composable
-private fun gameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiEvent) -> Unit) {
+private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiEvent) -> Unit) {
+  val openGameOverDialog = remember { mutableStateOf(false) }
+
+  if (uiState.status == GameStatus.Completed) {
+    openGameOverDialog.value = true
+  }
+
+  if (openGameOverDialog.value) {
+    GameOverDialog(
+      onDismissRequest = {
+        openGameOverDialog.value = false
+        onEvent(MainUiEvent.NavigateToMainMenu())
+      },
+      onConfirmation = {
+        openGameOverDialog.value = false
+        onEvent(MainUiEvent.ReplayGame())
+      },
+      dialogTitle = "Game Over",
+      dialogText = "${uiState.winner?.winner?.name} won by ${uiState.winner?.winCondition?.message}!",
+    )
+  }
+
   Card(
       modifier = Modifier.padding(16.dp),
       elevation = 4.dp,
@@ -209,6 +230,44 @@ private fun gameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
   ) {
     Text("Confirm Move")
   }
+}
+
+@Composable
+fun GameOverDialog(
+  onDismissRequest: () -> Unit,
+  onConfirmation: () -> Unit,
+  dialogTitle: String,
+  dialogText: String,
+) {
+  AlertDialog(
+    title = {
+      Text(text = dialogTitle)
+    },
+    text = {
+      Text(text = dialogText)
+    },
+    onDismissRequest = {
+      onDismissRequest()
+    },
+    confirmButton = {
+      TextButton(
+        onClick = {
+          onConfirmation()
+        }
+      ) {
+        Text("Replay")
+      }
+    },
+    dismissButton = {
+      TextButton(
+        onClick = {
+          onDismissRequest()
+        }
+      ) {
+        Text("Go to Main Menu")
+      }
+    }
+  )
 }
 
 @Composable
@@ -542,7 +601,7 @@ private fun AddPieceMoveOptions(
 }
 
 @Composable
-private fun configurePlayers(onEvent: (MainUiEvent) -> Unit) {
+private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
   var playerOneModelExpanded by remember { mutableStateOf(false) }
   var playerTwoModelExpanded by remember { mutableStateOf(false) }
 
@@ -1347,41 +1406,4 @@ private fun getPieceImage(piece: Piece): ImageBitmap {
               .readBytes()
       )
       .toComposeImageBitmap()
-
-  //  val blackDvonn =
-  //
-  //  val blackGipf =
-  //    Image.makeFromEncoded(File("$dir/Black_GIPF.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val blackPunct =
-  //    Image.makeFromEncoded(File("$dir/Black_PUNCT.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val blackTamsk =
-  //    Image.makeFromEncoded(File("$dir/Black_TAMSK.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val blackYinsh =
-  //    Image.makeFromEncoded(File("$dir/Black_YINSH.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val blackZertz =
-  //    Image.makeFromEncoded(File("$dir/Black_ZERTZ.png").readBytes())
-  //      .toComposeImageBitmap()
-  //
-  //  val whiteDvonn =
-  //    Image.makeFromEncoded(File("$dir/White_DVONN.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val whiteGipf =
-  //    Image.makeFromEncoded(File("$dir/White_GIPF.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val whitePunct =
-  //    Image.makeFromEncoded(File("$dir/White_PUNCT.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val whiteTamsk =
-  //    Image.makeFromEncoded(File("$dir/White_TAMSK.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val whiteYinsh =
-  //    Image.makeFromEncoded(File("$dir/White_YINSH.png").readBytes())
-  //      .toComposeImageBitmap()
-  //  val whiteZertz =5
-  //    Image.makeFromEncoded(File("$dir/White_ZERTZ.png").readBytes())
-  //      .toComposeImageBitmap()
 }

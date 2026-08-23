@@ -6,8 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.example.EXPECTED_TOTAL
-import org.example.MAXIMUM_PIECES
 import org.example.ai.doActionGetTurnPhase
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.createChildState
@@ -35,12 +33,17 @@ data class MainUiState(
 )
 
 sealed class MainUiEvent {
+
   data class StartNewGame(
       val whitePlayer: Player,
       val blackPlayer: Player,
   ) : MainUiEvent()
 
   data class SelectMove(val move: PackedMove) : MainUiEvent()
+
+  data class ReplayGame(val a: Boolean = true) : MainUiEvent()
+
+  data class NavigateToMainMenu(val a: Boolean = true) : MainUiEvent()
 }
 
 class MainViewModel : ViewModel() {
@@ -50,6 +53,11 @@ class MainViewModel : ViewModel() {
 
   fun onEvent(event: MainUiEvent) {
     when (event) {
+      is MainUiEvent.NavigateToMainMenu -> {
+        _uiState.update {
+          MainUiState()
+        }
+      }
       is MainUiEvent.StartNewGame -> {
         _uiState.update {
           it.copy(
@@ -66,6 +74,45 @@ class MainViewModel : ViewModel() {
       }
       is MainUiEvent.SelectMove -> {
         applyMove(event.move)
+      }
+      is MainUiEvent.ReplayGame -> {
+        val whitePlayer =
+            if (_uiState.value.gameState?.currentPlayer?.name == PlayerName.WHITE) {
+              _uiState.value.gameState?.currentPlayer
+            } else _uiState.value.gameState?.nextPlayer
+
+        val blackPlayer =
+            if (_uiState.value.gameState?.currentPlayer?.name == PlayerName.BLACK) {
+              _uiState.value.gameState?.currentPlayer
+            } else _uiState.value.gameState?.nextPlayer
+
+        requireNotNull(whitePlayer)
+        requireNotNull(blackPlayer)
+
+        _uiState.update {
+          it.copy(
+              status = GameStatus.Running,
+              gameState =
+                  initializeState(
+                      whitePlayer.copy(
+                          piecesInReserve = mutableListOf(),
+                          capturedPieces = mutableListOf(),
+                      ),
+                      blackPlayer.copy(
+                          piecesInReserve = mutableListOf(),
+                          capturedPieces = mutableListOf(),
+                      ),
+                  ),
+            turnCount = 0,
+            turnPhase = TurnPhase.PlayerInputWindow,
+            availableMoves = emptyList(),
+            winner = null,
+            previousTurnPhases = emptyList(),
+            playerWhoMadeTheLastMove = null,
+          )
+        }
+
+        initGame()
       }
     }
   }
@@ -84,9 +131,9 @@ class MainViewModel : ViewModel() {
 
     _uiState.update {
       it.copy(
-        turnCount = 1,
-        turnPhase = TurnPhase.PlayerInputWindow,
-        availableMoves = availableMoves,
+          turnCount = 1,
+          turnPhase = TurnPhase.PlayerInputWindow,
+          availableMoves = availableMoves,
       )
     }
   }
@@ -116,8 +163,10 @@ class MainViewModel : ViewModel() {
       newState.currentPlayer.combinePieces()
 
       _uiState.update {
-        it.copy(gameState = newState,
-          playerWhoMadeTheLastMove = newState.currentPlayer,)
+        it.copy(
+            gameState = newState,
+            playerWhoMadeTheLastMove = newState.currentPlayer,
+        )
       }
 
       if (evaluateCapturedPieces(newState)) return
@@ -150,8 +199,10 @@ class MainViewModel : ViewModel() {
       newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
 
       _uiState.update {
-        it.copy(gameState = newState,
-          playerWhoMadeTheLastMove = newState.currentPlayer,)
+        it.copy(
+            gameState = newState,
+            playerWhoMadeTheLastMove = newState.currentPlayer,
+        )
       }
     }
 
@@ -179,8 +230,8 @@ class MainViewModel : ViewModel() {
 
       _uiState.update {
         it.copy(
-          gameState = newState,
-          playerWhoMadeTheLastMove = newState.currentPlayer,
+            gameState = newState,
+            playerWhoMadeTheLastMove = newState.currentPlayer,
         )
       }
     }
@@ -237,8 +288,10 @@ class MainViewModel : ViewModel() {
       newState.currentPlayer.combinePieces()
 
       _uiState.update {
-        it.copy(gameState = newState,
-          playerWhoMadeTheLastMove = newState.currentPlayer,)
+        it.copy(
+            gameState = newState,
+            playerWhoMadeTheLastMove = newState.currentPlayer,
+        )
       }
     }
 
@@ -271,7 +324,7 @@ class MainViewModel : ViewModel() {
                   collector = state.collector,
               ),
           turnPhase = nodeTurnPhase,
-        turnCount = _uiState.value.turnCount + 1,
+          turnCount = _uiState.value.turnCount + 1,
           availableMoves = nodeMoves,
       )
     }
@@ -292,9 +345,7 @@ class MainViewModel : ViewModel() {
             state.nextPlayer,
         )
 
-    state.turnMoves
-      .getOrDefault(_uiState.value.turnCount, mutableListOf())
-      .add(packedMove)
+    state.turnMoves.getOrDefault(_uiState.value.turnCount, mutableListOf()).add(packedMove)
 
     _uiState.update {
       it.copy(previousTurnPhases = _uiState.value.previousTurnPhases + _uiState.value.turnPhase)
@@ -333,26 +384,27 @@ class MainViewModel : ViewModel() {
 
     _uiState.update {
       it.copy(
-        gameState = newState,
-        turnPhase = nodeTurnPhase,
-        availableMoves = nodeMoves,
+          gameState = newState,
+          turnPhase = nodeTurnPhase,
+          availableMoves = nodeMoves,
       )
     }
 
     if (evaluateCapturedPieces(newState)) {
-      val winner = determineWinner(
-        currentPlayer = nodeCurrentPlayer,
-        nextPlayer = nodeNextPlayer,
-        playerWhoMadeTheLastMove = state.currentPlayer,
-        bitboard = bitboard,
-        state = newState,
-        true
-      )
+      val winner =
+          determineWinner(
+              currentPlayer = nodeCurrentPlayer,
+              nextPlayer = nodeNextPlayer,
+              playerWhoMadeTheLastMove = state.currentPlayer,
+              bitboard = bitboard,
+              state = newState,
+              true,
+          )
 
       _uiState.update {
         it.copy(
-          winner = winner,
-          status = GameStatus.Completed,
+            winner = winner,
+            status = GameStatus.Completed,
         )
       }
 
@@ -361,19 +413,20 @@ class MainViewModel : ViewModel() {
 
     // todo check is nodesMoves is empty declare winner
     if (nodeMoves.isEmpty()) {
-      val winner = determineWinner(
-        currentPlayer = nodeCurrentPlayer,
-        nextPlayer = nodeNextPlayer,
-        playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
-        bitboard = bitboard,
-        state = newState,
-        true
-      )
+      val winner =
+          determineWinner(
+              currentPlayer = nodeCurrentPlayer,
+              nextPlayer = nodeNextPlayer,
+              playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
+              bitboard = bitboard,
+              state = newState,
+              true,
+          )
 
       _uiState.update {
         it.copy(
-          winner = winner,
-          status = GameStatus.Completed,
+            winner = winner,
+            status = GameStatus.Completed,
         )
       }
       return
@@ -382,7 +435,7 @@ class MainViewModel : ViewModel() {
     if (nodeCurrentPlayer.model != Model.HUMAN) {
       _uiState.update {
         it.copy(
-          turnCount = _uiState.value.turnCount + 1,
+            turnCount = _uiState.value.turnCount + 1,
         )
       }
 
@@ -393,19 +446,20 @@ class MainViewModel : ViewModel() {
       )
 
       if (evaluateCapturedPieces(newState) || _uiState.value.availableMoves.isEmpty()) {
-        val winner = determineWinner(
-          currentPlayer = nodeCurrentPlayer,
-          nextPlayer = nodeNextPlayer,
-          playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
-          bitboard = bitboard,
-          state = newState,
-          true
-        )
+        val winner =
+            determineWinner(
+                currentPlayer = nodeCurrentPlayer,
+                nextPlayer = nodeNextPlayer,
+                playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
+                bitboard = bitboard,
+                state = newState,
+                true,
+            )
 
         _uiState.update {
           it.copy(
-            winner = winner,
-            status = GameStatus.Completed,
+              winner = winner,
+              status = GameStatus.Completed,
           )
         }
         return
