@@ -2,6 +2,8 @@ plugins {
 	application
 	kotlin("jvm") version "2.3.20"
 	kotlin("plugin.serialization") version "2.3.20"
+	alias(libs.plugins.composeMultiplatform)
+	alias(libs.plugins.composeCompiler)
 }
 
 group = "org.example"
@@ -9,9 +11,29 @@ version = "1.0-SNAPSHOT"
 
 repositories {
 	mavenCentral()
+	maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+	maven("https://jitpack.io")
+	google()
 }
 
 dependencies {
+	implementation(compose.desktop.currentOs)
+	implementation(libs.kotlinx.coroutinesSwing)
+	implementation(libs.compose.uiToolingPreview)
+	implementation(libs.compose.runtime)
+	implementation(libs.compose.foundation)
+	implementation(libs.compose.material3)
+	implementation(libs.compose.ui)
+	implementation(libs.compose.components.resources)
+	implementation(libs.androidx.lifecycle.viewmodelCompose)
+	implementation(libs.androidx.lifecycle.runtimeCompose)
+
+	// Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-core
+	implementation("androidx.compose.material:material-icons-core:1.7.8")
+	//implementation(libs.androidx.foundation.desktop)
+	// Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-extended
+	runtimeOnly("androidx.compose.material:material-icons-extended:1.7.8")
+
 	implementation("io.github.oshai:kotlin-logging:7.0.7")
 	implementation("ch.qos.logback:logback-classic:1.5.38")
 	testImplementation(kotlin("test"))
@@ -33,6 +55,8 @@ dependencies {
 	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
 	implementation("commons-cli:commons-cli:1.11.0")
 	implementation("com.github.ajalt.clikt:clikt:5.1.0")
+
+	implementation("com.github.Hexworks.mixite:mixite.core-jvm:2018.2.0-RELEASE")
 }
 
 tasks.test {

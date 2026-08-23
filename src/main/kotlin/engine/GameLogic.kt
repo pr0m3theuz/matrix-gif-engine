@@ -385,8 +385,8 @@ fun determineWinner(
       }
 }
 
-enum class WinCondition {
-  CapturedAllGIPFPieces,
-  MadeTheLastMove,
-  HasMovesAvailable,
+enum class WinCondition(val message: String) {
+  CapturedAllGIPFPieces(message = "capturing all GIPF pieces"),
+  MadeTheLastMove(message = "making the last move"),
+  HasMovesAvailable(message = "having moves available"),
 }

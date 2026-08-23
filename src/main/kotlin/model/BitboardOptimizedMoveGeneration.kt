@@ -4,6 +4,7 @@ package org.example.model
 
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import org.example.ai.mcts.PackedMove
+import kotlin.math.abs
 
 private val logger = logger {}
 
@@ -120,6 +121,95 @@ fun Bitboard.getTamskMoves(
               .setPotential(potential = true)
       )
   )
+}
+
+fun Bitboard.getZertzTargets(
+  player: Player,
+  boardMask: ULong = 1UL.shl(40).minus(1UL),
+  potentials: ULong,
+  occupied: ULong,
+  emptySquares: ULong,
+  movesBuffer: MutableList<PackedMove>,
+) {
+  //    val sourceTargets: MutableList<Pair<ULong, ULong>> = mutableListOf()
+
+  var tempPotentials = potentials
+  while (tempPotentials != 0UL) {
+    val potential = 1UL shl tempPotentials.countTrailingZeroBits()
+    val potentialBitPosition = tempPotentials.countTrailingZeroBits()
+    val potentialMask = rays[potentialBitPosition]
+    val adjacentBits = clusterArray[potentialBitPosition]
+
+    val targets = emptySquares and potentialMask and adjacentBits.inv()
+
+    var tempAdjBits = adjacentBits
+    var tempTargets = targets
+    while (tempAdjBits != 0UL) {
+      val adjacentBitPosition = tempAdjBits.countTrailingZeroBits()
+      val adjacentBit = tempAdjBits.takeLowestOneBit()
+
+      val distanceBetweenBits = abs(potentialBitPosition - adjacentBitPosition)
+
+      val jumpOne =
+        if (adjacentBitPosition < potentialBitPosition) {
+          (potential shr distanceBetweenBits) and occupied != 0UL
+        } else {
+          (potential shl distanceBetweenBits) and occupied != 0UL
+        }
+
+      // for vertical rays
+      val upperBound =
+        (openningSpotsLineMask and (adjacentBit - 1UL).inv() and boardMask).takeLowestOneBit()
+      val lowerBound =
+        (openningSpotsLineMask and (adjacentBit - 1UL) and boardMask).takeHighestOneBit()
+
+      val inBoundBits = ((upperBound shl 1) - 1UL) and (lowerBound - 1UL).inv()
+
+      val validTargets =
+        if (abs(adjacentBitPosition - potentialBitPosition) == 1) {
+          // lower bound < tempTargets < upper bound & not and adjacent bit
+          tempTargets and inBoundBits
+        } else if (adjacentBitPosition < potentialBitPosition) {
+          tempTargets and adjacentBit - 1UL
+        } else {
+          tempTargets and
+              (adjacentBit or (adjacentBit - 1UL).inv()) and
+              rays[adjacentBitPosition]
+        }
+
+      val tempValidTargets = validTargets // and (adjacentBits.inv())
+      if (jumpOne && tempValidTargets != 0UL) {
+        val target =
+          if (adjacentBitPosition < potentialBitPosition) {
+            validTargets.takeHighestOneBit()
+          } else {
+            validTargets.takeLowestOneBit()
+          }
+        //          sourceTargets.add(Pair(potential, target))
+        movesBuffer.add(
+          PackedMove.Single(
+            0u.packPossibleBitMove(
+              sourceBit = potential,
+              targetBit = target,
+              moveType = MoveType.UsePotential,
+            )
+              .setPieceType(
+                pieceType = PieceType.ZERTZ,
+              )
+              .setPieceColor(
+                pieceColor = player.name,
+              )
+              .setPotential(potential = true)
+          )
+        )
+
+        tempTargets = tempTargets xor target
+      }
+      tempAdjBits = tempAdjBits xor adjacentBit
+    }
+
+    tempPotentials = tempPotentials xor potential
+  }
 }
 
 fun Bitboard.getZertzMoves(
@@ -811,16 +901,16 @@ fun Bitboard.identifyAvailableMoves(
 
   when (currentPlayer.name) {
     PlayerName.WHITE -> {
-      if (blackZERTZ != 0UL) {
+      if (whiteZERTZ != 0UL) {
         getZertzMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackYINSH != 0UL) {
+      if (whiteYINSH != 0UL) {
         getYinshMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackDVONNLayer[0] != 0UL) {
+      if (whiteDVONNLayer[0] != 0UL) {
         getDvonnMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackPUNCTLayer[0] != 0UL) {
+      if (whitePUNCTLayer[0] != 0UL) {
         getPunctMoves(currentPlayer, columnInfos, movesBuffer)
       }
     }

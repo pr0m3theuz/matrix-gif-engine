@@ -404,7 +404,6 @@ class MainViewModel : ViewModel() {
       _uiState.update {
         it.copy(
             winner = winner,
-            status = GameStatus.Completed,
         )
       }
 
@@ -426,7 +425,7 @@ class MainViewModel : ViewModel() {
       _uiState.update {
         it.copy(
             winner = winner,
-            status = GameStatus.Completed,
+            status = GameStatus.Running,
         )
       }
       return
@@ -459,7 +458,7 @@ class MainViewModel : ViewModel() {
         _uiState.update {
           it.copy(
               winner = winner,
-              status = GameStatus.Completed,
+              status = GameStatus.Running,
           )
         }
         return

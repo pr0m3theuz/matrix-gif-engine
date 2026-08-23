@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -31,9 +31,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -41,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.model.*
 import org.example.model.State
@@ -65,14 +65,42 @@ fun MainScreen(
   Scaffold(
       topBar = {
         TopAppBar(
-            title = { Text("MATRX GIPF") }
-            /*actions = {
-            IconButton(onClick = { */
-            /*TODO: Implement import logic */
-            /* }) {
-            		Icon(Icons.Filled.Add, contentDescription = "Import")
-            	}
-            }*/
+            title = { Text("MATRX GIPF") },
+            actions = {
+              TooltipArea(
+                  tooltip = {
+                    // Composable tooltip content:
+                    Surface(
+                        modifier = Modifier.shadow(4.dp),
+                        shape = RoundedCornerShape(4.dp),
+                    ) {
+                      Text(
+                          text = "Exit to Main Menu",
+                          modifier = Modifier.padding(10.dp),
+                      )
+                    }
+                  },
+                  modifier = Modifier.padding(start = 40.dp),
+                  delayMillis = 100, // In milliseconds
+                  tooltipPlacement =
+                      TooltipPlacement.CursorPoint(
+                          alignment = Alignment.BottomStart,
+                          offset =
+                              DpOffset(
+                                  (-8).dp,
+                                  (8).dp, // Tooltip offset
+                              ),
+                      ),
+              ) {
+                IconButton(
+                    onClick = {
+                      onEvent(MainUiEvent.NavigateToMainMenu())
+                    }
+                ) {
+                  Icon(Icons.AutoMirrored.Default.ExitToApp, null)
+                }
+              }
+            },
         )
       },
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -116,22 +144,23 @@ fun MainScreen(
 private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiEvent) -> Unit) {
   val openGameOverDialog = remember { mutableStateOf(false) }
 
-  if (uiState.status == GameStatus.Completed) {
+  if (uiState.winner != null) {
     openGameOverDialog.value = true
   }
 
   if (openGameOverDialog.value) {
     GameOverDialog(
-      onDismissRequest = {
-        openGameOverDialog.value = false
-        onEvent(MainUiEvent.NavigateToMainMenu())
-      },
-      onConfirmation = {
-        openGameOverDialog.value = false
-        onEvent(MainUiEvent.ReplayGame())
-      },
-      dialogTitle = "Game Over",
-      dialogText = "${uiState.winner?.winner?.name} won by ${uiState.winner?.winCondition?.message}!",
+        onDismissRequest = {
+          openGameOverDialog.value = false
+          onEvent(MainUiEvent.NavigateToMainMenu())
+        },
+        onConfirmation = {
+          openGameOverDialog.value = false
+          onEvent(MainUiEvent.ReplayGame())
+        },
+        dialogTitle = "Game Over!",
+        dialogText =
+            "${uiState.winner?.winner?.name} won by ${uiState.winner?.winCondition?.message}!",
     )
   }
 
@@ -164,7 +193,7 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
       }
       Column {
         Text(
-            "Opponent Player: ${gameState.nextPlayer.name}",
+            "Opponent: ${gameState.nextPlayer.name}",
             style = MaterialTheme.typography.bodyLargeEmphasized,
         )
       }
@@ -174,19 +203,36 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
   var selectedMove by remember { mutableStateOf<PackedMove?>(null) }
 
   // todo draw the board
-  DrawBoard(uiState)
+  DrawBoard(uiState, selectedMove)
 
   Row(
-    modifier = Modifier.fillMaxWidth().padding(16.dp),
-    horizontalArrangement = Arrangement.SpaceAround,
-    verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().padding(16.dp),
+      horizontalArrangement = Arrangement.SpaceAround,
+      verticalAlignment = Alignment.CenterVertically,
   ) {
-    Pieces(gameState.currentPlayer.piecesInReserve.mapNotNull { it.extractPiece() }, "Reserve")
+    Column(
+        modifier = Modifier.weight(0.5f, fill = false).padding(16.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      Pieces(gameState.currentPlayer.piecesInReserve.mapNotNull { it.extractPiece() }, "Reserve")
 
-    if (gameState.currentPlayer.capturedPieces.isNotEmpty()) {
-      Pieces(gameState.currentPlayer.capturedPieces.mapNotNull { it.extractPiece() }, "Captured")
+      if (gameState.currentPlayer.capturedPieces.isNotEmpty()) {
+        Pieces(gameState.currentPlayer.capturedPieces.mapNotNull { it.extractPiece() }, "Captured")
+      }
     }
 
+    Column(
+        modifier = Modifier.weight(0.5f, fill = false).padding(16.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      Pieces(gameState.nextPlayer.piecesInReserve.mapNotNull { it.extractPiece() }, "Reserve")
+
+      if (gameState.nextPlayer.capturedPieces.isNotEmpty()) {
+        Pieces(gameState.nextPlayer.capturedPieces.mapNotNull { it.extractPiece() }, "Captured")
+      }
+    }
   }
 
   if (uiState.turnPhase != TurnPhase.PieceRemoval) {
@@ -234,39 +280,40 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
 
 @Composable
 fun GameOverDialog(
-  onDismissRequest: () -> Unit,
-  onConfirmation: () -> Unit,
-  dialogTitle: String,
-  dialogText: String,
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+    dialogTitle: String,
+    dialogText: String,
 ) {
+
   AlertDialog(
-    title = {
-      Text(text = dialogTitle)
-    },
-    text = {
-      Text(text = dialogText)
-    },
-    onDismissRequest = {
-      onDismissRequest()
-    },
-    confirmButton = {
-      TextButton(
-        onClick = {
-          onConfirmation()
+      title = {
+        Text(text = dialogTitle, style = MaterialTheme.typography.headlineMediumEmphasized)
+      },
+      text = {
+        Text(text = dialogText, style = MaterialTheme.typography.bodyMedium)
+      },
+      onDismissRequest = {
+        onDismissRequest()
+      },
+      confirmButton = {
+        TextButton(
+            onClick = {
+              onConfirmation()
+            }
+        ) {
+          Text("Replay")
         }
-      ) {
-        Text("Replay")
-      }
-    },
-    dismissButton = {
-      TextButton(
-        onClick = {
-          onDismissRequest()
+      },
+      dismissButton = {
+        TextButton(
+            onClick = {
+              onDismissRequest()
+            }
+        ) {
+          Text("Go to Main Menu")
         }
-      ) {
-        Text("Go to Main Menu")
-      }
-    }
+      },
   )
 }
 
@@ -279,15 +326,15 @@ private fun PieceRemovalMoves(uiState: MainUiState): PackedMove? {
       elevation = 8.dp,
   ) {
     Column(
-        Modifier.padding(16.dp).heightIn(max = 200.dp),
+        Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Text("Retrieve/Capture Moves", style = MaterialTheme.typography.headlineSmallEmphasized)
 
       FlowRow(
-        Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+          Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalArrangement = Arrangement.spacedBy(20.dp),
       ) {
         uiState.availableMoves.forEach { move ->
           Row(
@@ -336,11 +383,10 @@ private fun UsePotentialMoves(
     ) {
       Text("Use Potential Moves", style = MaterialTheme.typography.headlineSmallEmphasized)
 
-
       FlowRow(
-        Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+          Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalArrangement = Arrangement.spacedBy(20.dp),
       ) {
         usePotentialMoves.forEach { potential ->
           Row(
@@ -476,9 +522,9 @@ private fun AddPieceMoveOptions(
           Column(Modifier.padding(8.dp)) {
             Text("Pieces")
             FlowRow(
-              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
-              verticalArrangement = Arrangement.spacedBy(20.dp),
+                Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
               pieceTypes.forEach { pieceType ->
                 Row(
@@ -501,9 +547,9 @@ private fun AddPieceMoveOptions(
           Column(Modifier.padding(8.dp)) {
             Text("Push Directions")
             FlowRow(
-              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
-              verticalArrangement = Arrangement.spacedBy(20.dp),
+                Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
               pushDirections.forEach { pushDirection ->
                 Row(
@@ -549,9 +595,9 @@ private fun AddPieceMoveOptions(
           Column(Modifier.padding(8.dp)) {
             Text("Nodes")
             FlowRow(
-              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
-              verticalArrangement = Arrangement.spacedBy(20.dp),
+                Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
               targetNodes.forEach { targetNode ->
                 Row(
@@ -1020,7 +1066,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
 
 @Composable
 // https://www.redblobgames.com/grids/hexagons/
-fun DrawBoard(uiState: MainUiState) {
+fun DrawBoard(uiState: MainUiState, selectMove: PackedMove? = null) {
   val HEIGHT = 11
   val offsetAmount = 100f
   val canvasOffset = Offset(offsetAmount, offsetAmount.minus(30f))
@@ -1051,7 +1097,7 @@ fun DrawBoard(uiState: MainUiState) {
   }
 
   Row {
-    Card(
+    /*    Card(
         modifier = Modifier.padding(16.dp).fillMaxWidth(0.25f),
         elevation = 2.dp,
     ) {
@@ -1069,7 +1115,7 @@ fun DrawBoard(uiState: MainUiState) {
             style = MaterialTheme.typography.bodySmall,
         )
       }
-    }
+    }*/
 
     Card(
         modifier = Modifier.padding(16.dp).widthIn(max = 1000.dp),
@@ -1134,22 +1180,22 @@ fun DrawBoard(uiState: MainUiState) {
                         val node = hexagonSpots.getValue(hex)
                         "Spot: " +
                             node?.coordinate.toString() +
-                            "\n" +
-                            "Piece: " +
-                            node?.piece?.abbreviation +
-                            "\n" +
-                            "Potential: " +
-                            node?.piece?.potential.toString().uppercase() +
-                            "\n" +
-                            "Neutralized: " +
-                            node?.piece?.isNeutralized.toString().uppercase() +
-                            if (node?.piece?.isNeutralized == true) {
+                            if (node?.piece != null) {
                               "\n" +
-                              "Active Piece: " + node.piece?.stackedPieces?.last()?.abbreviation
+                                  "Piece: " +
+                                  node.piece?.abbreviation +
+                                  "\n" +
+                                  "Potential: " +
+                                  node.piece?.potential.toString().uppercase() +
+                                  if (node.piece?.isNeutralized == true) {
+                                    "\n" +
+                                        "Neutralized: " +
+                                        node.piece?.isNeutralized.toString().uppercase() +
+                                        "\n" +
+                                        "Active Piece: " +
+                                        node.piece?.stackedPieces?.last()?.abbreviation
+                                  } else ""
                             } else ""
-
-
-
                       } ?: ""
                 }
         ) {
@@ -1232,88 +1278,9 @@ fun DrawBoard(uiState: MainUiState) {
                               ),
                       )
                     }
-
-/*                    drawText(
-                        textMeasurer = textMeasurer,
-                        topLeft =
-                            Offset(
-                                    hexagon.centerX.toFloat(),
-                                    hexagon.centerY.toFloat(),
-                                )
-                                .minus(canvasOffset)
-                                .minus(Offset(30f, 30f)),
-                        style = textStyle,
-                        text =
-                            buildAnnotatedString {
-                              withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
-                                append(
-                                    when (piece.type) {
-                                      PieceType.DVONN,
-                                      PieceType.PUNCT -> {
-                                        if (piece.isNeutralized) {
-                                          piece.stackedPieces.last().abbreviation
-                                        } else {
-                                          if (piece.potential) {
-                                            piece.abbreviation.uppercase()
-                                          } else {
-                                            piece.abbreviation.lowercase()
-                                          }
-                                        }
-                                      }
-
-                                      else -> {
-                                        if (piece.potential) {
-                                          piece.abbreviation.uppercase()
-                                        } else {
-                                          piece.abbreviation.lowercase()
-                                        }
-                                      }
-                                    }
-                                )
-                              }
-                            },
-                    )*/
                   }
                 }
           }
-
-          /*for (hexagon in grid.hexagons) {
-          	val neighbors =
-          			grid.getNeighborsOf(hexagon).map {
-          				Offset(
-          						it.centerX.toFloat(),
-          						it.centerY.toFloat(),
-          				)
-          			}
-
-          	for ((index, neighbor) in neighbors.withIndex()) {
-          		drawLine(
-          				color = Color.LightGray,
-          				start =
-          						Offset(
-          								hexagon.centerX.toFloat(),
-          								hexagon.centerY.toFloat(),
-          						),
-          				end = neighbor,
-          				strokeWidth = 1f,
-          		)
-          	}
-
-          	drawText(
-          			textMeasurer = textMeasurer,
-          			topLeft =
-          					Offset(
-          							hexagon.centerX.toFloat(),
-          							hexagon.centerY.toFloat(),
-          					),
-          			text =
-          					buildAnnotatedString {
-          						withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
-          							append("x:${hexagon.gridX},z:${hexagon.gridZ},y:${hexagon.gridY}")
-          						}
-          					},
-          	)
-          }*/
         }
       }
     }
@@ -1324,21 +1291,21 @@ fun DrawBoard(uiState: MainUiState) {
 fun Pieces(pieces: List<Piece>, title: String) {
 
   Card(
-      modifier = Modifier.padding(16.dp),
+      modifier = Modifier.padding(16.dp).fillMaxWidth(),
       elevation = 8.dp,
   ) {
     Column(
-        Modifier.padding(16.dp),
+        Modifier.padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Text(title, style = MaterialTheme.typography.headlineSmallEmphasized)
       Row(
-          Modifier.padding(16.dp),
+          Modifier,
       ) {
-        Grid(
-            config = {
-              gap(16.dp)
-            }
+        FlowRow(
+            Modifier.padding(20.dp).wrapContentHeight(align = Alignment.Top),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
           pieces
               .distinctBy { it.type }
