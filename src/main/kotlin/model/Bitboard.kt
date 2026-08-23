@@ -2486,21 +2486,12 @@ fun Bitboard.getDvonnMoves(
     val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
 
     // 3. Find intersecting occupied spots
-    var occupiedIndices = 0UL
-    var blockingPieces = occupiedColumnSpots and pathMask
-    while (blockingPieces != 0UL) {
-      // numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
-      val bitIndex = blockingPieces.countTrailingZeroBits()
-      occupiedIndices = occupiedIndices or (1UL shl bitIndex)
-
-      // Clear the lowest set bit so we can find the next one (e.g., 24)
-      blockingPieces = blockingPieces and (blockingPieces - 1UL)
-    }
+    val blockingPieces = occupiedColumnSpots and pathMask
 
     if (
         (columnActiveDvonnPieces > 0UL) &&
             (columnTargetDvonnPieces > 0UL) &&
-            occupiedIndices == 0UL // should be the same as OR right?
+            blockingPieces == 0UL
     ) {
       col.positions
           .filter {
@@ -2640,21 +2631,12 @@ fun Bitboard.getPunctMoves(
     val pathMask = (highBit - 1UL) xor ((lowBit shl 1) - 1UL)
 
     // 3. Find intersecting occupied spots
-    var occupiedIndices = 0UL
-    var blockingPieces = occupiedColumnSpots and pathMask
-    while (blockingPieces != 0UL) {
-      // numberOfTrailingZeros gives you the index of the lowest set bit (e.g., 17)
-      val bitIndex = blockingPieces.countTrailingZeroBits()
-      occupiedIndices = occupiedIndices or (1UL shl bitIndex)
-
-      // Clear the lowest set bit so we can find the next one (e.g., 24)
-      blockingPieces = blockingPieces and (blockingPieces - 1UL)
-    }
+    val blockingPieces = occupiedColumnSpots and pathMask
 
     if (
         (columnActivePunctPieces > 0UL) &&
             (columnTargetPunctPieces > 0UL) &&
-            occupiedIndices == 0UL // should be the same as OR right?
+            blockingPieces == 0UL
     ) {
       col.positions
           .filter {
