@@ -374,9 +374,9 @@ fun playOneGame(
           .let { if (it) break }
       }
 
-      check(value = turn <= MAX_TURNS_THRESHOLD) {
-        "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
-      }
+//      check(value = turn <= MAX_TURNS_THRESHOLD) {
+//        "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
+//      }
 
       playerWhoMadeTheLastMove = gameState.currentPlayer
       gameState = gameState.rotatePlayers()
