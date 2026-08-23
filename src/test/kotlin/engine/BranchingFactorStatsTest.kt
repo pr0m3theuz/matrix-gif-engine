@@ -5,21 +5,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.example.ai.humanEvaluation.SearchInfo
-import org.example.model.Model
-import org.example.model.Strength
-import org.example.model.initializeState
+import org.example.model.*
 
 class BranchingFactorStatsTest {
 
   @Test
   fun `test SearchInfo branching factors calculation`() {
-    val searchInfo = SearchInfo(
-        model = Model.MINIMAX,
-        strength = Strength.EASY,
-        totalNodesEvaluated = 100.0,
-        totalAvailableMovesEvaluated = 1500.0,
-        maxDepthReached = 4.0,
-    )
+    val searchInfo =
+        SearchInfo(
+            model = Model.MINIMAX,
+            strength = Strength.EASY,
+            totalNodesEvaluated = 100.0,
+            totalAvailableMovesEvaluated = 1500.0,
+            maxDepthReached = 4.0,
+        )
 
     assertEquals(15.0, searchInfo.averageBranchingFactor, 0.0001)
     // 100^(1/4) = 3.16227766
@@ -28,21 +27,23 @@ class BranchingFactorStatsTest {
 
   @Test
   fun `test SearchInfo branching factors edge cases`() {
-    val emptySearchInfo = SearchInfo(
-        model = Model.MINIMAX,
-        strength = Strength.RANDOM,
-    )
+    val emptySearchInfo =
+        SearchInfo(
+            model = Model.MINIMAX,
+            strength = Strength.RANDOM,
+        )
 
     assertEquals(0.0, emptySearchInfo.averageBranchingFactor, 0.0001)
     assertEquals(0.0, emptySearchInfo.effectiveBranchingFactor, 0.0001)
 
-    val zeroDepthSearchInfo = SearchInfo(
-        model = Model.MCTS,
-        strength = Strength.EASY,
-        totalNodesEvaluated = 50.0,
-        totalAvailableMovesEvaluated = 200.0,
-        maxDepthReached = 0.0,
-    )
+    val zeroDepthSearchInfo =
+        SearchInfo(
+            model = Model.MCTS,
+            strength = Strength.EASY,
+            totalNodesEvaluated = 50.0,
+            totalAvailableMovesEvaluated = 200.0,
+            maxDepthReached = 0.0,
+        )
 
     assertEquals(4.0, zeroDepthSearchInfo.averageBranchingFactor, 0.0001)
     assertEquals(0.0, zeroDepthSearchInfo.effectiveBranchingFactor, 0.0001)
@@ -50,26 +51,29 @@ class BranchingFactorStatsTest {
 
   @Test
   fun `test calculateTurnSearchStats aggregation`() {
-    val info1 = SearchInfo(
-        model = Model.MINIMAX,
-        strength = Strength.MEDIUM,
-        totalNodesEvaluated = 10.0,
-        totalAvailableMovesEvaluated = 100.0,
-        maxDepthReached = 2.0,
-    )
-    val info2 = SearchInfo(
-        model = Model.MINIMAX,
-        strength = Strength.MEDIUM,
-        totalNodesEvaluated = 90.0,
-        totalAvailableMovesEvaluated = 900.0,
-        maxDepthReached = 4.0,
-    )
+    val info1 =
+        SearchInfo(
+            model = Model.MINIMAX,
+            strength = Strength.MEDIUM,
+            totalNodesEvaluated = 10.0,
+            totalAvailableMovesEvaluated = 100.0,
+            maxDepthReached = 2.0,
+        )
+    val info2 =
+        SearchInfo(
+            model = Model.MINIMAX,
+            strength = Strength.MEDIUM,
+            totalNodesEvaluated = 90.0,
+            totalAvailableMovesEvaluated = 900.0,
+            maxDepthReached = 4.0,
+        )
 
-    val stats = calculateTurnSearchStats(
-        gameId = 1,
-        turn = 3,
-        searchInfos = listOf(info1, info2),
-    )
+    val stats =
+        calculateTurnSearchStats(
+            gameId = 1,
+            turn = 3,
+            searchInfos = listOf(info1, info2),
+        )
 
     assertEquals(1, stats?.gameId)
     assertEquals(3, stats?.turn)
@@ -86,19 +90,25 @@ class BranchingFactorStatsTest {
     val tempFile = File.createTempFile("search_stats_test", ".csv")
     tempFile.deleteOnExit()
 
-    val state = initializeState()
-    val searchInfo = SearchInfo(
-        model = Model.MCTS,
-        strength = Strength.EASY,
-        totalNodesEvaluated = 64.0,
-        totalAvailableMovesEvaluated = 320.0,
-        maxDepthReached = 3.0,
-    )
+    val state =
+        initializeState(
+            Player(name = PlayerName.WHITE),
+            Player(name = PlayerName.BLACK),
+        )
+    val searchInfo =
+        SearchInfo(
+            model = Model.MCTS,
+            strength = Strength.EASY,
+            totalNodesEvaluated = 64.0,
+            totalAvailableMovesEvaluated = 320.0,
+            maxDepthReached = 3.0,
+        )
     state.turnSearchInfo[1] = mutableListOf(mutableListOf(searchInfo))
 
     recordSearchStatsCSV(
         csvFile = tempFile,
         lock = "testLock",
+        seed = 1,
         gameId = 42,
         state = state,
     )
@@ -110,7 +120,7 @@ class BranchingFactorStatsTest {
 
     val row = lines[1].split(",")
     assertEquals("42", row[0]) // gameId
-    assertEquals("1", row[1])  // turn
+    assertEquals("1", row[1]) // turn
     assertEquals("MCTS", row[2]) // model
     assertEquals("3.0", row[3]) // depth
     assertEquals("5.0", row[4]) // avg_branching_factor (320 / 64)
@@ -123,14 +133,19 @@ class BranchingFactorStatsTest {
     val tempFile = File.createTempFile("raw_search_data_test", ".json")
     tempFile.deleteOnExit()
 
-    val state = initializeState()
-    val searchInfo = SearchInfo(
-        model = Model.MCTS,
-        strength = Strength.EASY,
-        totalNodesEvaluated = 64.0,
-        totalAvailableMovesEvaluated = 320.0,
-        maxDepthReached = 3.0,
-    )
+    val state =
+        initializeState(
+            Player(name = PlayerName.WHITE),
+            Player(name = PlayerName.BLACK),
+        )
+    val searchInfo =
+        SearchInfo(
+            model = Model.MCTS,
+            strength = Strength.EASY,
+            totalNodesEvaluated = 64.0,
+            totalAvailableMovesEvaluated = 320.0,
+            maxDepthReached = 3.0,
+        )
     state.turnSearchInfo[1] = mutableListOf(mutableListOf(searchInfo))
 
     recordRawSearchDataJson(
