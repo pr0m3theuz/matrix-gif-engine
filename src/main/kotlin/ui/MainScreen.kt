@@ -25,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -50,6 +52,7 @@ import org.hexworks.mixite.core.api.HexagonalGridBuilder
 import org.hexworks.mixite.core.api.HexagonalGridLayout
 import org.hexworks.mixite.core.api.contract.SatelliteData
 import org.jetbrains.skia.Image
+import kotlin.collections.map
 
 @Composable
 fun MainScreen(
@@ -202,8 +205,27 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
 
   var selectedMove by remember { mutableStateOf<PackedMove?>(null) }
 
+  val nodesToHighlight = selectedMove?.let {
+    when (it) {
+	    is PackedMove.Multiple -> {
+        it.values.map { move ->
+          bitmaskNodes.getValue(move.extractTargetBit()).coordinate
+        }
+      }
+	    is PackedMove.Single -> {
+        val temp = mutableListOf(
+          bitmaskNodes.getValue(it.value.extractTargetBit()).coordinate,
+        )
+        if (it.value.extractMoveType() == MoveType.UsePotential) {
+          temp.add(bitmaskNodes.getValue(it.value.extractSourceBit()).coordinate)
+        }
+        temp.toList()
+      }
+    }
+  } ?: emptyList()
+
   // todo draw the board
-  DrawBoard(uiState, selectedMove)
+  DrawBoard(uiState, nodesToHighlight)
 
   Row(
       modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -1065,8 +1087,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
 }
 
 @Composable
-// https://www.redblobgames.com/grids/hexagons/
-fun DrawBoard(uiState: MainUiState, selectMove: PackedMove? = null) {
+fun DrawBoard(uiState: MainUiState, selectedMoveCoordinates: List<Coordinate>) {
   val HEIGHT = 11
   val offsetAmount = 100f
   val canvasOffset = Offset(offsetAmount, offsetAmount.minus(30f))
@@ -1199,7 +1220,7 @@ fun DrawBoard(uiState: MainUiState, selectMove: PackedMove? = null) {
                       } ?: ""
                 }
         ) {
-          for ((index, hexagon) in hexagons.withIndex()) {
+          for (hexagon in hexagons) {
             val neighbors =
                 grid.getNeighborsOf(hexagon).map {
                   Offset(
@@ -1228,19 +1249,28 @@ fun DrawBoard(uiState: MainUiState, selectMove: PackedMove? = null) {
                   it.bitmask == bitmaskToCubeCoordinate.keys.toList()[index]
                 }
                 ?.let { node ->
+
+                  if (node.coordinate in selectedMoveCoordinates) {
+                    drawCircle(
+                      brush = Brush.linearGradient(
+                        colors = IBMColorBlindPalette.colors.map { it.copy(alpha = 0.6f) },
+                        end = Offset(size.width / 4f, 0f),
+                        tileMode = TileMode.Mirror
+                      ),
+                      center =
+                        Offset(
+                          hexagon.centerX.toFloat(),
+                          hexagon.centerY.toFloat(),
+                        )
+                          .minus(canvasOffset),
+                      radius =
+                        (hexagon.centerX -
+                            hexagon.points[0].coordinateX).toFloat().times(0.8f),
+                    )
+                  }
+
                   node.piece?.let { piece: Piece ->
-                    //                    drawCircle(
-                    //                        color = Color.White,
-                    //                        center =
-                    //                            Offset(
-                    //                                    hexagon.centerX.toFloat(),
-                    //                                    hexagon.centerY.toFloat(),
-                    //                                )
-                    //                                .minus(canvasOffset),
-                    //                        radius =
-                    //                            (hexagon.centerX -
-                    // hexagon.points[0].coordinateX).toFloat().times(0.7f),
-                    //                    )
+
 
                     val topPiece =
                         when (piece.type) {
