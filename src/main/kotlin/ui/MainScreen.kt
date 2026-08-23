@@ -1,14 +1,14 @@
-@file:OptIn(ExperimentalMaterialApi::class)
+@file:OptIn(
+    ExperimentalMaterialApi::class,
+    ExperimentalGridApi::class,
+    ExperimentalComposeUiApi::class,
+    ExperimentalFoundationApi::class,
+)
 
 package org.example.ui
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -19,16 +19,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import java.io.File
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.PackedMove
 import org.example.model.*
@@ -37,16 +49,20 @@ import org.hexworks.mixite.core.api.HexagonOrientation
 import org.hexworks.mixite.core.api.HexagonalGridBuilder
 import org.hexworks.mixite.core.api.HexagonalGridLayout
 import org.hexworks.mixite.core.api.contract.SatelliteData
+import org.jetbrains.skia.Image
 
 @Composable
-fun MainScreen(window: ComposeWindow, uiState: MainUiState, onEvent: (event: MainUiEvent) -> Unit) {
+fun MainScreen(
+    window: ComposeWindow,
+    uiState: MainUiState,
+    onEvent: (event: MainUiEvent) -> Unit,
+) {
   //        val context = LocalContext.current
 
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
-
+  val stateVertical = rememberScrollState(0)
   Scaffold(
-      modifier = Modifier.scrollable(rememberScrollState(), orientation = Orientation.Vertical),
       topBar = {
         TopAppBar(
             title = { Text("MATRX GIPF") }
@@ -61,23 +77,38 @@ fun MainScreen(window: ComposeWindow, uiState: MainUiState, onEvent: (event: Mai
       },
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
   ) { paddingValues ->
-    Surface(color = MaterialTheme.colorScheme.surface) {
-      Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues),
-        //      verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround,
+    Box(
+        modifier =
+            Modifier.fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.surface)
+    ) {
+      Box(
+          modifier =
+              Modifier.fillMaxSize()
+                  .verticalScroll(stateVertical)
+                  .padding(end = 12.dp, bottom = 12.dp)
       ) {
-        if (uiState.status == GameStatus.Init) {
-          configurePlayers(onEvent)
-        }
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            //      verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceAround,
+        ) {
+          if (uiState.status == GameStatus.Init) {
+            configurePlayers(onEvent)
+          }
 
-        if (uiState.status == GameStatus.Running && uiState.gameState != null) {
-          gameScreen(uiState, uiState.gameState, onEvent)
+          if (uiState.status == GameStatus.Running && uiState.gameState != null) {
+            gameScreen(uiState, uiState.gameState, onEvent)
+          }
         }
       }
+      VerticalScrollbar(
+          modifier = Modifier.fillMaxHeight().align(Alignment.CenterEnd),
+          adapter = rememberScrollbarAdapter(stateVertical),
+      )
     }
-
   }
 }
 
@@ -124,6 +155,19 @@ private fun gameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
   // todo draw the board
   DrawBoard(uiState)
 
+  Row(
+    modifier = Modifier.fillMaxWidth().padding(16.dp),
+    horizontalArrangement = Arrangement.SpaceAround,
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Pieces(gameState.currentPlayer.piecesInReserve.mapNotNull { it.extractPiece() }, "Reserve")
+
+    if (gameState.currentPlayer.capturedPieces.isNotEmpty()) {
+      Pieces(gameState.currentPlayer.capturedPieces.mapNotNull { it.extractPiece() }, "Captured")
+    }
+
+  }
+
   if (uiState.turnPhase != TurnPhase.PieceRemoval) {
     val (addPieceMoves, usePotentialMoves) =
         uiState.availableMoves.partition {
@@ -131,11 +175,21 @@ private fun gameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
         }
 
     if (addPieceMoves.isNotEmpty()) {
-      selectedMove = AddPieceMoveOptions(addPieceMoves, selectedMove)
+      AddPieceMoveOptions(
+          addPieceMoves,
+          updateSelectedMove = {
+            selectedMove = it
+          },
+      )
     }
 
     if (usePotentialMoves.isNotEmpty()) {
-      selectedMove = UsePotentialMoves(usePotentialMoves)
+      UsePotentialMoves(
+          usePotentialMoves,
+          updateSelectedMove = {
+            selectedMove = it
+          },
+      )
     }
   }
 
@@ -166,31 +220,36 @@ private fun PieceRemovalMoves(uiState: MainUiState): PackedMove? {
       elevation = 8.dp,
   ) {
     Column(
-        Modifier.padding(16.dp),
+        Modifier.padding(16.dp).heightIn(max = 200.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Text("Retrieve/Capture Moves", style = MaterialTheme.typography.headlineSmallEmphasized)
 
-      LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 192.dp)) {
-        items(uiState.availableMoves.size) { index ->
+      FlowRow(
+        Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+      ) {
+        uiState.availableMoves.forEach { move ->
           Row(
               verticalAlignment = Alignment.CenterVertically,
           ) {
-            val move =
-                (uiState.availableMoves[index] as PackedMove.Multiple).values.map { move ->
+            val nodes =
+                (move as PackedMove.Multiple).values.map { move ->
                   bitmaskNodes.getValue(move.extractTargetBit())
                 }
 
-            val text = move.joinToString { it.coordinate.toString() }
+            val text = nodes.joinToString { it.coordinate.toString() }
             Checkbox(
-                checked = selectedMove == uiState.availableMoves[index],
+                checked = selectedMove == move,
                 onCheckedChange = {
-                  selectedMove = if (selectedMove == uiState.availableMoves[index]) {
-                    null
-                  } else {
-                    uiState.availableMoves[index]
-                  }
-                }
+                  selectedMove =
+                      if (selectedMove == move) {
+                        null
+                      } else {
+                        move
+                      }
+                },
             )
             Text(text)
           }
@@ -204,7 +263,8 @@ private fun PieceRemovalMoves(uiState: MainUiState): PackedMove? {
 @Composable
 private fun UsePotentialMoves(
     usePotentialMoves: List<PackedMove>,
-): PackedMove? {
+    updateSelectedMove: (PackedMove?) -> Unit,
+) {
   var selectedMove by remember { mutableStateOf<PackedMove?>(null) }
 
   Card(
@@ -217,25 +277,34 @@ private fun UsePotentialMoves(
     ) {
       Text("Use Potential Moves", style = MaterialTheme.typography.headlineSmallEmphasized)
 
-      LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 192.dp)) {
-        items(usePotentialMoves.size) { index ->
+
+      FlowRow(
+        Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+      ) {
+        usePotentialMoves.forEach { potential ->
           Row(
               verticalAlignment = Alignment.CenterVertically,
           ) {
-            val move = (usePotentialMoves[index] as PackedMove.Single).value
+            val move = (potential as PackedMove.Single).value
             val pieceType = move.extractPieceType()
             val sourceNode = bitmaskNodes.getValue(move.extractSourceBit())
             val targetNode = bitmaskNodes.getValue(move.extractTargetBit())
 
-            val text = "$pieceType $sourceNode -> $targetNode"
+            val text = "${pieceType?.name}\n${sourceNode.coordinate} ➔ ${targetNode.coordinate}"
+
             Checkbox(
-                checked = selectedMove == usePotentialMoves[index],
+                checked = selectedMove == potential,
                 onCheckedChange = {
-                  selectedMove = if (selectedMove == usePotentialMoves[index]) {
-                    null
-                  } else {
-                    usePotentialMoves[index]
-                  }
+                  selectedMove =
+                      if (selectedMove == potential) {
+                        null
+                      } else {
+                        potential
+                      }
+
+                  updateSelectedMove(selectedMove)
                 },
             )
             Text(text)
@@ -244,22 +313,21 @@ private fun UsePotentialMoves(
       }
     }
   }
-
-  return selectedMove
 }
 
 @Composable
 private fun AddPieceMoveOptions(
     addPieceMoves: List<PackedMove>,
-    selectedMove: PackedMove?,
-): PackedMove? {
-  var selectedMove1 = selectedMove
+    updateSelectedMove: (PackedMove?) -> Unit,
+) {
+  var selectedMove by remember { mutableStateOf<PackedMove?>(null) }
   val pieceTypes =
       addPieceMoves
           .mapNotNull {
             (it as PackedMove.Single).value.extractPieceType()
           }
           .distinct()
+          .sortedBy { it.ordinal }
 
   val pushDirections =
       addPieceMoves
@@ -267,6 +335,7 @@ private fun AddPieceMoveOptions(
             (it as PackedMove.Single).value.extractPushDirection()
           }
           .distinct()
+          .sortedBy { it.ordinal }
 
   val targetPushDirections: MutableMap<ULong, MutableList<PushDirection?>> = mutableMapOf()
 
@@ -347,16 +416,20 @@ private fun AddPieceMoveOptions(
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Pieces")
-            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 128.dp)) {
-              items(pieceTypes.size) { pieceType ->
+            FlowRow(
+              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+              pieceTypes.forEach { pieceType ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                   Checkbox(
-                      checked = pieceTypes[pieceType] == selectedPieceType,
-                      onCheckedChange = { selectedPieceType = pieceTypes[pieceType] },
+                      checked = pieceType == selectedPieceType,
+                      onCheckedChange = { selectedPieceType = pieceType },
                   )
-                  Text(pieceTypes[pieceType].name)
+                  Text(pieceType.name)
                 }
               }
             }
@@ -368,8 +441,12 @@ private fun AddPieceMoveOptions(
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Push Directions")
-            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 192.dp)) {
-              items(pushDirections.size) { pushDirection ->
+            FlowRow(
+              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+              pushDirections.forEach { pushDirection ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -377,21 +454,30 @@ private fun AddPieceMoveOptions(
                       enabled =
                           if (selectedTargetNode != null) {
                             targetPushDirections[selectedTargetNode?.bitmask]?.contains(
-                                pushDirections[pushDirection]
+                                pushDirection
                             ) == true
-                          } else if (pushDirections[pushDirection] == selectedPushDirection) {
+                          } else if (pushDirection == selectedPushDirection) {
                             true
                           } else true,
-                      checked = pushDirections[pushDirection] == selectedPushDirection,
+                      checked = pushDirection == selectedPushDirection,
                       onCheckedChange = {
-                        if (pushDirections[pushDirection] == selectedPushDirection) {
+                        if (pushDirection == selectedPushDirection) {
                           selectedPushDirection = null
                         } else {
-                          selectedPushDirection = pushDirections[pushDirection]
+                          selectedPushDirection = pushDirection
                         }
                       },
                   )
-                  Text(pushDirections[pushDirection].name)
+                  Text(
+                      when (pushDirection) {
+                        PushDirection.UP -> "↑"
+                        PushDirection.DOWN -> "↓"
+                        PushDirection.UPPER_RIGHT -> "↗︎"
+                        PushDirection.LOWER_RIGHT -> "↘︎"
+                        PushDirection.UPPER_LEFT -> "↖︎"
+                        PushDirection.LOWER_LEFT -> "↙︎"
+                      } + " " + pushDirection.name.replace("_", " ")
+                  )
                 }
               }
             }
@@ -403,8 +489,12 @@ private fun AddPieceMoveOptions(
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Nodes")
-            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 96.dp)) {
-              items(targetNodes.size) { targetNode ->
+            FlowRow(
+              Modifier.fillMaxWidth(1f).padding(20.dp).wrapContentHeight(align = Alignment.Top),
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+              targetNodes.forEach { targetNode ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -412,21 +502,21 @@ private fun AddPieceMoveOptions(
                       enabled =
                           if (selectedPushDirection != null) {
                             pushDirectionTargets[selectedPushDirection]?.contains(
-                                targetNodes[targetNode].bitmask
+                                targetNode.bitmask
                             ) == true
-                          } else if (targetNodes[targetNode] == selectedTargetNode) {
+                          } else if (targetNode == selectedTargetNode) {
                             true
                           } else true,
-                      checked = targetNodes[targetNode] == selectedTargetNode,
+                      checked = targetNode == selectedTargetNode,
                       onCheckedChange = {
-                        if (targetNodes[targetNode] == selectedTargetNode) {
+                        if (targetNode == selectedTargetNode) {
                           selectedTargetNode = null
                         } else {
-                          selectedTargetNode = targetNodes[targetNode]
+                          selectedTargetNode = targetNode
                         }
                       },
                   )
-                  Text(targetNodes[targetNode].coordinate.toString())
+                  Text(targetNode.coordinate.toString())
                 }
               }
             }
@@ -441,16 +531,14 @@ private fun AddPieceMoveOptions(
           selectedPushDirection != null &&
           selectedTargetNode != null
   ) {
-    selectedMove1 = addPieceMoves.firstOrNull {
+    selectedMove = addPieceMoves.firstOrNull {
       val move = (it as PackedMove.Single).value
       move.extractPieceType() == selectedPieceType &&
           move.extractTargetBit() == selectedTargetNode!!.bitmask &&
           move.extractPushDirection() == selectedPushDirection
     }
-    return selectedMove1
+    updateSelectedMove(selectedMove)
   }
-
-  return null
 }
 
 @Composable
@@ -897,172 +985,403 @@ fun DrawBoard(uiState: MainUiState) {
 
   val spots = uiState.gameState?.board?.nodes?.filter { it.isSpot }
 
+  val hexagonSpots = hexagons.associateWith { hexagon ->
+    val bitmaskIndex = bitmaskToCubeCoordinate.values.indexOf(hexagon.cubeCoordinate)
+    val bitmask = bitmaskToCubeCoordinate.keys.toList()[bitmaskIndex]
+    spots?.first { it.bitmask == bitmask }
+  }
+
   Row {
     Card(
-      modifier = Modifier.padding(16.dp).weight(0.3f),
-      elevation = 2.dp,
+        modifier = Modifier.padding(16.dp).fillMaxWidth(0.25f),
+        elevation = 2.dp,
     ) {
       Column(
-        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+          modifier = Modifier.padding(16.dp).fillMaxWidth(),
       ) {
         val json = Json { prettyPrint = true }
         Text(
-          text = "Bitborad",
-          style = MaterialTheme.typography.bodyLarge,
+            text = "Bitborad",
+            style = MaterialTheme.typography.bodyLarge,
         )
 
         Text(
-          text = json.encodeToString(uiState.gameState?.bitboard),
-          style = MaterialTheme.typography.bodySmall,
-          )
+            text = json.encodeToString(uiState.gameState?.bitboard),
+            style = MaterialTheme.typography.bodySmall,
+        )
       }
     }
 
     Card(
-      modifier = Modifier.padding(16.dp).weight(0.7f),
-      elevation = 6.dp,
+        modifier = Modifier.padding(16.dp).widthIn(max = 1000.dp),
+        elevation = 6.dp,
     ) {
       val textMeasurer = rememberTextMeasurer()
 
       val textStyle =
-        TextStyle(
-          fontFamily = FontFamily.Monospace,
-          fontSize = MaterialTheme.typography.headlineSmallEmphasized.fontSize.times(2),
-          fontWeight = FontWeight.Bold,
-          brush =
-            Brush.linearGradient(
-              colors = IBMColorBlindPalette.colors,
-            ),
-        )
+          TextStyle(
+              fontFamily = FontFamily.Monospace,
+              fontSize = MaterialTheme.typography.headlineSmallEmphasized.fontSize.times(1),
+              fontWeight = FontWeight.Bold,
+              brush =
+                  Brush.linearGradient(
+                      colors = IBMColorBlindPalette.colors,
+                  ),
+          )
 
-      Canvas(modifier = Modifier.height(900.dp).width(900.dp)) {
-        for ((index, hexagon) in hexagons.withIndex()) {
-          val neighbors =
-            grid.getNeighborsOf(hexagon).map {
-              Offset(
-                it.centerX.toFloat(),
-                it.centerY.toFloat(),
-              )
-            }
+      var tooltipText by remember { mutableStateOf("") }
 
-          for (neighbor in neighbors) {
-            drawLine(
-              color = Color.Black,
-              start =
-                Offset(
-                  hexagon.centerX.toFloat(),
-                  hexagon.centerY.toFloat(),
-                )
-                  .minus(canvasOffset),
-              end = neighbor.minus(canvasOffset),
-              strokeWidth = 8f,
-            )
-          }
-        }
-        for ((index, hexagon) in hexagons.withIndex()) {
-          spots
-            ?.first {
-              it.bitmask == bitmaskToCubeCoordinate.keys.toList()[index]
-            }
-            ?.let { node ->
-              node.piece?.let { piece: Piece ->
-                drawCircle(
-                  color = Color.DarkGray.copy(alpha = 0.5f),
-                  center =
-                    Offset(
-                      hexagon.centerX.toFloat(),
-                      hexagon.centerY.toFloat(),
-                    )
-                      .minus(canvasOffset),
-                  radius =
-                    (hexagon.centerX - hexagon.points[0].coordinateX).toFloat().times(0.6f),
-                )
-                drawText(
-                  textMeasurer = textMeasurer,
-                  topLeft =
-                    Offset(
-                      hexagon.centerX.toFloat(),
-                      hexagon.centerY.toFloat(),
-                    )
-                      .minus(canvasOffset)
-                      .minus(Offset(30f, 30f)),
-                  style = textStyle,
-                  text =
-                    buildAnnotatedString {
-                      withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
-                        append(
-                          when (piece.type) {
-                            PieceType.DVONN,
-                            PieceType.PUNCT -> {
-                              if (piece.isNeutralized) {
-                                piece.stackedPieces.last().abbreviation
-                              } else {
-                                piece.abbreviation.also {
-                                  if (piece.potential) {
-                                    it.uppercase()
-                                  } else {
-                                    it.lowercase()
-                                  }
-                                }
-                              }
-                            }
-                            else -> {
-                              piece.abbreviation.also {
-                                if (piece.potential) {
-                                  it.uppercase()
-                                } else {
-                                  it.lowercase()
-                                }
-                              }
-                            }
-                          }
-                        )
-                      }
-                    },
+      TooltipArea(
+          tooltip = {
+            // Composable tooltip content:
+            if (tooltipText.isNotEmpty()) {
+              Surface(
+                  modifier = Modifier.shadow(4.dp),
+                  color = MaterialTheme.colorScheme.background,
+                  shape = RoundedCornerShape(4.dp),
+              ) {
+                Text(
+                    text = tooltipText,
+                    modifier = Modifier.padding(10.dp),
                 )
               }
             }
+          },
+          modifier = Modifier.padding(start = 40.dp),
+          delayMillis = 100, // In milliseconds
+          tooltipPlacement =
+              TooltipPlacement.CursorPoint(
+                  alignment = Alignment.TopEnd,
+                  offset =
+                      DpOffset(
+                          (8).dp,
+                          (-8).dp, // Tooltip offset
+                      ),
+              ),
+      ) {
+        Canvas(
+            modifier =
+                Modifier.height(900.dp).width(900.dp).onPointerEvent(PointerEventType.Move) {
+                  val position = it.changes.first().position
+                  val hexagon = hexagons.firstOrNull {
+                    val radius = abs(it.centerX - it.points[0].coordinateX).toFloat().times(0.8f)
+
+                    position.x.plus(100f) in it.centerX.minus(radius)..it.centerX.plus(radius) &&
+                        position.y.plus(70f) in it.centerY.minus(radius)..it.centerY.plus(radius)
+                  }
+
+                  tooltipText =
+                      hexagon?.let { hex ->
+                        val node = hexagonSpots.getValue(hex)
+                        "Spot: " +
+                            node?.coordinate.toString() +
+                            "\n" +
+                            "Piece: " +
+                            node?.piece?.abbreviation +
+                            "\n" +
+                            "Potential: " +
+                            node?.piece?.potential.toString().uppercase() +
+                            "\n" +
+                            "Neutralized: " +
+                            node?.piece?.isNeutralized.toString().uppercase() +
+                            if (node?.piece?.isNeutralized == true) {
+                              "\n" +
+                              "Active Piece: " + node.piece?.stackedPieces?.last()?.abbreviation
+                            } else ""
+
+
+
+                      } ?: ""
+                }
+        ) {
+          for ((index, hexagon) in hexagons.withIndex()) {
+            val neighbors =
+                grid.getNeighborsOf(hexagon).map {
+                  Offset(
+                      it.centerX.toFloat(),
+                      it.centerY.toFloat(),
+                  )
+                }
+
+            for (neighbor in neighbors) {
+              drawLine(
+                  color = Color.Black,
+                  start =
+                      Offset(
+                              hexagon.centerX.toFloat(),
+                              hexagon.centerY.toFloat(),
+                          )
+                          .minus(canvasOffset),
+                  end = neighbor.minus(canvasOffset),
+                  strokeWidth = 8f,
+              )
+            }
+          }
+          for ((index, hexagon) in hexagons.withIndex()) {
+            spots
+                ?.first {
+                  it.bitmask == bitmaskToCubeCoordinate.keys.toList()[index]
+                }
+                ?.let { node ->
+                  node.piece?.let { piece: Piece ->
+                    //                    drawCircle(
+                    //                        color = Color.White,
+                    //                        center =
+                    //                            Offset(
+                    //                                    hexagon.centerX.toFloat(),
+                    //                                    hexagon.centerY.toFloat(),
+                    //                                )
+                    //                                .minus(canvasOffset),
+                    //                        radius =
+                    //                            (hexagon.centerX -
+                    // hexagon.points[0].coordinateX).toFloat().times(0.7f),
+                    //                    )
+
+                    val topPiece =
+                        when (piece.type) {
+                          PieceType.DVONN,
+                          PieceType.PUNCT -> {
+                            if (piece.isNeutralized) {
+                              piece.stackedPieces.last()
+                            } else piece
+                          }
+                          else -> piece
+                        }
+
+                    val image = getPieceImage(topPiece)
+
+                    image?.let {
+                      drawImage(
+                          image,
+                          IntOffset.Zero,
+                          IntSize(it.width, it.height),
+                          dstOffset =
+                              IntOffset(
+                                      hexagon.centerX.toInt(),
+                                      hexagon.centerY.toInt(),
+                                  )
+                                  .minus(
+                                      IntOffset(
+                                          100 + it.width.times(0.1).toInt(),
+                                          70 + it.height.times(0.1).toInt(),
+                                      )
+                                  ),
+                          dstSize =
+                              IntSize(
+                                  it.width.times(0.2f).roundToInt(),
+                                  it.height.times(0.2f).roundToInt(),
+                              ),
+                      )
+                    }
+
+/*                    drawText(
+                        textMeasurer = textMeasurer,
+                        topLeft =
+                            Offset(
+                                    hexagon.centerX.toFloat(),
+                                    hexagon.centerY.toFloat(),
+                                )
+                                .minus(canvasOffset)
+                                .minus(Offset(30f, 30f)),
+                        style = textStyle,
+                        text =
+                            buildAnnotatedString {
+                              withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
+                                append(
+                                    when (piece.type) {
+                                      PieceType.DVONN,
+                                      PieceType.PUNCT -> {
+                                        if (piece.isNeutralized) {
+                                          piece.stackedPieces.last().abbreviation
+                                        } else {
+                                          if (piece.potential) {
+                                            piece.abbreviation.uppercase()
+                                          } else {
+                                            piece.abbreviation.lowercase()
+                                          }
+                                        }
+                                      }
+
+                                      else -> {
+                                        if (piece.potential) {
+                                          piece.abbreviation.uppercase()
+                                        } else {
+                                          piece.abbreviation.lowercase()
+                                        }
+                                      }
+                                    }
+                                )
+                              }
+                            },
+                    )*/
+                  }
+                }
+          }
+
+          /*for (hexagon in grid.hexagons) {
+          	val neighbors =
+          			grid.getNeighborsOf(hexagon).map {
+          				Offset(
+          						it.centerX.toFloat(),
+          						it.centerY.toFloat(),
+          				)
+          			}
+
+          	for ((index, neighbor) in neighbors.withIndex()) {
+          		drawLine(
+          				color = Color.LightGray,
+          				start =
+          						Offset(
+          								hexagon.centerX.toFloat(),
+          								hexagon.centerY.toFloat(),
+          						),
+          				end = neighbor,
+          				strokeWidth = 1f,
+          		)
+          	}
+
+          	drawText(
+          			textMeasurer = textMeasurer,
+          			topLeft =
+          					Offset(
+          							hexagon.centerX.toFloat(),
+          							hexagon.centerY.toFloat(),
+          					),
+          			text =
+          					buildAnnotatedString {
+          						withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
+          							append("x:${hexagon.gridX},z:${hexagon.gridZ},y:${hexagon.gridY}")
+          						}
+          					},
+          	)
+          }*/
         }
-
-        /*for (hexagon in grid.hexagons) {
-					val neighbors =
-							grid.getNeighborsOf(hexagon).map {
-								Offset(
-										it.centerX.toFloat(),
-										it.centerY.toFloat(),
-								)
-							}
-
-					for ((index, neighbor) in neighbors.withIndex()) {
-						drawLine(
-								color = Color.LightGray,
-								start =
-										Offset(
-												hexagon.centerX.toFloat(),
-												hexagon.centerY.toFloat(),
-										),
-								end = neighbor,
-								strokeWidth = 1f,
-						)
-					}
-
-					drawText(
-							textMeasurer = textMeasurer,
-							topLeft =
-									Offset(
-											hexagon.centerX.toFloat(),
-											hexagon.centerY.toFloat(),
-									),
-							text =
-									buildAnnotatedString {
-										withStyle(ParagraphStyle(textAlign = TextAlign.Start)) {
-											append("x:${hexagon.gridX},z:${hexagon.gridZ},y:${hexagon.gridY}")
-										}
-									},
-					)
-				}*/
       }
     }
   }
+}
 
+@Composable
+fun Pieces(pieces: List<Piece>, title: String) {
+
+  Card(
+      modifier = Modifier.padding(16.dp),
+      elevation = 8.dp,
+  ) {
+    Column(
+        Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      Text(title, style = MaterialTheme.typography.headlineSmallEmphasized)
+      Row(
+          Modifier.padding(16.dp),
+      ) {
+        Grid(
+            config = {
+              gap(16.dp)
+            }
+        ) {
+          pieces
+              .distinctBy { it.type }
+              .forEach { piece ->
+                val count = pieces.sumOf { if (it.type == piece.type) it.count() else 0 }
+
+                if (count > 0) {
+                  TooltipArea(
+                      tooltip = {
+                        // Composable tooltip content:
+                        Surface(
+                            modifier = Modifier.shadow(4.dp),
+                            color = MaterialTheme.colorScheme.background,
+                            shape = RoundedCornerShape(4.dp),
+                        ) {
+                          Text(
+                              text = piece.type.name,
+                              modifier = Modifier.padding(10.dp),
+                          )
+                        }
+                      },
+                      modifier = Modifier.padding(start = 40.dp),
+                      delayMillis = 100, // In milliseconds
+                      tooltipPlacement =
+                          TooltipPlacement.CursorPoint(
+                              alignment = Alignment.TopEnd,
+                              offset =
+                                  DpOffset(
+                                      (8).dp,
+                                      (-8).dp, // Tooltip offset
+                                  ),
+                          ),
+                  ) {
+                    BadgedBox(
+                        badge = {
+                          Badge(
+                              backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+                              contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                          ) {
+                            Text("$count", style = MaterialTheme.typography.headlineSmallEmphasized)
+                          }
+                        }
+                    ) {
+                      Image(
+                          modifier = Modifier.size(64.dp),
+                          bitmap = getPieceImage(piece),
+                          contentDescription = null,
+                      )
+                    }
+                  }
+                }
+              }
+        }
+      }
+    }
+  }
+}
+
+private fun getPieceImage(piece: Piece): ImageBitmap {
+
+  val dir = "/Users/darronporter/Downloads/Dissertation/code/src/main/resources/images"
+
+  return Image.makeFromEncoded(
+          File("$dir/${piece.colorName.name.lowercase()}_${piece.type.name.lowercase()}.png")
+              .readBytes()
+      )
+      .toComposeImageBitmap()
+
+  //  val blackDvonn =
+  //
+  //  val blackGipf =
+  //    Image.makeFromEncoded(File("$dir/Black_GIPF.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val blackPunct =
+  //    Image.makeFromEncoded(File("$dir/Black_PUNCT.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val blackTamsk =
+  //    Image.makeFromEncoded(File("$dir/Black_TAMSK.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val blackYinsh =
+  //    Image.makeFromEncoded(File("$dir/Black_YINSH.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val blackZertz =
+  //    Image.makeFromEncoded(File("$dir/Black_ZERTZ.png").readBytes())
+  //      .toComposeImageBitmap()
+  //
+  //  val whiteDvonn =
+  //    Image.makeFromEncoded(File("$dir/White_DVONN.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val whiteGipf =
+  //    Image.makeFromEncoded(File("$dir/White_GIPF.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val whitePunct =
+  //    Image.makeFromEncoded(File("$dir/White_PUNCT.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val whiteTamsk =
+  //    Image.makeFromEncoded(File("$dir/White_TAMSK.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val whiteYinsh =
+  //    Image.makeFromEncoded(File("$dir/White_YINSH.png").readBytes())
+  //      .toComposeImageBitmap()
+  //  val whiteZertz =5
+  //    Image.makeFromEncoded(File("$dir/White_ZERTZ.png").readBytes())
+  //      .toComposeImageBitmap()
 }

@@ -55,5 +55,9 @@ data class Piece(
 
     return pieceType or potential or color or neutralized
   }
+
+  fun count(): Int {
+    return if (potential) 2 else 1
+  }
 }
 

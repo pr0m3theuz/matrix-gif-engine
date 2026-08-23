@@ -84,7 +84,7 @@ val bitmaskToCubeCoordinate = mapOf<ULong, CubeCoordinate>(
 	17179869184UL to CubeCoordinate.fromCoordinates(gridX=8, gridZ=1),
 	34359738368UL to CubeCoordinate.fromCoordinates(gridX=8, gridZ=0),
 	68719476736UL to CubeCoordinate.fromCoordinates(gridX=8, gridZ=-1),
-	137438953472UL to CubeCoordinate.fromCoordinates(gridX=9, gridZ=-1),
+	137438953472UL to CubeCoordinate.fromCoordinates(gridX=9, gridZ=1),
 	274877906944UL to CubeCoordinate.fromCoordinates(gridX=9, gridZ=0),
-	549755813888UL to CubeCoordinate.fromCoordinates(gridX=9, gridZ=1),
+	549755813888UL to CubeCoordinate.fromCoordinates(gridX=9, gridZ=-1),
 )
