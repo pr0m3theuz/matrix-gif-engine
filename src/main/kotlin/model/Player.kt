@@ -14,6 +14,7 @@ import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
 import org.example.engine.TranspositionTable
+import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -106,6 +107,7 @@ data class Player(
     val piecesInReserve: MutableList<UInt> = mutableListOf(),
     val capturedPieces: MutableList<UInt> = mutableListOf(),
     @EncodeDefault val timeControl: Boolean = false,
+    @EncodeDefault val timeDuration: Duration = 1000.milliseconds,
     @EncodeDefault val useRAVE: Boolean = false,
     @EncodeDefault val enableFPU: Boolean = false,
     @EncodeDefault val enablePW: Boolean = false,
@@ -129,6 +131,7 @@ data class Player(
         capturedPieces = this.capturedPieces.toMutableList(),
         timeControl = this.timeControl,
         useRAVE = this.useRAVE,
+        timeDuration = this.timeDuration,
         enableFPU = this.enableFPU,
         enablePW = this.enablePW,
         iterations = this.iterations,
@@ -149,6 +152,7 @@ data class Player(
         piecesInReserve = this.piecesInReserve.toMutableList(),
         capturedPieces = this.capturedPieces.toMutableList(),
         timeControl = this.timeControl,
+        timeDuration = this.timeDuration,
         useRAVE = this.useRAVE,
         enableFPU = this.enableFPU,
         enablePW = this.enablePW,
@@ -513,7 +517,7 @@ fun Player.selectMove(
             var bestMove: PackedMove? = null
 
             val startTime = System.currentTimeMillis()
-            val endTime = startTime + strength.duration.inWholeMilliseconds
+            val endTime = startTime + timeDuration.inWholeMilliseconds
 
             while (System.nanoTime() < endTime /*&& startingDepth <= strength.minimaxDepth*/) {
               val searchInfo =
@@ -595,7 +599,7 @@ fun Player.selectMove(
             var bestMove: PackedMove? = null
 
             val startTime = System.currentTimeMillis()
-            val endTime = startTime + strength.duration.inWholeMilliseconds
+            val endTime = startTime + timeDuration.inWholeMilliseconds
 
             while (
                 System.currentTimeMillis() < endTime /*|| startingDepth <= strength.minimaxDepth*/
@@ -681,7 +685,7 @@ fun Player.selectMove(
           turnPhase = turnPhase,
           rounds = 0..this.iterations,
           rng = rng,
-          duration = if (timeControl) strength.duration else Duration.ZERO,
+          duration = if (timeControl) timeDuration else Duration.ZERO,
           useRAVE = this.useRAVE,
           searchInfos = searchInfos,
       )
