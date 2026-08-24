@@ -320,8 +320,6 @@ fun alphaBetaNgMxSearch(
   val captureTableIndex = depth.coerceIn(0, currentPlayer.captureMoves[0].lastIndex)
 
   try {
-    availableMoves.sortByDescending {
-      val move = (it as PackedMove.Single).value
       val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
       val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
       //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
@@ -331,6 +329,8 @@ fun alphaBetaNgMxSearch(
       val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
       val ttMoveType = if (pvMove) ttEntry.move.extractMoveType() else 0u
 
+    availableMoves.sortByDescending {
+      val move = (it as PackedMove.Single).value
       if (pvMove && move == ttEntry.move) {
         1000000
       } else if (move == killer0) {
