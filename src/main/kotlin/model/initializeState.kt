@@ -15,7 +15,7 @@ fun initializeState(
     transpositionTable = TranspositionTable(),
   )
 
-  val blackPlayer = playerTwo.copy(
+  val blackPlayer = playerTwo.deepCopy().copy(
     transpositionTable = TranspositionTable(),
   )
 
