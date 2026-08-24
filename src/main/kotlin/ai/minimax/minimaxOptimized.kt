@@ -319,64 +319,69 @@ fun alphaBetaNgMxSearch(
   val killerTableIndex = depth.coerceIn(0, currentPlayer.killerMoves[0].lastIndex)
   val captureTableIndex = depth.coerceIn(0, currentPlayer.captureMoves[0].lastIndex)
 
-  availableMoves.sortByDescending {
-    val move = (it as PackedMove.Single).value
-    val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
-    val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
-    //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
-    //    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
+  try {
+    availableMoves.sortByDescending {
+      val move = (it as PackedMove.Single).value
+      val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
+      val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
+      //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
+      //    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
 
-    val ttTargetBit = if (pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
-    val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
-    val ttMoveType = if (pvMove) ttEntry.move.extractMoveType() else 0u
+      val ttTargetBit = if (pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
+      val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
+      val ttMoveType = if (pvMove) ttEntry.move.extractMoveType() else 0u
 
-    if (pvMove && move == ttEntry.move) {
-      1000000
-    } else if (move == killer0) {
-      900000
-    } else if (move == killer1) {
-      800000
-      //    } else if (captureMoves.isNotEmpty()) {
-      //      if (
-      //        captureMoves.any {
-      //          val capture = (it as PackedMove.Single).value
-      //          capture.extractTargetBit() == move.extractTargetBit() &&
-      //              capture.extractPushDirection() == move.extractPushDirection() &&
-      //              capture.extractMoveType() == move.extractMoveType()
-      //        }
-      //      ) {
-      //        450000
-      //      } else 0
-    } else if (
+      if (pvMove && move == ttEntry.move) {
+        1000000
+      } else if (move == killer0) {
+        900000
+      } else if (move == killer1) {
+        800000
+        //    } else if (captureMoves.isNotEmpty()) {
+        //      if (
+        //        captureMoves.any {
+        //          val capture = (it as PackedMove.Single).value
+        //          capture.extractTargetBit() == move.extractTargetBit() &&
+        //              capture.extractPushDirection() == move.extractPushDirection() &&
+        //              capture.extractMoveType() == move.extractMoveType()
+        //        }
+        //      ) {
+        //        450000
+        //      } else 0
+      } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
-            move.extractTargetBit() == ttTargetBit &&
-            move.extractPushDirection() == ttPushDirection &&
-            move.extractMoveType() == ttMoveType
-    ) {
-      500000
+        move.extractTargetBit() == ttTargetBit &&
+        move.extractPushDirection() == ttPushDirection &&
+        move.extractMoveType() == ttMoveType
+      ) {
+        500000
 
-      //    } else if (move == capture0) {
-      //      7
-      //    } else if (move == capture1) {
-      //      6
-      //    } else if (
-      //      // todo try target bit and push direction
-      //      (move.extractTargetBit() == killer0.extractTargetBit() &&
-      //      move.extractPushDirection() == killer0.extractPushDirection() &&
-      //      move.extractMoveType() == killer0.extractMoveType())
-      //    ) {
-      //      4
-      //    } else if (
-      //    // todo try target bit and push direction
-      //      (move.extractTargetBit() == killer1.extractTargetBit() &&
-      //          move.extractPushDirection() == killer1.extractPushDirection() &&
-      //          move.extractMoveType() == killer1.extractMoveType())
-      //    ) {
-      //      3
-    } else {
-      0
+        //    } else if (move == capture0) {
+        //      7
+        //    } else if (move == capture1) {
+        //      6
+        //    } else if (
+        //      // todo try target bit and push direction
+        //      (move.extractTargetBit() == killer0.extractTargetBit() &&
+        //      move.extractPushDirection() == killer0.extractPushDirection() &&
+        //      move.extractMoveType() == killer0.extractMoveType())
+        //    ) {
+        //      4
+        //    } else if (
+        //    // todo try target bit and push direction
+        //      (move.extractTargetBit() == killer1.extractTargetBit() &&
+        //          move.extractPushDirection() == killer1.extractPushDirection() &&
+        //          move.extractMoveType() == killer1.extractMoveType())
+        //    ) {
+        //      3
+      } else {
+        0
+      }
     }
+  } catch (e: Exception) {
+    logger.error { e.message }
   }
+
 
   // endregion
 
