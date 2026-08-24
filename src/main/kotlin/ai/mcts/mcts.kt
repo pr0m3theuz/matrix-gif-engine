@@ -1,6 +1,9 @@
 package org.example.ai.mcts
 
-import kotlin.math.*
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlinx.serialization.Serializable
@@ -63,32 +66,34 @@ data class RaveStats(
 
 // @Serializable
 data class MCTSNode(
-  val bitboard: Bitboard,
-  val currentPlayer: Player,
-  val nextPlayer: Player,
-  val parentNode: MCTSNode? = null,
-  val move: PackedMove? = null,
-  var turnCount: Int = 0,
-  val turnPhase: TurnPhase,
-  val previousTurnPhases: List<TurnPhase> = emptyList(),
-  val childrenNodes: MutableList<MCTSNode> = mutableListOf(),
-  val winCounts: MutableMap<PlayerName, Int> =
+    val bitboard: Bitboard,
+    val currentPlayer: Player,
+    val nextPlayer: Player,
+    val parentNode: MCTSNode? = null,
+    val move: PackedMove? = null,
+    var turnCount: Int = 0,
+    val turnPhase: TurnPhase,
+    val previousTurnPhases: List<TurnPhase> = emptyList(),
+    val childrenNodes: MutableList<MCTSNode> = mutableListOf(),
+    val winCounts: MutableMap<PlayerName, Int> =
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
-  var rolloutCounts: Int = 0,
-  val unvisitedMoves: MutableList<PackedMove>,
-  val useRAVE: Boolean = false,
-  val raveStats: Map<PackedMove, RaveStats>,
-  var raveCounts: Int = 0,
-  var raveWins: MutableMap<PlayerName, Int> =
+    var rolloutCounts: Int = 0,
+    val unvisitedMoves: MutableList<PackedMove>,
+    val useRAVE: Boolean = false,
+    val enableFPU: Boolean = false,
+    val enablePW: Boolean = false,
+    val raveStats: Map<PackedMove, RaveStats>,
+    var raveCounts: Int = 0,
+    var raveWins: MutableMap<PlayerName, Int> =
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
-  var parentMeanFPUValue: Float = 0.5f,
-  var meanFPUValue: Float = 0.5f, // from Facebook's ELF Go
-  val progressiveWideningConstant: Double = 1.5, // where
-  val progressiveWideningAlpha: Double = 0.4, // where
-  val totalActions: Int,
-  val evalScore: Int = 0,
-  var expValue: Double = 0.0,
-  var priorProbability: Double = 0.0,
+    var parentMeanFPUValue: Float = 0.5f,
+    var meanFPUValue: Float = 0.5f, // from Facebook's ELF Go
+    val progressiveWideningConstant: Double = 1.5, // where
+    val progressiveWideningAlpha: Double = 0.4, // where
+    val totalActions: Int,
+    val evalScore: Int = 0,
+    var expValue: Double = 0.0,
+    var priorProbability: Double = 0.0,
 ) {
   override fun toString(): String {
     return "MCTSNode{" +
@@ -175,6 +180,8 @@ data class MCTSNode(
                 else emptyList(),
             unvisitedMoves = nodeMoves,
             useRAVE = this.useRAVE,
+            enableFPU = this.enableFPU,
+            enablePW = this.enablePW,
             raveStats = nodeMoves.associateWith { RaveStats() },
             raveCounts = this.raveStats.getValue(selectedPackedMove).raveCounts,
             raveWins = this.raveStats.getValue(selectedPackedMove).raveWins.toMutableMap(),
@@ -246,7 +253,7 @@ data class MCTSNode(
         val stats = this.raveStats[move]
         if (stats != null && stats.raveCounts > 0) {
           exploitation =
-            stats.raveWins.getValue(this.currentPlayer.name).toDouble() / stats.raveCounts
+              stats.raveWins.getValue(this.currentPlayer.name).toDouble() / stats.raveCounts
         }
       }
 
@@ -284,7 +291,8 @@ data class MCTSNode(
     // unconditionally, independent of useRAVE, since an unvisited node has no RAVE stats either.
     if (childNode.rolloutCounts <= 0) {
       //  return fpu.toDouble()
-      val exploration = sqrt(ln(parentRollouts)/*.div(1 + 0) because childNode.rolloutCounts == 0*/)
+      val exploration =
+          sqrt(ln(parentRollouts) /*.div(1 + 0) because childNode.rolloutCounts == 0*/)
       return fpu + temperature * exploration
     }
 
@@ -363,6 +371,7 @@ data class MCTSNode(
     return bestChildNode ?: expandNextChild(rng)
   }
 }
+
 // endregion
 
 fun selectMoveMCTS(
@@ -394,6 +403,8 @@ fun selectMoveMCTS(
           turnPhase = turnPhase,
           unvisitedMoves = availableMoves.toMutableList(),
           useRAVE = useRAVE,
+          enableFPU = currentPlayer.enableFPU,
+          enablePW = currentPlayer.enablePW,
           raveStats = availableMoves.associateWith { RaveStats() },
           totalActions = availableMoves.size,
       )
@@ -424,11 +435,12 @@ fun selectMoveMCTS(
             "Verify tree expansion bounds and parent-child link validity."
       }
 
-// region TODO REWRITE
-      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> = mapOf(
-        PlayerName.WHITE to mutableSetOf(),
-        PlayerName.BLACK to mutableSetOf(),
-      )
+      // region TODO REWRITE
+      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
+          mapOf(
+              PlayerName.WHITE to mutableSetOf(),
+              PlayerName.BLACK to mutableSetOf(),
+          )
 
       val winner =
           simulateRandomGame(
@@ -442,15 +454,14 @@ fun selectMoveMCTS(
       // Group moves by the player who made them so AMAF lookups below never cross-credit a
       // sibling using a move the *other* player happened to play during the rollout. Includes
       // both the in-tree path moves and the random-playout moves, per the RAVE definition.
-//      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
-//          collectTreePathMovesByPlayer(currentNode).apply {
-//            for (simulatedMove in simulationActions) {
-//              getOrPut(simulatedMove.player) { mutableSetOf() }.add(simulatedMove.move)
-//            }
-//          }
+      //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
+      //          collectTreePathMovesByPlayer(currentNode).apply {
+      //            for (simulatedMove in simulationActions) {
+      //              getOrPut(simulatedMove.player) { mutableSetOf() }.add(simulatedMove.move)
+      //            }
+      //          }
 
-// endregion
-
+      // endregion
 
       backpropagateRewards(currentNode, winner, simulationActions)
     }
@@ -484,10 +495,11 @@ fun selectMoveMCTS(
 
       // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
       // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
-      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> = mapOf(
-        PlayerName.WHITE to mutableSetOf(),
-        PlayerName.BLACK to mutableSetOf(),
-      )
+      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
+          mapOf(
+              PlayerName.WHITE to mutableSetOf(),
+              PlayerName.BLACK to mutableSetOf(),
+          )
 
       val winner =
           simulateRandomGame(
@@ -503,12 +515,12 @@ fun selectMoveMCTS(
       // Group moves by the player who made them so AMAF lookups below never cross-credit a
       // sibling using a move the *other* player happened to play during the rollout. Includes
       // both the in-tree path moves and the random-playout moves, per the RAVE definition.
-//      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
-//          collectTreePathMovesByPlayer(currentNode).apply {
-//            for ((player, move) in simulationActions) {
-//              getOrPut(player) { mutableSetOf() }.add(move)
-//            }
-//          }
+      //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
+      //          collectTreePathMovesByPlayer(currentNode).apply {
+      //            for ((player, move) in simulationActions) {
+      //              getOrPut(player) { mutableSetOf() }.add(move)
+      //            }
+      //          }
       // endregion
       backpropagateRewards(currentNode, winner, simulationActions)
     }
@@ -550,7 +562,7 @@ fun selectMoveMCTS(
         maxDepthReached = maxDepthVal,
         branchingCounts = branchingCounts,
         totalActions = totalActions,
-        depths =  depth,
+        depths = depth,
     )
   }
 
@@ -571,9 +583,9 @@ fun selectMoveMCTS(
 }
 
 private fun backpropagateRewards(
-  currentNode: MCTSNode?,
-  winner: Player?,
-  simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>>
+    currentNode: MCTSNode?,
+    winner: Player?,
+    simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>>,
 ) {
   var currentNode1 = currentNode
   while (currentNode1 != null && winner != null) {
@@ -584,7 +596,8 @@ private fun backpropagateRewards(
 
     // Check if actions appear in the simulation for the PARENT node's context
     if (parentNode != null) {
-      val movesByParentParentPlayer = simulationActionsByPlayer.getValue(parentNode.currentPlayer.name)
+      val movesByParentParentPlayer =
+          simulationActionsByPlayer.getValue(parentNode.currentPlayer.name)
 
       // Check if this sibling's action appears in the simulation
       for (siblingNode in parentNode.childrenNodes) {
