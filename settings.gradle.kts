@@ -14,3 +14,4 @@ pluginManagement {
 }
 
 rootProject.name = "code"
+include("core", "desktop", "cli")

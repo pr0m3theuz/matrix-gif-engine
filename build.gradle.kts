@@ -1,89 +1,16 @@
 plugins {
-	application
-	kotlin("jvm") version "2.3.20"
-	kotlin("plugin.serialization") version "2.3.20"
-	alias(libs.plugins.composeMultiplatform)
-	alias(libs.plugins.composeCompiler)
+    kotlin("jvm") version "2.3.20" apply false
+    kotlin("plugin.serialization") version "2.3.20" apply false
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
-repositories {
-	mavenCentral()
-	maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-	maven("https://jitpack.io")
-	google()
-}
-
-dependencies {
-	implementation(compose.desktop.currentOs)
-	implementation(libs.kotlinx.coroutinesSwing)
-	implementation(libs.compose.uiToolingPreview)
-	implementation(libs.compose.runtime)
-	implementation(libs.compose.foundation)
-	implementation(libs.compose.material3)
-	implementation(libs.compose.ui)
-	implementation(libs.compose.components.resources)
-	implementation(libs.androidx.lifecycle.viewmodelCompose)
-	implementation(libs.androidx.lifecycle.runtimeCompose)
-
-	// Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-core
-	implementation("androidx.compose.material:material-icons-core:1.7.8")
-	//implementation(libs.androidx.foundation.desktop)
-	// Source: https://mvnrepository.com/artifact/androidx.compose.material/material-icons-extended
-	runtimeOnly("androidx.compose.material:material-icons-extended:1.7.8")
-
-	implementation("io.github.oshai:kotlin-logging:7.0.7")
-	implementation("ch.qos.logback:logback-classic:1.5.38")
-	testImplementation(kotlin("test"))
-
-	testImplementation("net.jqwik:jqwik:1.10.1")
-
-	testImplementation("com.code-intelligence:jazzer-junit:0.24.0")
-	testImplementation("com.code-intelligence:jazzer-api:0.24.0")
-
-	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-	testImplementation("org.junit.jupiter:junit-jupiter:5.14.0")
-
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-
-	implementation("org.jetbrains.kotlinx:multik-default:0.3.1")
-	// https://central.sonatype.com/artifact/io.jhdf/jhdf
-	implementation("io.jhdf:jhdf:0.13.0")
-
-	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
-	implementation("commons-cli:commons-cli:1.11.0")
-	implementation("com.github.ajalt.clikt:clikt:5.1.0")
-
-	implementation("com.github.Hexworks.mixite:mixite.core-jvm:2018.2.0-RELEASE")
-}
-
-tasks.test {
-	useJUnitPlatform()
-}
-
-kotlin {
-	jvmToolchain(21)
-	compilerOptions {
-//		freeCompilerArgs.add("-Xmx8g -Xmx16g -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/peachyfox/Downloads/matrx_gipf/log/java")
-	}
-}
-
-
-tasks {
-	val fatJar = register<Jar>("fatJar") {
-		dependsOn.addAll(listOf("compileJava", "compileKotlin", "processResources")) // We need this for Gradle optimization to work
-		archiveClassifier.set("standalone") // Naming the jar
-		duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//		manifest { attributes(mapOf("Main-Class" to "org.example.MainKt")) } // /Provided we set it up in the application plugin configuration
-		val sourcesMain = sourceSets.main.get()
-		val contents = configurations.runtimeClasspath.get()
-			.map { if (it.isDirectory) it else zipTree(it) } +
-				sourcesMain.output
-		from(contents)
-	}
-	build {
-		dependsOn(fatJar) // Trigger fat jar creation during build
-	}
+subprojects {
+    repositories {
+        mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+        maven("https://jitpack.io")
+        google()
+    }
 }
