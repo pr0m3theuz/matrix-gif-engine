@@ -43,10 +43,10 @@ for depth in "${MM_DEPTHS[@]}"; do
     for rave in "${RAVE_OPTIONS[@]}"; do
 
       A1_FLAGS="-m minimax -mdp $depth"
-      A2_FLAGS="-M mcts -MI $iters"
+      A2_FLAGS="-M mcts -Mi $iters"
 
       if [ "$rave" = true ]; then
-        A2_FLAGS="$A2_FLAGS -MRV"
+        A2_FLAGS="$A2_FLAGS -Mrv"
         RAVE_LABEL="RAVE"
       else
         RAVE_LABEL="Standard"
