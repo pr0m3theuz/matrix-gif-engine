@@ -343,6 +343,8 @@ fun playOneGame(
 ): List<String> {
   val rng = Random(seed)
 
+  constructZobristHashKeysTable(rng)
+
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
