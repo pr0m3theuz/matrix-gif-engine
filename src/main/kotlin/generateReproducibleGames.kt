@@ -4,18 +4,24 @@ package org.example
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
+import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock.System.now
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.apache.commons.cli.*
+import org.apache.commons.cli.CommandLine
+import org.apache.commons.cli.CommandLineParser
+import org.apache.commons.cli.DefaultParser
+import org.apache.commons.cli.ParseException
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
-import kotlin.time.Instant
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -101,9 +107,9 @@ suspend fun main(args: Array<String>) = coroutineScope {
         Progressive Widening: ${agentTwo.enablePW}
         First Play Urgency:   ${agentTwo.enableFPU}
       =====================================================================================
-      """.trimIndent()
+      """
+        .trimIndent()
   }
-
 
   if (cmd.hasOption("replay")) {
     val gameId =
@@ -212,6 +218,9 @@ private suspend fun runBatch(
   val failed = AtomicInteger(0)
   val startTime = System.currentTimeMillis()
 
+  val allowedTime = AtomicLong(0)
+  val previousCompletionTime = AtomicLong(0)
+
   constructZobristHashKeysTable(Random(42))
 
   val elapsedMs = measureTimeMillis {
@@ -240,12 +249,23 @@ private suspend fun runBatch(
 
               val n = completed.incrementAndGet()
               if (n % 10 == 0) {
+                previousCompletionTime.set(System.currentTimeMillis())
                 val secs = (System.currentTimeMillis() - startTime) / 1000.0
                 val rate = n / secs
+
                 val etaSecs = ((totalGames - n) / rate).toLong()
+                allowedTime.set(etaSecs / 2)
                 logger.info {
                   "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
                 }
+              }
+
+              if (
+                  allowedTime.get() > 5.seconds.inWholeMilliseconds &&
+                    System.nanoTime() >
+                          previousCompletionTime.get().plus(allowedTime.get())
+              ) {
+                exitProcess(1)
               }
             } catch (e: Throwable) {
               failed.incrementAndGet()
@@ -267,9 +287,10 @@ private suspend fun runBatch(
   }
   if (failed.get() > 0) {
     logger.info { "Failures logged to $FAILURES_LOG — replay any of them with:" }
-//    logger.info {
-//      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
-//    }
+    //    logger.info {
+    //      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms
+    // $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
+    //    }
   }
 
   coroutineContext.cancelChildren()
@@ -349,28 +370,30 @@ fun playOneGame(
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
       initializeState(
-        whitePlayer = Player(
-          name = PlayerName.WHITE,
-          model = agentOne.model,
-          strength = agentOne.strength,
-          timeControl = agentOne.timeControl,
-          useRAVE = agentOne.useRAVE,
-          enableFPU = agentOne.enableFPU,
-          enablePW = agentOne.enablePW,
-          iterations = agentOne.iterations,
-          depth = agentOne.depth,
-        ),
-        blackPlayer = Player(
-          name = PlayerName.BLACK,
-          model = agentTwo.model,
-          strength = agentTwo.strength,
-          timeControl = agentTwo.timeControl,
-          useRAVE = agentTwo.useRAVE,
-          enableFPU = agentTwo.enableFPU,
-          enablePW = agentTwo.enablePW,
-          iterations = agentTwo.iterations,
-          depth = agentTwo.depth,
-        ),
+          whitePlayer =
+              Player(
+                  name = PlayerName.WHITE,
+                  model = agentOne.model,
+                  strength = agentOne.strength,
+                  timeControl = agentOne.timeControl,
+                  useRAVE = agentOne.useRAVE,
+                  enableFPU = agentOne.enableFPU,
+                  enablePW = agentOne.enablePW,
+                  iterations = agentOne.iterations,
+                  depth = agentOne.depth,
+              ),
+          blackPlayer =
+              Player(
+                  name = PlayerName.BLACK,
+                  model = agentTwo.model,
+                  strength = agentTwo.strength,
+                  timeControl = agentTwo.timeControl,
+                  useRAVE = agentTwo.useRAVE,
+                  enableFPU = agentTwo.enableFPU,
+                  enablePW = agentTwo.enablePW,
+                  iterations = agentTwo.iterations,
+                  depth = agentTwo.depth,
+              ),
       )
 
   var turn = 0
@@ -460,30 +483,32 @@ fun playOneGame(
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
-    initializeState(
-      whitePlayer = Player(
-        name = PlayerName.WHITE,
-        model = agentOne.model,
-        strength = agentOne.strength,
-        timeControl = agentOne.timeControl,
-        useRAVE = agentOne.useRAVE,
-        enableFPU = agentOne.enableFPU,
-        enablePW = agentOne.enablePW,
-        iterations = agentOne.iterations,
-        depth = agentOne.depth,
-      ),
-      blackPlayer = Player(
-        name = PlayerName.BLACK,
-        model = agentTwo.model,
-        strength = agentTwo.strength,
-        timeControl = agentTwo.timeControl,
-        useRAVE = agentTwo.useRAVE,
-        enableFPU = agentTwo.enableFPU,
-        enablePW = agentTwo.enablePW,
-        iterations = agentTwo.iterations,
-        depth = agentTwo.depth,
-      ),
-    )
+      initializeState(
+          whitePlayer =
+              Player(
+                  name = PlayerName.WHITE,
+                  model = agentOne.model,
+                  strength = agentOne.strength,
+                  timeControl = agentOne.timeControl,
+                  useRAVE = agentOne.useRAVE,
+                  enableFPU = agentOne.enableFPU,
+                  enablePW = agentOne.enablePW,
+                  iterations = agentOne.iterations,
+                  depth = agentOne.depth,
+              ),
+          blackPlayer =
+              Player(
+                  name = PlayerName.BLACK,
+                  model = agentTwo.model,
+                  strength = agentTwo.strength,
+                  timeControl = agentTwo.timeControl,
+                  useRAVE = agentTwo.useRAVE,
+                  enableFPU = agentTwo.enableFPU,
+                  enablePW = agentTwo.enablePW,
+                  iterations = agentTwo.iterations,
+                  depth = agentTwo.depth,
+              ),
+      )
 
   var turn = 0
   var playerWhoMadeTheLastMove: Player? = null
