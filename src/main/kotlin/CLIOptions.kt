@@ -45,7 +45,6 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
           .longOpt("$prefix-time-control")
           .hasArg(true)
           .argName("${prefix.uppercase()}-TIME-CONTROL")
-          .type(Int::class.java)
           .desc("Time in milliseconds given to $name search for a move")
           .get()
 
@@ -61,7 +60,6 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
       Option.builder("${shortPrefix}rv")
           .longOpt("$prefix-mcts-rave")
           .hasArg(false)
-          //            .argName("AGENT-1-MCTS-RAVE")
           .desc("Enable MCTS RAVE for $name (default: false)")
           .get()
 
@@ -69,7 +67,6 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
       Option.builder("${shortPrefix}fpu")
           .longOpt("$prefix-mcts-fpu")
           .hasArg(false)
-          //            .argName("AGENT-1-MCTS-RAVE")
           .desc("Enable First Play Urgency for $name (default: false)")
           .get()
 
@@ -77,17 +74,15 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
       Option.builder("${shortPrefix}pw")
           .longOpt("$prefix-mcts-pw")
           .hasArg(false)
-          //            .argName("AGENT-1-MCTS-RAVE")
           .desc("Enable MCTS Progressive Widening for $name (default: false)")
           .get()
 
   val iterations =
-      Option.builder("${shortPrefix}iter")
+      Option.builder("${shortPrefix}i")
           .longOpt("$prefix-mcts-iterations")
           .hasArg(true)
           .argName("${prefix.uppercase()}-ITERATIONS")
           .desc("Number of MCTS Iterations for $name (default: 0)")
-          .type(Int::class.java)
           .get()
 
   val depth =
@@ -96,7 +91,6 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
           .hasArg(true)
           .argName("${prefix.uppercase()}-DEPTH")
           .desc("Depth of Minimax Search for $name (default: 1)")
-          .type(Int::class.java)
           .get()
 
   return listOf(model, strength, timeControl, timeDuration, rave, fpu, pw, iterations, depth)
@@ -118,19 +112,19 @@ fun parseAgentArgs(
 
   val timeDuration =
       if (cmd.hasOption("$prefix-time-duration"))
-          cmd.getParsedOptionValue<Int>("$prefix-time-duration").milliseconds
+          cmd.getOptionValue("$prefix-time-duration").toInt().milliseconds
       else Duration.ZERO
 
-  val raveMode = cmd.hasOption("$prefix-rave")
-  val fpu = cmd.hasOption("$prefix-fpu")
-  val pw = cmd.hasOption("$prefix-pw")
+  val raveMode = cmd.hasOption("$prefix-mcts-rave")
+  val fpu = cmd.hasOption("$prefix-mcts-fpu")
+  val pw = cmd.hasOption("$prefix-mcts-pw")
 
   val iterations =
-      if (cmd.hasOption("$prefix-iterations")) cmd.getParsedOptionValue<Int>("$prefix-iterations")
+      if (cmd.hasOption("$prefix-mcts-iterations")) cmd.getOptionValue("$prefix-mcts-iterations").toInt()
       else 0
 
   val depth =
-      if (cmd.hasOption("$prefix-depth")) cmd.getParsedOptionValue<Int>("$prefix-depth") else 1
+      if (cmd.hasOption("$prefix-minimax-depth")) cmd.getOptionValue("$prefix-minimax-depth").toInt() else 1
 
   return AgentConfig(
       model = model,
