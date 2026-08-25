@@ -138,7 +138,7 @@ fun alphaBetaNgMxSearch(
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
   val initBitboard = bitboard.deepCopy()
-  val initialHash = bitboard.getZobristHash(currentPlayer)
+//  val initialHash = bitboard.getZobristHash(currentPlayer)
   //  val bitboard = convertBoardToBitboard(state.board)
 
   // TODO Need to score piece removals
@@ -274,7 +274,7 @@ fun alphaBetaNgMxSearch(
   // region Transposition Table & Move Ordering
   val (ttFound, ttEntry) =
       transpositionTable.probe(
-          hash = initialHash,
+          hash = bitboard.getZobristHash(currentPlayer),
       )
 
   val ttAlpha = alphaBetaScore.alpha // + forcedRemovalScore
@@ -531,6 +531,7 @@ fun alphaBetaNgMxSearch(
 
           bound = Bound.EXACT
         }
+
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
           currentPlayer.updateKillerMoves(moveValue, depth)
 

@@ -82,8 +82,8 @@ suspend fun main(args: Array<String>) = coroutineScope {
       [Agent 1 (White)]
         Model:                ${agentOne.model}
         Strength:             ${agentOne.strength}
-        MCTS Iterations:      ${agentOne.iterations}
         Minimax Depth:        ${agentOne.depth}
+        MCTS Iterations:      ${agentOne.iterations}
         Time Control:         ${agentOne.timeControl}
         Time Duration:        ${agentOne.timeDuration}
         MCTS RAVE:            ${agentOne.useRAVE}
