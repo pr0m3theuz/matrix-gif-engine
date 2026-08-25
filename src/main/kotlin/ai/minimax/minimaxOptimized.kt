@@ -17,7 +17,7 @@ import org.example.model.*
 
 val MAX_HISTORY: Int = 100000
 const val INFINITY: Int = 2_000_000_000
-const val MAX_Q_DEPTH: Int = 1
+const val MAX_Q_DEPTH: Int = 2
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -322,8 +322,8 @@ fun alphaBetaNgMxSearch(
 
     val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
     val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
-    //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
-    //    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
+        val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
+        val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
 
     val ttTargetBit = if (pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
     val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
@@ -337,17 +337,17 @@ fun alphaBetaNgMxSearch(
       900000
     } else if (move == killer1) {
       800000
-      //    } else if (captureMoves.isNotEmpty()) {
-      //      if (
-      //        captureMoves.any {
-      //          val capture = (it as PackedMove.Single).value
-      //          capture.extractTargetBit() == move.extractTargetBit() &&
-      //              capture.extractPushDirection() == move.extractPushDirection() &&
-      //              capture.extractMoveType() == move.extractMoveType()
-      //        }
-      //      ) {
-      //        450000
-      //      } else 0
+          } else if (captureMoves.isNotEmpty()) {
+            if (
+              captureMoves.any {
+                val capture = (it as PackedMove.Single).value
+                capture.extractTargetBit() == move.extractTargetBit() &&
+                    capture.extractPushDirection() == move.extractPushDirection() &&
+                    capture.extractMoveType() == move.extractMoveType()
+              }
+            ) {
+              450000
+            } else 0
     } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
             move.extractTargetBit() == ttTargetBit &&
