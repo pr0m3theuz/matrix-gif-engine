@@ -212,6 +212,8 @@ private suspend fun runBatch(
   val failed = AtomicInteger(0)
   val startTime = System.currentTimeMillis()
 
+  constructZobristHashKeysTable(Random(42))
+
   val elapsedMs = measureTimeMillis {
     val jobs =
         (1..totalGames).map { gameId ->
@@ -342,8 +344,6 @@ fun playOneGame(
     agentTwo: AgentConfig,
 ): List<String> {
   val rng = Random(seed)
-
-  constructZobristHashKeysTable(rng)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.

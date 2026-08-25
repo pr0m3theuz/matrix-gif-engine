@@ -17,7 +17,7 @@ import org.example.model.*
 
 val MAX_HISTORY: Int = 100000
 const val INFINITY: Int = 2_000_000_000
-const val MAX_Q_DEPTH: Int = 2
+const val MAX_Q_DEPTH: Int = 1
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
