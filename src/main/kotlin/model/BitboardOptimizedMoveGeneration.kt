@@ -811,16 +811,16 @@ fun Bitboard.identifyAvailableMoves(
 
   when (currentPlayer.name) {
     PlayerName.WHITE -> {
-      if (blackZERTZ != 0UL) {
+      if (whiteZERTZ != 0UL) {
         getZertzMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackYINSH != 0UL) {
+      if (whiteYINSH != 0UL) {
         getYinshMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackDVONNLayer[0] != 0UL) {
+      if (whiteDVONNLayer[0] != 0UL) {
         getDvonnMoves(currentPlayer, columnInfos, movesBuffer)
       }
-      if (blackPUNCTLayer[0] != 0UL) {
+      if (whitePUNCTLayer[0] != 0UL) {
         getPunctMoves(currentPlayer, columnInfos, movesBuffer)
       }
     }

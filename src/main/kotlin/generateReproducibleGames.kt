@@ -1,13 +1,32 @@
+@file:OptIn(ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
+
 package org.example
 
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.parameters.groups.OptionGroup
+import com.github.ajalt.clikt.parameters.groups.provideDelegate
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.help
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.int
+import com.github.ajalt.clikt.parameters.types.long
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.commons.cli.*
@@ -155,11 +174,41 @@ private suspend fun runBatch(
 
   val filePrefix =
       "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
-  val file = File(RESULTS_DIR, "${filePrefix}_games_record_${now().toString().replace(":", "-")}.jsonl")
+  val timestamp = now().toString().replace(":", "-")
+
+  val file = File(RESULTS_DIR, "${filePrefix}_games_record_$timestamp.jsonl")
   val lock = file.path
+
+
+  val searchStatsFile = File(RESULTS_DIR, "${filePrefix}_search_stats_$timestamp.csv")
 
   if (!file.exists()) {
     file.createNewFile()
+  }
+
+  if (!searchStatsFile.exists()) {
+    searchStatsFile.createNewFile()
+  }
+
+  searchStatsFile.appendText("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
+
+  val gameResultsData = Channel<String>(capacity = 64)
+  val searchResultsData = Channel<String>(capacity = 64)
+
+  val gameResultsWriter = launch(Dispatchers.IO) {
+    file.bufferedWriter().use { writer ->
+      for (line in gameResultsData) {
+        writer.write(line)
+      }
+     }
+  }
+
+  val searchResultsWriter = launch(Dispatchers.IO) {
+    searchStatsFile.bufferedWriter().use { writer ->
+      for (line in searchResultsData) {
+        writer.write(line)
+      }
+     }
   }
 
   val dispatcher = Dispatchers.Default.limitedParallelism(parallelism)
@@ -167,15 +216,17 @@ private suspend fun runBatch(
   val failed = AtomicInteger(0)
   val startTime = System.currentTimeMillis()
 
+
   val elapsedMs = measureTimeMillis {
     val jobs =
         (1..totalGames).map { gameId ->
           async(dispatcher) {
             // Derive a per-game seed from the base seed + gameId so it's
             // deterministic across runs but distinct per game.
+
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
-              playOneGame(
+              val result = playOneGame(
                   file = file,
                   fileLock = lock,
                   gameId = gameId,
@@ -191,6 +242,10 @@ private suspend fun runBatch(
                   playerOneEnableRAVE = playerOneEnableRAVE,
                   playerTwoEnableRAVE = playerTwoEnableRAVE,
               )
+
+              gameResultsData.send(result.first())
+              searchResultsData.send(result.last())
+
               val n = completed.incrementAndGet()
               if (n % 10 == 0) {
                 val secs = (System.currentTimeMillis() - startTime) / 1000.0
@@ -209,6 +264,12 @@ private suspend fun runBatch(
     jobs.awaitAll()
   }
 
+  gameResultsData.close()
+  searchResultsData.close()
+
+  gameResultsWriter.join()
+  searchResultsWriter.join()
+
   logger.info {
     "Done. ${completed.get()} succeeded, ${failed.get()} failed, ${elapsedMs / 1000.0}s elapsed."
   }
@@ -218,11 +279,12 @@ private suspend fun runBatch(
       "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
     }
   }
+
+  coroutineContext.cancelChildren()
 }
 
 /** Deterministic per-game seed. Same baseSeed + gameId always yields the same seed. */
 private fun deriveSeed(baseSeed: Long, gameId: Int): Long {
-  // Simple, stable mix — not cryptographic, just needs to avoid obvious collisions.
   return baseSeed xor (gameId.toLong() * -0x61c8864680b583ebL)
 }
 
@@ -294,7 +356,7 @@ fun playOneGame(
     playerTwoTimeControl: Boolean = false,
     playerOneEnableRAVE: Boolean = false,
     playerTwoEnableRAVE: Boolean = false,
-) {
+): List<String>  {
   val rng = Random(seed)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
@@ -382,7 +444,7 @@ fun playOneGame(
   //    else -> {}
   //  }
 
-  recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn)
+  return recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn)
   //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
 }
 

@@ -2,7 +2,7 @@
 
 package org.example.ai.humanEvaluation
 
-import kotlin.math.min
+import kotlin.math.max
 import kotlin.random.Random
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -13,7 +13,6 @@ import org.example.engine.Bound
 import org.example.engine.TranspositionTable
 import org.example.engine.getZobristHash
 import org.example.model.*
-import kotlin.math.max
 
 val MAX_HISTORY: Int = 100000
 const val INFINITY: Int = 2_000_000_000
@@ -28,30 +27,29 @@ data class BestPackedMove(
 
 @Serializable
 data class SearchInfo(
-  var model: Model,
-  var strength: Strength,
-  var turnPhase: MutableList<TurnPhase> = mutableListOf(),
-  var depths: MutableList<Double> = mutableListOf(),
-  var nodesSearched: MutableList<Double> = mutableListOf(),
-  val branchingCounts: MutableList<Double> = mutableListOf(),
-  val totalActions: MutableList<Double> = mutableListOf(),
-  val totalActionsSum: MutableList<Double> = mutableListOf(),
-  var totalNodesEvaluated: Double = 0.0,
-  var totalAvailableMovesEvaluated: Double = 0.0,
-  var maxDepthReached: Double = 0.0,
+    var model: Model,
+    var strength: Strength,
+    var turnPhase: MutableList<TurnPhase> = mutableListOf(),
+    var depths: MutableList<Double> = mutableListOf(),
+    var nodesSearched: MutableList<Double> = mutableListOf(),
+    val branchingCounts: MutableList<Double> = mutableListOf(),
+    val totalActions: MutableList<Double> = mutableListOf(),
+    val totalActionsSum: MutableList<Double> = mutableListOf(),
+    var totalNodesEvaluated: Double = 0.0,
+    var totalAvailableMovesEvaluated: Double = 0.0,
+    var maxDepthReached: Double = 0.0,
 ) {
   val computedNodesEvaluated: Double
-    get() = if (totalNodesEvaluated > 0.0) totalNodesEvaluated
-            else if (nodesSearched.isNotEmpty()) nodesSearched.sum()
-            else totalActions.size.toDouble()
+    get() =
+        if (totalNodesEvaluated > 0.0) totalNodesEvaluated
+        else if (nodesSearched.isNotEmpty()) nodesSearched.sum() else totalActions.size.toDouble()
 
   val computedAvailableMovesEvaluated: Double
-    get() = if (totalAvailableMovesEvaluated > 0.0) totalAvailableMovesEvaluated
-            else totalActions.sum()
+    get() =
+        if (totalAvailableMovesEvaluated > 0.0) totalAvailableMovesEvaluated else totalActions.sum()
 
   val computedMaxDepth: Double
-    get() = if (maxDepthReached > 0.0) maxDepthReached
-            else (depths.maxOrNull() ?: 0.0)
+    get() = if (maxDepthReached > 0.0) maxDepthReached else (depths.maxOrNull() ?: 0.0)
 
   val averageBranchingFactor: Double
     get() {
@@ -146,7 +144,6 @@ fun alphaBetaNgMxSearch(
   // TODO Need to score piece removals
   // TODO enforce PieceRemovalRules & handle intersecting lines
   // TODO if linesWithFourInARow is empty, return/skip
-
 
   /**
    * A regular move and an extra move are considered one single turn, whether the extra move is made
@@ -274,7 +271,6 @@ fun alphaBetaNgMxSearch(
     return BestPackedMove()
   }
 
-
   // region Transposition Table & Move Ordering
   val (ttFound, ttEntry) =
       transpositionTable.probe(
@@ -323,14 +319,18 @@ fun alphaBetaNgMxSearch(
   val killerTableIndex = depth.coerceIn(0, currentPlayer.killerMoves[0].lastIndex)
   val captureTableIndex = depth.coerceIn(0, currentPlayer.captureMoves[0].lastIndex)
 
-  availableMoves.sortByDescending {
-    val move = (it as PackedMove.Single).value
     val killer0 = currentPlayer.killerMoves[0][killerTableIndex]
     val killer1 = currentPlayer.killerMoves[1][killerTableIndex]
     //    val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
     //    val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
 
-    if (pvMove && move == ttEntry.move) {
+    val ttTargetBit = if (pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
+    val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
+    val ttMoveType = if (pvMove) ttEntry.move.extractMoveType() else 0u
+
+  availableMoves.sortByDescending {
+    val move = (it as PackedMove.Single).value
+      if (pvMove && move == ttEntry.move) {
       1000000
     } else if (move == killer0) {
       900000
@@ -349,13 +349,9 @@ fun alphaBetaNgMxSearch(
       //      } else 0
     } else if (
         pvMove && // todo try target bit and push direction. works for add piece but not for use
-            // potential
-            ((move.extractTargetBit() == ttEntry.move.extractTargetBit() &&
-                move.extractPushDirection() == ttEntry.move.extractPushDirection() &&
-                move.extractMoveType() == ttEntry.move.extractMoveType()) // ||
-            //                (move.extractPieceType() == ttEntry.move.extractPieceType() &&
-            //                    move.extractMoveType() == ttEntry.move.extractMoveType())
-            )
+            move.extractTargetBit() == ttTargetBit &&
+            move.extractPushDirection() == ttPushDirection &&
+            move.extractMoveType() == ttMoveType
     ) {
       500000
 
