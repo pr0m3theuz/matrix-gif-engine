@@ -555,7 +555,7 @@ fun selectMoveMCTS(
 
     return SearchInfo(
         model = Model.MCTS,
-        strength = currentPlayer.strength,
+        strength = currentPlayer.iterations.toString(),
         turnPhase = turnPhases,
         totalNodesEvaluated = nodesCount,
         totalAvailableMovesEvaluated = totalAvailableMovesSum,

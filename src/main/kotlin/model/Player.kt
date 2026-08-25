@@ -525,7 +525,7 @@ fun Player.selectMove(
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
-                      strength = this.strength,
+                      strength = timeDuration.toString(),
                   )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -562,11 +562,11 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while (startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= depth) {
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
-                      strength = this.strength,
+                      strength = depth.toString(),
                   )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -609,7 +609,7 @@ fun Player.selectMove(
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
-                      strength = this.strength,
+                      strength = timeDuration.toString(),
                   )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -646,11 +646,11 @@ fun Player.selectMove(
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
-            while (startingDepth <= strength.minimaxDepth) {
+            while (startingDepth <= depth) {
               val searchInfo =
                   SearchInfo(
                       model = Model.MINIMAX,
-                      strength = this.strength,
+                      strength = depth.toString(),
                   )
               searchInfo.turnPhase.add(turnPhase)
 
@@ -685,10 +685,11 @@ fun Player.selectMove(
           currentPlayer = this.liteDeepCopy(),
           nextPlayer = opponent.liteDeepCopy(),
           turnPhase = turnPhase,
-          rounds = strength.mctsRounds,
+          rounds = 0..iterations,
           rng = rng,
           duration = if (timeControl) timeDuration else Duration.ZERO,
           useRAVE = this.useRAVE,
+
           searchInfos = searchInfos,
       )
     }
