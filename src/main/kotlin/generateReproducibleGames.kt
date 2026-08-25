@@ -2,38 +2,20 @@
 
 package org.example
 
-import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.core.Context
-import com.github.ajalt.clikt.core.main
-import com.github.ajalt.clikt.parameters.groups.OptionGroup
-import com.github.ajalt.clikt.parameters.groups.provideDelegate
-import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.flag
-import com.github.ajalt.clikt.parameters.options.help
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.types.enum
-import com.github.ajalt.clikt.parameters.types.int
-import com.github.ajalt.clikt.parameters.types.long
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancelChildren
+import kotlin.time.Clock.System.now
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.commons.cli.*
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
-import kotlin.time.Clock.System.now
+import kotlin.time.Instant
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -47,7 +29,6 @@ private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  * <SEED> -v <VERBOSE> -m <AGENT-1-MODEL> -ms <AGENT-1-DIFFICULTY> -M <AGENT-2-MODEL> -MS
  * <AGENT-2-DIFFICULTY
  */
-
 private const val FAILURES_DIR = "output/failures"
 private const val FAILURES_LOG = "output/failures.jsonl"
 
@@ -86,17 +67,43 @@ suspend fun main(args: Array<String>) = coroutineScope {
     return@coroutineScope
   }
 
-  val playerOneModel = getModel(cmd.getOptionValue("agent-1-model"))
-  val playerOneStrength = getStrength(cmd.getOptionValue("agent-1-strength"))
+  val agentOne = parseAgentArgs(cmd, "Agent 1 (White)", "agent-1", "m")
+  val agentTwo = parseAgentArgs(cmd, "Agent 2 (White)", "agent-2", "m")
 
-  val playerTwoModel = getModel(cmd.getOptionValue("agent-2-model"))
-  val playerTwoStrength = getStrength(cmd.getOptionValue("agent-2-strength"))
+  val startTimestamp = System.currentTimeMillis()
+  val startIso = Instant.fromEpochMilliseconds(startTimestamp).toString()
 
-  val playerOneTimeControl = cmd.hasOption("player-one-time-control")
-  val playerOneEnableRAVE = cmd.hasOption("player-one-mcts-rave")
+  logger.info {
+    """
+      ============================== EXECUTION CONFIGURATION ==============================
+      Start Time: $startIso ($startTimestamp ms)
+      Mode:       ${if (cmd.hasOption("replay")) "Replay" else "Batch"}
 
-  val playerTwoTimeControl = cmd.hasOption("player-two-time-control")
-  val playerTwoEnableRAVE = cmd.hasOption("player-two-mcts-rave")
+      [Agent 1 (White)]
+        Model:                ${agentOne.model}
+        Strength:             ${agentOne.strength}
+        MCTS Iterations:      ${agentOne.iterations}
+        Minimax Depth:        ${agentOne.depth}
+        Time Control:         ${agentOne.timeControl}
+        Time Duration:        ${agentOne.timeDuration}
+        MCTS RAVE:            ${agentOne.useRAVE}
+        Progressive Widening: ${agentOne.enablePW}
+        First Play Urgency:   ${agentOne.enableFPU}
+
+      [Agent 2 (Black)]
+        Model:                ${agentTwo.model}
+        Strength:             ${agentTwo.strength}
+        Minimax Depth:        ${agentTwo.depth}
+        MCTS Iterations:      ${agentTwo.iterations}
+        Time Control:         ${agentTwo.timeControl}
+        Time Duration:        ${agentTwo.timeDuration}
+        MCTS RAVE:            ${agentTwo.useRAVE}
+        Progressive Widening: ${agentTwo.enablePW}
+        First Play Urgency:   ${agentTwo.enableFPU}
+      =====================================================================================
+      """.trimIndent()
+  }
+
 
   if (cmd.hasOption("replay")) {
     val gameId =
@@ -112,14 +119,8 @@ suspend fun main(args: Array<String>) = coroutineScope {
         seed,
         verbose = verbose,
         timestamp = 0L,
-        playerOneModel = playerOneModel,
-        playerOneStrength = playerOneStrength,
-        playerTwoModel = playerTwoModel,
-        playerTwoStrength = playerTwoStrength,
-        playerOneTimeControl = playerOneTimeControl,
-        playerTwoTimeControl = playerTwoTimeControl,
-        playerOneEnableRAVE = playerOneEnableRAVE,
-        playerTwoEnableRAVE = playerTwoEnableRAVE,
+        agentOne,
+        agentTwo,
     )
 
     logger.info {
@@ -142,14 +143,8 @@ suspend fun main(args: Array<String>) = coroutineScope {
         totalGames = totalGames,
         parallelism = parallelism,
         baseSeed = baseSeed,
-        playerOneModel = playerOneModel,
-        playerOneStrength = playerOneStrength,
-        playerTwoModel = playerTwoModel,
-        playerTwoStrength = playerTwoStrength,
-        playerOneTimeControl = playerOneTimeControl,
-        playerTwoTimeControl = playerTwoTimeControl,
-        playerOneEnableRAVE = playerOneEnableRAVE,
-        playerTwoEnableRAVE = playerTwoEnableRAVE,
+        agentOne,
+        agentTwo,
     )
   }
 }
@@ -158,14 +153,8 @@ private suspend fun runBatch(
     totalGames: Int,
     parallelism: Int,
     baseSeed: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean,
-    playerTwoTimeControl: Boolean,
-    playerOneEnableRAVE: Boolean,
-    playerTwoEnableRAVE: Boolean,
+    agentOne: AgentConfig,
+    agentTwo: AgentConfig,
 ) = coroutineScope {
   logger.info {
     "Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed"
@@ -173,12 +162,17 @@ private suspend fun runBatch(
   logger.info { "(save baseSeed if you want to reproduce this exact batch later)" }
 
   val filePrefix =
-      "agent-1_${playerOneModel}_${playerOneStrength}_agent-2_${playerTwoModel}_${playerTwoStrength}"
+      "agent-1_${agentOne.model}_${
+        if (agentOne.strength != Strength.NULL) agentOne.strength else {
+        "iterations-" + agentOne.iterations + "-depth-" + agentOne.depth
+      }}_agent-2_${agentTwo.model}_${ if (agentTwo.strength != Strength.NULL) agentTwo.strength else {
+        "iterations-" + agentTwo.iterations + "-depth-" + agentTwo.depth
+      }}"
+
   val timestamp = now().toString().replace(":", "-")
 
   val file = File(RESULTS_DIR, "${filePrefix}_games_record_$timestamp.jsonl")
   val lock = file.path
-
 
   val searchStatsFile = File(RESULTS_DIR, "${filePrefix}_search_stats_$timestamp.csv")
 
@@ -195,27 +189,28 @@ private suspend fun runBatch(
   val gameResultsData = Channel<String>(capacity = 64)
   val searchResultsData = Channel<String>(capacity = 64)
 
-  val gameResultsWriter = launch(Dispatchers.IO) {
-    file.bufferedWriter().use { writer ->
-      for (line in gameResultsData) {
-        writer.write(line)
+  val gameResultsWriter =
+      launch(Dispatchers.IO) {
+        file.bufferedWriter().use { writer ->
+          for (line in gameResultsData) {
+            writer.write(line)
+          }
+        }
       }
-     }
-  }
 
-  val searchResultsWriter = launch(Dispatchers.IO) {
-    searchStatsFile.bufferedWriter().use { writer ->
-      for (line in searchResultsData) {
-        writer.write(line)
+  val searchResultsWriter =
+      launch(Dispatchers.IO) {
+        searchStatsFile.bufferedWriter().use { writer ->
+          for (line in searchResultsData) {
+            writer.write(line)
+          }
+        }
       }
-     }
-  }
 
   val dispatcher = Dispatchers.Default.limitedParallelism(parallelism)
   val completed = AtomicInteger(0)
   val failed = AtomicInteger(0)
   val startTime = System.currentTimeMillis()
-
 
   val elapsedMs = measureTimeMillis {
     val jobs =
@@ -226,22 +221,17 @@ private suspend fun runBatch(
 
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
-              val result = playOneGame(
-                  file = file,
-                  fileLock = lock,
-                  gameId = gameId,
-                  seed = gameSeed,
-                  verbose = false,
-                  timestamp = startTime,
-                  playerOneModel = playerOneModel,
-                  playerOneStrength = playerOneStrength,
-                  playerTwoModel = playerTwoModel,
-                  playerTwoStrength = playerTwoStrength,
-                  playerOneTimeControl = playerOneTimeControl,
-                  playerTwoTimeControl = playerTwoTimeControl,
-                  playerOneEnableRAVE = playerOneEnableRAVE,
-                  playerTwoEnableRAVE = playerTwoEnableRAVE,
-              )
+              val result =
+                  playOneGame(
+                      file = file,
+                      fileLock = lock,
+                      gameId = gameId,
+                      seed = gameSeed,
+                      verbose = false,
+                      timestamp = startTime,
+                      agentOne,
+                      agentTwo,
+                  )
 
               gameResultsData.send(result.first())
               searchResultsData.send(result.last())
@@ -275,9 +265,9 @@ private suspend fun runBatch(
   }
   if (failed.get() > 0) {
     logger.info { "Failures logged to $FAILURES_LOG — replay any of them with:" }
-    logger.info {
-      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
-    }
+//    logger.info {
+//      "  java -jar app.jar -replay -G [game-id] -s [seed] -m $playerOneModel -ms $playerTwoStrength -M $playerTwoModel -MS $playerTwoStrength"
+//    }
   }
 
   coroutineContext.cancelChildren()
@@ -329,7 +319,7 @@ data class FailureRecord(
     val stackTrace: String,
 )
 
-private const val MAX_TURNS_THRESHOLD = 500
+private const val MAX_TURNS_THRESHOLD = 999
 
 /**
  * Plays one game. If [verbose] is true, prints full state summaries each turn — use this only for
@@ -348,29 +338,37 @@ fun playOneGame(
     seed: Long,
     verbose: Boolean,
     timestamp: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean = false,
-    playerTwoTimeControl: Boolean = false,
-    playerOneEnableRAVE: Boolean = false,
-    playerTwoEnableRAVE: Boolean = false,
-): List<String>  {
+    agentOne: AgentConfig,
+    agentTwo: AgentConfig,
+): List<String> {
   val rng = Random(seed)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
       initializeState(
-          playerOneModel,
-          playerOneStrength,
-          playerTwoModel,
-          playerTwoStrength,
-          playerOneTimeControl,
-          playerTwoTimeControl,
-          playerOneEnableRAVE,
-          playerTwoEnableRAVE,
+        whitePlayer = Player(
+          name = PlayerName.WHITE,
+          model = agentOne.model,
+          strength = agentOne.strength,
+          timeControl = agentOne.timeControl,
+          useRAVE = agentOne.useRAVE,
+          enableFPU = agentOne.enableFPU,
+          enablePW = agentOne.enablePW,
+          iterations = agentOne.iterations,
+          depth = agentOne.depth,
+        ),
+        blackPlayer = Player(
+          name = PlayerName.BLACK,
+          model = agentTwo.model,
+          strength = agentTwo.strength,
+          timeControl = agentTwo.timeControl,
+          useRAVE = agentTwo.useRAVE,
+          enableFPU = agentTwo.enableFPU,
+          enablePW = agentTwo.enablePW,
+          iterations = agentTwo.iterations,
+          depth = agentTwo.depth,
+        ),
       )
 
   var turn = 0
@@ -396,15 +394,14 @@ fun playOneGame(
       gameState = playerTurn(gameState, turn, rng)
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
-
       if (gameState.turnMoves.size > 2) {
         gameState.turnMoves.keys
-          .toList()
-          .takeLast(1)
-          .any { turns ->
-            gameState.turnMoves[turns].isNullOrEmpty()
-          }
-          .let { if (it) break }
+            .toList()
+            .takeLast(1)
+            .any { turns ->
+              gameState.turnMoves[turns].isNullOrEmpty()
+            }
+            .let { if (it) break }
       }
 
       check(value = turn <= MAX_TURNS_THRESHOLD) {
@@ -453,30 +450,38 @@ fun playOneGame(
     seed: Long,
     verbose: Boolean,
     timestamp: Long,
-    playerOneModel: Model,
-    playerOneStrength: Strength,
-    playerTwoModel: Model,
-    playerTwoStrength: Strength,
-    playerOneTimeControl: Boolean,
-    playerTwoTimeControl: Boolean,
-    playerOneEnableRAVE: Boolean,
-    playerTwoEnableRAVE: Boolean,
+    agentOne: AgentConfig,
+    agentTwo: AgentConfig,
 ) {
   val rng = Random(seed)
 
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
-      initializeState(
-          playerOneModel,
-          playerOneStrength,
-          playerTwoModel,
-          playerTwoStrength,
-          playerOneTimeControl,
-          playerTwoTimeControl,
-          playerOneEnableRAVE,
-          playerTwoEnableRAVE,
-      )
+    initializeState(
+      whitePlayer = Player(
+        name = PlayerName.WHITE,
+        model = agentOne.model,
+        strength = agentOne.strength,
+        timeControl = agentOne.timeControl,
+        useRAVE = agentOne.useRAVE,
+        enableFPU = agentOne.enableFPU,
+        enablePW = agentOne.enablePW,
+        iterations = agentOne.iterations,
+        depth = agentOne.depth,
+      ),
+      blackPlayer = Player(
+        name = PlayerName.BLACK,
+        model = agentTwo.model,
+        strength = agentTwo.strength,
+        timeControl = agentTwo.timeControl,
+        useRAVE = agentTwo.useRAVE,
+        enableFPU = agentTwo.enableFPU,
+        enablePW = agentTwo.enablePW,
+        iterations = agentTwo.iterations,
+        depth = agentTwo.depth,
+      ),
+    )
 
   var turn = 0
   var playerWhoMadeTheLastMove: Player? = null

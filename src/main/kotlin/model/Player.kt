@@ -79,6 +79,12 @@ enum class Strength(
       mctsRounds = 0..4999,
       duration = 10.seconds,
   ),
+  NULL(
+    difficulty = 0,
+    minimaxDepth = 1,
+    mctsRounds = 0..0,
+    duration = Duration.ZERO,
+  )
 }
 
 fun getStrength(strength: String): Strength {
@@ -108,6 +114,10 @@ data class Player(
     @EncodeDefault val timeControl: Boolean = false,
     @EncodeDefault val timeDuration: Duration = 1000.milliseconds,
     @EncodeDefault val useRAVE: Boolean = false,
+    @EncodeDefault val enableFPU: Boolean = false,
+    @EncodeDefault val enablePW: Boolean = false,
+    @EncodeDefault val iterations: Int = 0,
+    @EncodeDefault val depth: Int = 0,
     @Transient val collector: ExperienceCollector? = ExperienceCollector(),
     @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
     @Transient val killerMoves: List<UIntArray> = List(2) { UIntArray(64) },

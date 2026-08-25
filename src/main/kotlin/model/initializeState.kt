@@ -81,6 +81,56 @@ fun initializeState(
   )
 }
 
+fun initializeState(
+  whitePlayer: Player,
+  blackPlayer: Player,
+): State {
+  val centerCoordinate = Coordinate(column = 'E', row = 5)
+
+  // Create pieces
+  val whitePieces = createPlayerPieces(whitePlayer)
+  val blackPieces = createPlayerPieces(blackPlayer)
+
+  whitePlayer.piecesInReserve.addAll(whitePieces)
+  blackPlayer.piecesInReserve.addAll(blackPieces)
+
+  val players = listOf<Player>(whitePlayer, blackPlayer)
+
+  // Create Nodes
+  val nodes =
+    constructNodes(
+      letters = LETTERS,
+      rows = ROWS.toList(),
+      centerLetterIndex = LETTERS.indexOf(centerCoordinate.column),
+      center = centerCoordinate,
+    )
+
+  // Populate node neighbours
+  nodes.forEach { node ->
+    node.neighbors =
+      populateNeighbors(
+        coordinate = node.coordinate,
+        nodes = nodes,
+      )
+  }
+
+  // Create board
+
+  val board = Board(nodes = nodes, centerNodeCoordinate = centerCoordinate)
+
+  // Create lines
+
+  return State(
+    currentPlayer = whitePlayer,
+    nextPlayer = blackPlayer,
+    //		whitePlayer = whitePlayer,
+    //		blackPlayer = blackPlayer,
+    board = board,
+    bitboard = Bitboard(),
+    //      lines = constructLines(nodes = nodes),
+  )
+}
+
 fun createPlayerPieces(player: Player): List<UInt> {
   val pieces = mutableListOf<UInt>()
 
