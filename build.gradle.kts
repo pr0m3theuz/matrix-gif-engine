@@ -2,10 +2,15 @@ plugins {
 	application
 	kotlin("jvm") version "2.3.20"
 	kotlin("plugin.serialization") version "2.3.20"
+	id("org.graalvm.buildtools.native") version "1.1.10"
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
+
+application {
+	mainClass.set("org.example.GenerateReproducibleGamesKt")
+}
 
 repositories {
 	mavenCentral()
@@ -39,7 +44,10 @@ tasks.test {
 }
 
 kotlin {
-	jvmToolchain(21)
+	jvmToolchain {
+		languageVersion.set(JavaLanguageVersion.of(21))
+		vendor.set(JvmVendorSpec.GRAAL_VM)
+	}
 	compilerOptions {
 //		freeCompilerArgs.add("-Xmx8g -Xmx16g -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/peachyfox/Downloads/matrx_gipf/log/java")
 	}
