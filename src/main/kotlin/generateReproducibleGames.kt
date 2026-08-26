@@ -6,10 +6,9 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
-import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock.System.now
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -22,6 +21,8 @@ import org.apache.commons.cli.ParseException
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
+import java.lang.Thread
+import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -233,39 +234,47 @@ private suspend fun runBatch(
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
               val result =
-                  playOneGame(
-                      file = file,
-                      fileLock = lock,
-                      gameId = gameId,
-                      seed = gameSeed,
-                      verbose = false,
-                      timestamp = startTime,
-                      agentOne,
-                      agentTwo,
-                  )
+                  withTimeoutOrNull(3.minutes) {
+                    runInterruptible {
+                      playOneGame(
+                        file = file,
+                        fileLock = lock,
+                        gameId = gameId,
+                        seed = gameSeed,
+                        verbose = false,
+                        timestamp = startTime,
+                        agentOne,
+                        agentTwo,
+                      )
+                    }
+                  }
 
-              gameResultsData.send(result.first())
-              searchResultsData.send(result.last())
+              if (result == null) {
+                // timed out — falls through here, no exception thrown
+                failed.incrementAndGet()
+                recordFailure(
+                    gameId,
+                    gameSeed,
+                  Throwable("Game $gameId exceeded time budget"),
+                )
+                error ("Game $gameId exceeded time budget")
+              } else {
 
-              val n = completed.incrementAndGet()
-              if (n % 10 == 0) {
-                previousCompletionTime.set(System.currentTimeMillis())
-                val secs = (System.currentTimeMillis() - startTime) / 1000.0
-                val rate = n / secs
+                gameResultsData.send(result.first())
+                searchResultsData.send(result.last())
 
-                val etaSecs = ((totalGames - n) / rate).toLong()
-                allowedTime.set(etaSecs / 2)
-                logger.info {
-                  "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
+                val n = completed.incrementAndGet()
+                if (n % 10 == 0) {
+                  previousCompletionTime.set(System.currentTimeMillis())
+                  val secs = (System.currentTimeMillis() - startTime) / 1000.0
+                  val rate = n / secs
+
+                  val etaSecs = ((totalGames - n) / rate).toLong()
+                  allowedTime.set(etaSecs / 2)
+                  logger.info {
+                    "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
+                  }
                 }
-              }
-
-              if (
-                  allowedTime.get() > 5.seconds.inWholeMilliseconds &&
-                    System.nanoTime() >
-                          previousCompletionTime.get().plus(allowedTime.get())
-              ) {
-                exitProcess(1)
               }
             } catch (e: Throwable) {
               failed.incrementAndGet()
@@ -403,7 +412,7 @@ fun playOneGame(
   // exact sequence leading up to the crash independent of whether seeding
   // was perfectly deterministic elsewhere in the codebase.
   try {
-    while (!evaluateCapturedPieces(gameState)) {
+    while (!evaluateCapturedPieces(gameState) && !Thread.interrupted()) {
       turn++
       gameState.turnMoves[turn] = mutableListOf()
       gameState.turnDuration[turn] = mutableListOf()
@@ -416,7 +425,9 @@ fun playOneGame(
         gameState.printStateSummary()
       }
 
-      gameState = playerTurn(gameState, turn, rng)
+      gameState = runBlocking {
+        playerTurn(gameState, turn, rng)
+      }
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
       if (gameState.turnMoves.size > 2) {
@@ -528,7 +539,8 @@ fun playOneGame(
         gameState.printStateSummary()
       }
 
-      gameState = playerTurn(gameState, turn, rng)
+      gameState = runBlocking { playerTurn(gameState, turn, rng) }
+
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
       playerWhoMadeTheLastMove = gameState.currentPlayer

@@ -43,7 +43,7 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
   val timeControl =
       Option.builder("${shortPrefix}tc")
           .longOpt("$prefix-time-control")
-          .hasArg(true)
+          .hasArg(false)
           .argName("${prefix.uppercase()}-TIME-CONTROL")
           .desc("Time in milliseconds given to $name search for a move")
           .get()

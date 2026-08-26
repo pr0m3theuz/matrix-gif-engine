@@ -1,5 +1,7 @@
 package org.example.ai.mcts
 
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -15,6 +17,7 @@ import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
+import java.lang.Thread
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -374,7 +377,7 @@ data class MCTSNode(
 
 // endregion
 
-fun selectMoveMCTS(
+suspend fun selectMoveMCTS(
     bitboard: Bitboard,
     currentPlayer: Player,
     nextPlayer: Player,
@@ -469,104 +472,71 @@ fun selectMoveMCTS(
     val startTime = System.currentTimeMillis()
     val endTime = startTime + duration.inWholeMilliseconds
 
-    while (System.currentTimeMillis() < endTime) {
-      var currentNode: MCTSNode? = rootMCTSNode
+    withTimeoutOrNull(currentPlayer.timeDuration) {
+      runInterruptible {
 
-      while (
-          (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
-              currentNode?.childrenNodes?.isNotEmpty() == true) &&
-              !evaluateCapturedPieces(currentNode.currentPlayer) // &&
-      ) {
+        while (System.currentTimeMillis() < endTime || !Thread.interrupted()) {
+          var currentNode: MCTSNode? = rootMCTSNode
 
-        currentNode = currentNode.selectOrExpandChild(rng)
+          while (
+            (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
+                currentNode?.childrenNodes?.isNotEmpty() == true) &&
+            !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+          ) {
 
-        if (currentNode.rolloutCounts == 0) {
-          break
-        }
-      }
+            currentNode = currentNode.selectOrExpandChild(rng)
 
-      checkNotNull(currentNode) {
-        "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
-            "Verify tree expansion bounds and parent-child link validity."
-      }
+            if (currentNode.rolloutCounts == 0) {
+              break
+            }
+          }
 
-      //      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode =
-      // currentNode.expandNextChild(rng)
+          checkNotNull(currentNode) {
+            "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
+                "Verify tree expansion bounds and parent-child link validity."
+          }
 
-      // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
-      // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
-      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
-          mapOf(
+          //      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode =
+          // currentNode.expandNextChild(rng)
+
+          // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
+          // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
+          val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
+            mapOf(
               PlayerName.WHITE to mutableSetOf(),
               PlayerName.BLACK to mutableSetOf(),
-          )
+            )
 
-      val winner =
-          simulateRandomGame(
+          val winner =
+            simulateRandomGame(
               currentNode.bitboard.deepCopy(),
               currentNode.currentPlayer.liteDeepCopy(),
               currentNode.nextPlayer.liteDeepCopy(),
               rng = rng,
               simulationActions,
               endTime,
-          )
+            )
 
-      // region TODO REWRITE
-      // Group moves by the player who made them so AMAF lookups below never cross-credit a
-      // sibling using a move the *other* player happened to play during the rollout. Includes
-      // both the in-tree path moves and the random-playout moves, per the RAVE definition.
-      //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
-      //          collectTreePathMovesByPlayer(currentNode).apply {
-      //            for ((player, move) in simulationActions) {
-      //              getOrPut(player) { mutableSetOf() }.add(move)
-      //            }
-      //          }
-      // endregion
-      backpropagateRewards(currentNode, winner, simulationActions)
-    }
-  }
-
-  fun collectMctsStats(root_node: MCTSNode, minVisits: Int = 1): SearchInfo {
-    val branchingCounts: MutableList<Double> = mutableListOf()
-    val turnPhases: MutableList<TurnPhase> = mutableListOf()
-    val totalActions: MutableList<Double> = mutableListOf()
-    val depth: MutableList<Double> = mutableListOf()
-
-    fun traverse(node: MCTSNode, currentDepth: Int) {
-      depth.add(currentDepth.toDouble())
-      turnPhases.add(node.turnPhase)
-      totalActions.add(node.totalActions.toDouble())
-      // Filter children with meaningful search volume
-      val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
-
-      if (activeChildren.isNotEmpty()) {
-        branchingCounts.add(activeChildren.size.toDouble())
-        for (child in activeChildren) {
-          traverse(child, currentDepth + 1)
+          // region TODO REWRITE
+          // Group moves by the player who made them so AMAF lookups below never cross-credit a
+          // sibling using a move the *other* player happened to play during the rollout. Includes
+          // both the in-tree path moves and the random-playout moves, per the RAVE definition.
+          //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
+          //          collectTreePathMovesByPlayer(currentNode).apply {
+          //            for ((player, move) in simulationActions) {
+          //              getOrPut(player) { mutableSetOf() }.add(move)
+          //            }
+          //          }
+          // endregion
+          backpropagateRewards(currentNode, winner, simulationActions)
         }
       }
     }
-
-    traverse(root_node, 0)
-
-    val nodesCount = totalActions.size.toDouble()
-    val totalAvailableMovesSum = totalActions.sum()
-    val maxDepthVal = depth.maxOrNull() ?: 0.0
-
-    return SearchInfo(
-        model = Model.MCTS,
-        strength = currentPlayer.iterations.toString(),
-        turnPhase = turnPhases,
-        totalNodesEvaluated = nodesCount,
-        totalAvailableMovesEvaluated = totalAvailableMovesSum,
-        maxDepthReached = maxDepthVal,
-        branchingCounts = branchingCounts,
-        totalActions = totalActions,
-        depths = depth,
-    )
   }
 
-  searchInfos?.add(collectMctsStats(rootMCTSNode))
+
+
+  searchInfos?.add(collectMctsStats(rootMCTSNode, iterations = rounds.count()))
 
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
@@ -582,6 +552,45 @@ fun selectMoveMCTS(
   return bestMove ?: availableMoves.random(rng)
 }
 
+private fun collectMctsStats(rootMCTSNode: MCTSNode, iterations: Int, minVisits: Int = 1): SearchInfo {
+  val branchingCounts: MutableList<Double> = mutableListOf()
+  val turnPhases: MutableList<TurnPhase> = mutableListOf()
+  val totalActions: MutableList<Double> = mutableListOf()
+  val depth: MutableList<Double> = mutableListOf()
+
+  fun traverse(node: MCTSNode, currentDepth: Int) {
+    depth.add(currentDepth.toDouble())
+    turnPhases.add(node.turnPhase)
+    totalActions.add(node.totalActions.toDouble())
+    // Filter children with meaningful search volume
+    val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
+
+    if (activeChildren.isNotEmpty()) {
+      branchingCounts.add(activeChildren.size.toDouble())
+      for (child in activeChildren) {
+        traverse(child, currentDepth + 1)
+      }
+    }
+  }
+
+  traverse(rootMCTSNode, 0)
+
+  val nodesCount = totalActions.size.toDouble()
+  val totalAvailableMovesSum = totalActions.sum()
+  val maxDepthVal = depth.maxOrNull() ?: 0.0
+
+  return SearchInfo(
+    model = Model.MCTS,
+    strength = iterations.toString(),
+    turnPhase = turnPhases,
+    totalNodesEvaluated = nodesCount,
+    totalAvailableMovesEvaluated = totalAvailableMovesSum,
+    maxDepthReached = maxDepthVal,
+    branchingCounts = branchingCounts,
+    totalActions = totalActions,
+    depths = depth,
+  )
+}
 private fun backpropagateRewards(
     currentNode: MCTSNode?,
     winner: Player?,

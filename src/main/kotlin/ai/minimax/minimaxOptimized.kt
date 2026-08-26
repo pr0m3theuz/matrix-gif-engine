@@ -214,7 +214,7 @@ fun alphaBetaNgMxSearch(
   val captureMoves = mutableListOf<PackedMove>()
   bitboard.generateCaptureMoves(currentPlayer, captureMoves)
 
-  if (depth >= maxDepth && captureMoves.isNotEmpty() && currentPlayer.strength != Strength.GREEDY) {
+  if (depth >= maxDepth && captureMoves.isNotEmpty() && currentPlayer.strength != Strength.GREEDY ) {
     val qMove =
         qSearch(
             turnPhase = TurnPhase.PlayerInputWindow,
@@ -240,7 +240,7 @@ fun alphaBetaNgMxSearch(
   // endregion
 
   // region Evaluate State
-  if (availableMoves.isEmpty() || depth >= maxDepth || System.currentTimeMillis() >= endTime) {
+  if (availableMoves.isEmpty() || depth >= maxDepth || System.currentTimeMillis() >= endTime || Thread.interrupted()) {
     // score = evaluate s for original player
     // return [null, score]
 
@@ -387,6 +387,11 @@ fun alphaBetaNgMxSearch(
   //  availableMoves.sortByDescending { (it as PackedMove.Single).value.extractMoveType().ordinal }
 
   outerLoop@ for ((index, packedMove) in availableMoves.withIndex()) {
+
+    if (Thread.interrupted()) {
+      break@outerLoop
+    }
+
     //    val mutableState = state.deepCopy()
     if (logger.isDebugEnabled()) {
       logger.info { "Move: $index" }

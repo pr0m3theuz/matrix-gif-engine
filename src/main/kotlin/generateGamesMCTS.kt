@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import org.example.engine.ExperienceCollector
 import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
@@ -96,7 +97,10 @@ fun playOneGame(gameId: Int): ExperienceCollector? {
 
     if (evaluateCapturedPieces(gameState)) break
 
-    gameState = playerTurn(gameState, turn, rng)
+    gameState = runBlocking {
+      playerTurn(gameState, turn, rng)
+    }
+
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
       if (gameState.turnMoves.size > 2) {

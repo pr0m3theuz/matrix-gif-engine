@@ -13,7 +13,7 @@ import org.example.model.*
 
 private val logger = KotlinLogging.logger {}
 
-fun playerTurn(state: State, turn: Int, rng: Random): State {
+suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
 
   var newState = state // .deepCopy(copyCollector = true)
 
@@ -95,7 +95,7 @@ fun playerTurn(state: State, turn: Int, rng: Random): State {
   return newState
 }
 
-fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): State {
+suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): State {
 
   val bitboard = state.bitboard.deepCopy()
 

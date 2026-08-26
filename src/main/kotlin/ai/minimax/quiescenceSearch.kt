@@ -63,7 +63,8 @@ fun qSearch(
 
 	if (
 		depth >= maxDepth ||
-		System.currentTimeMillis() >= endTime
+		System.currentTimeMillis() >= endTime ||
+		Thread.interrupted()
 	) {
 		// score = evaluate s for original player
 		// return [null, score]
@@ -148,6 +149,11 @@ fun qSearch(
 
 	// apply moves
 	outerLoop@ for ((index, packedMove) in captureMoves.withIndex()) {
+
+		if (Thread.interrupted()) {
+			break@outerLoop
+		}
+
 		//    val mutableState = state.deepCopy()
 		if (logger.isDebugEnabled()) {
 			logger.info { "Move: $index" }

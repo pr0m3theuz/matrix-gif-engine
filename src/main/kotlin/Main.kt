@@ -2,6 +2,7 @@
 
 package org.example
 
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
@@ -18,17 +19,37 @@ fun main() {
 
   constructZobristHashKeysTable(rng)
 
+//  var gameState: State =
+//      initializeState(
+//          Model.MINIMAX,
+//          Strength.EASY,
+//          Model.MCTS,
+//          Strength.MEDIUM,
+//          playerOneTimeControl = false,
+//          playerTwoTimeControl = false,
+//          playerOneEnableRAVE = false,
+//          playerTwoEnableRAVE = false,
+//      )
+
   var gameState: State =
-      initializeState(
-          Model.MINIMAX,
-          Strength.EASY,
-          Model.MCTS,
-          Strength.MEDIUM,
-          playerOneTimeControl = false,
-          playerTwoTimeControl = false,
-          playerOneEnableRAVE = false,
-          playerTwoEnableRAVE = false,
-      )
+    initializeState(
+      whitePlayer = Player(
+        name = PlayerName.WHITE,
+        model = Model.MINIMAX,
+        enableFPU = true,
+        enablePW = true,
+        iterations = 0,
+        depth = 3,
+      ),
+      blackPlayer = Player(
+        name = PlayerName.BLACK,
+        model = Model.MCTS,
+        enableFPU = true,
+        enablePW = true,
+        iterations = 24,
+        depth = 0,
+      ),
+    )
 
   var turn = 0
 
@@ -45,7 +66,10 @@ fun main() {
     gameState.turnDuration[turn] = mutableListOf()
     gameState.turnSearchInfo[turn] = mutableListOf()
 
-    gameState = playerTurn(gameState, turn, rng)
+    gameState = runBlocking {
+      playerTurn(gameState, turn, rng)
+    }
+
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
