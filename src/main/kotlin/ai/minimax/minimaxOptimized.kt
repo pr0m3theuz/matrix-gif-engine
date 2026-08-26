@@ -240,7 +240,7 @@ fun alphaBetaNgMxSearch(
   // endregion
 
   // region Evaluate State
-  if (availableMoves.isEmpty() || depth >= maxDepth || System.currentTimeMillis() >= endTime || Thread.interrupted()) {
+  if (availableMoves.isEmpty() || depth >= maxDepth || System.currentTimeMillis() >= endTime) {
     // score = evaluate s for original player
     // return [null, score]
 
@@ -1309,6 +1309,11 @@ fun resolveBoardRemovals(
       // a. Apply the piece removals to the board
       searchInfo?.turnPhase?.add(TurnPhase.PieceRemoval)
       searchInfo?.totalActions?.add(removePiecesPowerset.size.toDouble())
+
+
+      if (System.currentTimeMillis() >= endTime) {
+        break@removalLoop
+      }
 
       /**
        * TODO causes stack overflow error, but an empty list is necessary as a player can leave the

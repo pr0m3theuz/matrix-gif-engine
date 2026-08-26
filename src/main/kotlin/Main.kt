@@ -8,6 +8,7 @@ import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.engine.*
 import org.example.model.*
+import kotlin.time.Duration.Companion.seconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -36,17 +37,21 @@ fun main() {
       whitePlayer = Player(
         name = PlayerName.WHITE,
         model = Model.MINIMAX,
+        timeControl = true,
+        timeDuration = 1.seconds,
         enableFPU = true,
         enablePW = true,
         iterations = 0,
-        depth = 3,
+        depth = 0,
       ),
       blackPlayer = Player(
         name = PlayerName.BLACK,
         model = Model.MCTS,
+        timeControl = true,
+        timeDuration = 1.seconds,
         enableFPU = true,
         enablePW = true,
-        iterations = 24,
+        iterations = 0,
         depth = 0,
       ),
     )

@@ -63,8 +63,8 @@ fun qSearch(
 
 	if (
 		depth >= maxDepth ||
-		System.currentTimeMillis() >= endTime ||
-		Thread.interrupted()
+		System.currentTimeMillis() >= endTime
+//		Thread.interrupted()
 	) {
 		// score = evaluate s for original player
 		// return [null, score]
@@ -150,7 +150,7 @@ fun qSearch(
 	// apply moves
 	outerLoop@ for ((index, packedMove) in captureMoves.withIndex()) {
 
-		if (Thread.interrupted()) {
+		if (System.currentTimeMillis() >= endTime) {
 			break@outerLoop
 		}
 

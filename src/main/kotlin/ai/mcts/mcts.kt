@@ -1,13 +1,13 @@
 package org.example.ai.mcts
 
-import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.doActionGetTurnPhase
@@ -17,7 +17,6 @@ import org.example.model.*
 import org.example.toBitList
 import org.jetbrains.kotlinx.multik.ndarray.data.D1
 import org.jetbrains.kotlinx.multik.ndarray.data.NDArray
-import java.lang.Thread
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -394,7 +393,7 @@ suspend fun selectMoveMCTS(
 
   if (availableMoves.isEmpty()) return null
 
-  if (rounds.last() == 0) {
+  if (rounds.last() == 0 && currentPlayer.timeControl == false) {
     return availableMoves.random(rng)
   }
 
@@ -474,14 +473,15 @@ suspend fun selectMoveMCTS(
 
     withTimeoutOrNull(currentPlayer.timeDuration) {
       runInterruptible {
-
-        while (System.currentTimeMillis() < endTime || !Thread.interrupted()) {
+        while (System.currentTimeMillis() < endTime
+        //          !Thread.interrupted()
+        ) {
           var currentNode: MCTSNode? = rootMCTSNode
 
           while (
-            (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
-                currentNode?.childrenNodes?.isNotEmpty() == true) &&
-            !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+              (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
+                  currentNode?.childrenNodes?.isNotEmpty() == true) &&
+                  !evaluateCapturedPieces(currentNode.currentPlayer) // &&
           ) {
 
             currentNode = currentNode.selectOrExpandChild(rng)
@@ -502,20 +502,20 @@ suspend fun selectMoveMCTS(
           // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
           // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
           val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
-            mapOf(
-              PlayerName.WHITE to mutableSetOf(),
-              PlayerName.BLACK to mutableSetOf(),
-            )
+              mapOf(
+                  PlayerName.WHITE to mutableSetOf(),
+                  PlayerName.BLACK to mutableSetOf(),
+              )
 
           val winner =
-            simulateRandomGame(
-              currentNode.bitboard.deepCopy(),
-              currentNode.currentPlayer.liteDeepCopy(),
-              currentNode.nextPlayer.liteDeepCopy(),
-              rng = rng,
-              simulationActions,
-              endTime,
-            )
+              simulateRandomGame(
+                  currentNode.bitboard.deepCopy(),
+                  currentNode.currentPlayer.liteDeepCopy(),
+                  currentNode.nextPlayer.liteDeepCopy(),
+                  rng = rng,
+                  simulationActions,
+                  endTime = endTime
+              )
 
           // region TODO REWRITE
           // Group moves by the player who made them so AMAF lookups below never cross-credit a
@@ -534,8 +534,6 @@ suspend fun selectMoveMCTS(
     }
   }
 
-
-
   searchInfos?.add(collectMctsStats(rootMCTSNode, iterations = rounds.count()))
 
   var bestMove: PackedMove? = null
@@ -552,7 +550,11 @@ suspend fun selectMoveMCTS(
   return bestMove ?: availableMoves.random(rng)
 }
 
-private fun collectMctsStats(rootMCTSNode: MCTSNode, iterations: Int, minVisits: Int = 1): SearchInfo {
+private fun collectMctsStats(
+    rootMCTSNode: MCTSNode,
+    iterations: Int,
+    minVisits: Int = 1,
+): SearchInfo {
   val branchingCounts: MutableList<Double> = mutableListOf()
   val turnPhases: MutableList<TurnPhase> = mutableListOf()
   val totalActions: MutableList<Double> = mutableListOf()
@@ -580,17 +582,18 @@ private fun collectMctsStats(rootMCTSNode: MCTSNode, iterations: Int, minVisits:
   val maxDepthVal = depth.maxOrNull() ?: 0.0
 
   return SearchInfo(
-    model = Model.MCTS,
-    strength = iterations.toString(),
-    turnPhase = turnPhases,
-    totalNodesEvaluated = nodesCount,
-    totalAvailableMovesEvaluated = totalAvailableMovesSum,
-    maxDepthReached = maxDepthVal,
-    branchingCounts = branchingCounts,
-    totalActions = totalActions,
-    depths = depth,
+      model = Model.MCTS,
+      strength = iterations.toString(),
+      turnPhase = turnPhases,
+      totalNodesEvaluated = nodesCount,
+      totalAvailableMovesEvaluated = totalAvailableMovesSum,
+      maxDepthReached = maxDepthVal,
+      branchingCounts = branchingCounts,
+      totalActions = totalActions,
+      depths = depth,
   )
 }
+
 private fun backpropagateRewards(
     currentNode: MCTSNode?,
     winner: Player?,

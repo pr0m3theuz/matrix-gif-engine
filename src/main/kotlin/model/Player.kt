@@ -2,6 +2,7 @@
 
 package org.example.model
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
@@ -516,7 +517,7 @@ suspend fun Player.selectMove(
 
           if (timeControl) {
             transpositionTable.newSearch()
-            //            var remainingTime = strength.duration
+            var remainingTime = timeDuration
             var startingDepth = 1
             var bestMove: PackedMove? = null
 
@@ -525,7 +526,7 @@ suspend fun Player.selectMove(
 
             withTimeoutOrNull(timeDuration) {
               runInterruptible {
-                while (System.nanoTime() < endTime) {
+                while (!Thread.interrupted()) {
                   val searchInfo =
                     SearchInfo(
                       model = Model.MINIMAX,
@@ -533,33 +534,36 @@ suspend fun Player.selectMove(
                     )
                   searchInfo.turnPhase.add(turnPhase)
 
+                  if (Thread.interrupted()) {
+                    break
+                  }
+
                   val (move, elapsed) =
                     measureTimedValue {
-                      alphaBetaNgMxSearch(
-                        maxDepth = startingDepth,
-                        bitboard = bitboard.deepCopy(),
-                        currentPlayer = currentPlayer.deepCopy(),
-                        opponentPlayer = opponent.deepCopy(),
-                        alphaBetaScore = AlphaBetaScoreBitPacked(),
-                        rng = rng,
-                        depth = 0,
-                        turnPhase = turnPhase,
-                        transpositionTable = transpositionTable,
-                        endTime = endTime,
-                        searchInfo = searchInfo,
-                      )
-                        .move
-                    }
+                        alphaBetaNgMxSearch(
+                          maxDepth = startingDepth,
+                          bitboard = bitboard.deepCopy(),
+                          currentPlayer = currentPlayer.deepCopy(),
+                          opponentPlayer = opponent.deepCopy(),
+                          alphaBetaScore = AlphaBetaScoreBitPacked(),
+                          rng = rng,
+                          depth = 0,
+                          turnPhase = turnPhase,
+                          transpositionTable = transpositionTable,
+                          endTime = endTime,
+                          searchInfo = searchInfo,
+                        )
+                          .move
+                      }
 
                   searchInfos.add(searchInfo)
-                  //	            remainingTime -= elapsed
+                  remainingTime -= elapsed
                   startingDepth += 1
                   bestMove = move
                   // if there is not enough time remaining break
-                  //              if (remainingTime < elapsed.times(2)) break
+                  if (remainingTime < elapsed.times(2)) break
                 }
               }
-
             }
 
 
