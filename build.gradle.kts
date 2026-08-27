@@ -37,6 +37,9 @@ dependencies {
 
 	// Source: https://mvnrepository.com/artifact/commons-cli/commons-cli
 	implementation("commons-cli:commons-cli:1.11.0")
+
+	// Source: https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc
+	implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
 }
 
 tasks.test {

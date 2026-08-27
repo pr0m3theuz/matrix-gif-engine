@@ -561,7 +561,7 @@ suspend fun Player.selectMove(
                   startingDepth += 1
                   bestMove = move
                   // if there is not enough time remaining break
-//                  if (remainingTime < elapsed) break
+                  if (remainingTime < elapsed) break
                 }
               }
             }
