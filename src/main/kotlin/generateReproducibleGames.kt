@@ -234,7 +234,7 @@ private suspend fun runBatch(
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
               val result =
-                  withTimeoutOrNull(3.minutes) {
+                  withTimeoutOrNull(5.minutes) {
                     runInterruptible {
                       playOneGame(
                         file = file,
