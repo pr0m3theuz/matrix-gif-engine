@@ -39,6 +39,7 @@ dependencies {
 	implementation("commons-cli:commons-cli:1.11.0")
 
 	// Source: https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc
+	implementation("org.jetbrains.kotlinx:dataframe-jdbc:1.0.0-rc01")
 	implementation("org.duckdb:duckdb_jdbc:1.5.5.1")
 }
 
