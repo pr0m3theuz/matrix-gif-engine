@@ -136,7 +136,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
     }
   } else {
     // 3. Extract values with fallbacks
-    val totalGames = cmd.getOptionValue("total-games")?.toIntOrNull() ?: 5000
+    val totalGames = cmd.getOptionValue("total-games")?.toIntOrNull() ?: 50
 
     val cores = Runtime.getRuntime().availableProcessors()
     val parallelism =
