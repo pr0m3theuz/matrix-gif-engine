@@ -21,8 +21,6 @@ import org.apache.commons.cli.ParseException
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
-import java.lang.Thread
-import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -237,14 +235,14 @@ private suspend fun runBatch(
                   withTimeoutOrNull(5.minutes) {
                     runInterruptible {
                       playOneGame(
-                        file = file,
-                        fileLock = lock,
-                        gameId = gameId,
-                        seed = gameSeed,
-                        verbose = false,
-                        timestamp = startTime,
-                        agentOne,
-                        agentTwo,
+                          file = file,
+                          fileLock = lock,
+                          gameId = gameId,
+                          seed = gameSeed,
+                          verbose = false,
+                          timestamp = startTime,
+                          agentOne,
+                          agentTwo,
                       )
                     }
                   }
@@ -255,9 +253,9 @@ private suspend fun runBatch(
                 recordFailure(
                     gameId,
                     gameSeed,
-                  Throwable("Game $gameId exceeded time budget"),
+                    Throwable("Game $gameId exceeded time budget"),
                 )
-                error ("Game $gameId exceeded time budget")
+                error("Game $gameId exceeded time budget")
               } else {
 
                 gameResultsData.send(result.first())
@@ -351,7 +349,7 @@ data class FailureRecord(
     val stackTrace: String,
 )
 
-private const val MAX_TURNS_THRESHOLD = 999
+private const val MAX_TURNS_THRESHOLD = 499
 
 /**
  * Plays one game. If [verbose] is true, prints full state summaries each turn — use this only for
@@ -414,7 +412,10 @@ fun playOneGame(
   // exact sequence leading up to the crash independent of whether seeding
   // was perfectly deterministic elsewhere in the codebase.
   try {
-    while (!evaluateCapturedPieces(gameState) && !Thread.interrupted()) {
+    while (
+        !evaluateCapturedPieces(gameState) && !Thread.interrupted() &&
+            System.currentTimeMillis().minus(timestamp) < 5.minutes.inWholeMilliseconds
+    ) {
       turn++
       gameState.turnMoves[turn] = mutableListOf()
       gameState.turnDuration[turn] = mutableListOf()
