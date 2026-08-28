@@ -418,8 +418,7 @@ fun playOneGame(
   // was perfectly deterministic elsewhere in the codebase.
   try {
     while (
-        !evaluateCapturedPieces(gameState) && !Thread.interrupted() &&
-        System.currentTimeMillis() < timestamp.plus(5.minutes.inWholeMilliseconds)
+        !evaluateCapturedPieces(gameState) && !Thread.interrupted()
     ) {
       turn++
       gameState.turnMoves[turn] = mutableListOf()
@@ -452,7 +451,7 @@ fun playOneGame(
         "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
 
-      check(System.currentTimeMillis() < timestamp.plus(5.minutes.inWholeMilliseconds)) {
+      check(System.currentTimeMillis() < timestamp.plus(10.minutes.inWholeMilliseconds)) {
         "Safety guard triggered: Exceeded maximum time threshold of 5 minutes exceeded."
       }
 

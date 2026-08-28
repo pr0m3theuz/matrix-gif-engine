@@ -8,9 +8,6 @@ plugins {
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
-application {
-	mainClass.set("org.example.GenerateReproducibleGamesKt")
-}
 
 repositories {
 	mavenCentral()
@@ -73,4 +70,20 @@ tasks {
 	build {
 		dependsOn(fatJar) // Trigger fat jar creation during build
 	}
+}
+
+application {
+	mainClass.set("org.example.GenerateReproducibleGamesKt")
+}
+
+graalvmNative {
+	binaries {
+		named("main") {
+			imageName.set("generate-reproducible-games")
+			mainClass.set("org.example.GenerateReproducibleGamesKt")
+			buildArgs.add("--no-fallback")
+			// buildArgs.add("-H:+ReportExceptionStackTraces") // useful for debugging
+		}
+	}
+	toolchainDetection.set(true) // let the plugin find a GraalVM install
 }
