@@ -34,9 +34,9 @@ data class State(
         board = this.board,
         bitboard = bitboard.deepCopy(),
         //	    lines = this.lines,
-        turnMoves = this.turnMoves.mapValues { it.value.toMutableList() }.toMutableMap(),
-        turnDuration = this.turnDuration.mapValues { it.value.toMutableList() }.toMutableMap(),
-      turnSearchInfo = this.turnSearchInfo.mapValues { it.value.map { innerList -> innerList.toMutableList() }.toMutableList() }.toMutableMap(),
+        turnMoves = this.turnMoves.toMutableMap(),
+        turnDuration = this.turnDuration.toMutableMap(),
+      turnSearchInfo = this.turnSearchInfo.toMutableMap(),
         collector = if (copyCollector) this.collector else null,
     )
   }
