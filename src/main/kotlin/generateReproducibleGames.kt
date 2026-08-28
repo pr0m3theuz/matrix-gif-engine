@@ -275,7 +275,7 @@ private suspend fun runBatch(
                   }
                 }
 
-                if (n > 500) {
+                if (completed.get().plus(failed.get()) > 500) {
                   exitProcess(0)
                 }
               }
