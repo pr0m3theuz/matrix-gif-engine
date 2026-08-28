@@ -21,6 +21,7 @@ import org.apache.commons.cli.ParseException
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
+import kotlin.system.exitProcess
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -272,6 +273,10 @@ private suspend fun runBatch(
                   logger.info {
                     "Completed $n/$totalGames (${"%.2f".format(rate)} games/sec, ETA ${etaSecs}s)"
                   }
+                }
+
+                if (n > 500) {
+                  exitProcess(0)
                 }
               }
             } catch (e: Throwable) {
