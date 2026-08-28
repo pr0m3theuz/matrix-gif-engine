@@ -447,6 +447,10 @@ fun playOneGame(
         "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
 
+      check(System.currentTimeMillis().minus(timestamp) > 5.minutes.inWholeMilliseconds) {
+        "Safety guard triggered: Exceeded maximum time threshold of 5 minutes exceeded."
+      }
+
       playerWhoMadeTheLastMove = gameState.currentPlayer
       gameState = gameState.rotatePlayers()
 
