@@ -859,12 +859,12 @@ fun Bitboard.generateMoves(
   }
 }
 
-//fun Bitboard.createPlayerPiecesWithPotentialPowerset(
+// fun Bitboard.createPlayerPiecesWithPotentialPowerset(
 //    player: Player,
 //    columnInfos: List<ColumnInfo> = emptyList(),
 //    positions: List<ULong> = emptyList(),
 //    buffer: MutableList<List<UInt>> = mutableListOf(),
-//) {
+// ) {
 //  require(!(columnInfos.isEmpty() && positions.isEmpty())) { "There must be at least one column" }
 //
 //  // TODO handle intersecting lines, but do i?
@@ -914,11 +914,12 @@ fun Bitboard.generateMoves(
 //
 //  /**
 //   * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
-//   * stack in play TODO Minimax/MCTS — what it would be like to remove at least one of these pieces
+//   * stack in play TODO Minimax/MCTS — what it would be like to remove at least one of these
+// pieces
 //   * if all pieces have potentials use line score heuristic and pieces in reserve TODO return of a
 //   * list containing different combinations of bit positions
 //   */
-//}
+// }
 
 fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<PackedMove>) {
   val linesWithFourInARow = evaluateLinesForFourInARow(player)
@@ -970,7 +971,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
 
         PlayerName.BLACK -> {
           (blackPotentials and intersectingBits) != 0UL &&
-          (blackNeutralized.inv() and intersectingBits) != 0UL
+              (blackNeutralized.inv() and intersectingBits) != 0UL
         }
       }
 
@@ -1129,22 +1130,22 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
             removalsBuffer.add(move)
           }
         }
-      }
 
-      for (subset in playerPiecesWithPotential) {
-        if (intersectingBits and subset.sum() == 0UL) {
-          val move =
-            PackedMove.Multiple(
-              subset.map { bitmask ->
-                0u.packPossibleBitMove(
-                  targetBit = bitmask,
-                  moveType = MoveType.RetrieveCapturePieces,
+        for (subset in playerPiecesWithPotential) {
+          if (intersectingBits and subset.sum() == 0UL) {
+            val move =
+                PackedMove.Multiple(
+                    subset.map { bitmask ->
+                      0u.packPossibleBitMove(
+                              targetBit = bitmask,
+                              moveType = MoveType.RetrieveCapturePieces,
+                          )
+                          .setRetrieveCapture(RetrieveCapture.RETRIEVE)
+                    } + forcedRemovals
                 )
-                  .setRetrieveCapture(RetrieveCapture.RETRIEVE)
-              } + forcedRemovals
-            )
 
-          removalsBuffer.add(move)
+            removalsBuffer.add(move)
+          }
         }
       }
 
@@ -1152,15 +1153,15 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
         for (lineRemovals in removalsPerLine) {
           for (subset in playerPiecesWithPotential) {
             val move =
-              PackedMove.Multiple(
-                subset.map { bitmask ->
-                  0u.packPossibleBitMove(
-                    targetBit = bitmask,
-                    moveType = MoveType.RetrieveCapturePieces,
-                  )
-                    .setRetrieveCapture(RetrieveCapture.RETRIEVE)
-                } + lineRemovals
-              )
+                PackedMove.Multiple(
+                    subset.map { bitmask ->
+                      0u.packPossibleBitMove(
+                              targetBit = bitmask,
+                              moveType = MoveType.RetrieveCapturePieces,
+                          )
+                          .setRetrieveCapture(RetrieveCapture.RETRIEVE)
+                    } + lineRemovals
+                )
 
             if (move.values.sumOf { it.extractTargetBit() } == bitmasks) {
               removalsBuffer.add(move)
@@ -1169,49 +1170,48 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
         }
       }
     }
-//    else {
-//      for (subset in playerPiecesWithPotential) {
-//        val move =
-//            PackedMove.Multiple(
-//                subset.map { bitmask ->
-//                  0u.packPossibleBitMove(
-//                          targetBit = bitmask,
-//                          moveType = MoveType.RetrieveCapturePieces,
-//                      )
-//                      .setRetrieveCapture(RetrieveCapture.RETRIEVE)
-//                } + forcedRemovals
-//            )
-//
-//        removalsBuffer.add(move)
-//      }
-//
-//      for (bitmasks in linesMask) {
-//        for (lineRemovals in removalsPerLine) {
-//          for (subset in playerPiecesWithPotential) {
-//            val move =
-//                PackedMove.Multiple(
-//                    subset.map { bitmask ->
-//                      0u.packPossibleBitMove(
-//                              targetBit = bitmask,
-//                              moveType = MoveType.RetrieveCapturePieces,
-//                          )
-//                          .setRetrieveCapture(RetrieveCapture.RETRIEVE)
-//                    } + lineRemovals
-//                )
-//
-//            if (move.values.sumOf { it.extractTargetBit() } == bitmasks) {
-//              removalsBuffer.add(move)
-//            }
-//          }
-//        }
-//      }
-//    }
+    //    else {
+    //      for (subset in playerPiecesWithPotential) {
+    //        val move =
+    //            PackedMove.Multiple(
+    //                subset.map { bitmask ->
+    //                  0u.packPossibleBitMove(
+    //                          targetBit = bitmask,
+    //                          moveType = MoveType.RetrieveCapturePieces,
+    //                      )
+    //                      .setRetrieveCapture(RetrieveCapture.RETRIEVE)
+    //                } + forcedRemovals
+    //            )
+    //
+    //        removalsBuffer.add(move)
+    //      }
+    //
+    //      for (bitmasks in linesMask) {
+    //        for (lineRemovals in removalsPerLine) {
+    //          for (subset in playerPiecesWithPotential) {
+    //            val move =
+    //                PackedMove.Multiple(
+    //                    subset.map { bitmask ->
+    //                      0u.packPossibleBitMove(
+    //                              targetBit = bitmask,
+    //                              moveType = MoveType.RetrieveCapturePieces,
+    //                          )
+    //                          .setRetrieveCapture(RetrieveCapture.RETRIEVE)
+    //                    } + lineRemovals
+    //                )
+    //
+    //            if (move.values.sumOf { it.extractTargetBit() } == bitmasks) {
+    //              removalsBuffer.add(move)
+    //            }
+    //          }
+    //        }
+    //      }
+    //    }
 
     // TODO confirm there is never an empty list
     for (subset in removalsPerLine) {
       removalsBuffer.add(PackedMove.Multiple(subset))
     }
-
 
     removalsBuffer.removeIf { (it as PackedMove.Multiple).values.isEmpty() }
   }

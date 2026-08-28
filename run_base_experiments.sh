@@ -7,17 +7,17 @@ set -e
 # Configuration Variables
 # ==========================================
 JAVA_BIN="java"
-#JVM_OPTS="-Xmx87g"
+JVM_OPTS="-XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=90.0"
 JAR_PATH="./build/libs/code-1.0-SNAPSHOT-standalone.jar"
 MAIN_CLASS="org.example.GenerateReproducibleGamesKt"
 
 # Run Settings
-TOTAL_GAMES=500
+TOTAL_GAMES=550
 THREADS=22
 
 # Base command string
-#CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
-CMD="$JAVA_BIN -cp $JAR_PATH $MAIN_CLASS"
+CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
+#CMD="$JAVA_BIN -cp $JAR_PATH $MAIN_CLASS"
 
 # ==========================================
 # Matrix Parameters
@@ -26,9 +26,9 @@ CMD="$JAVA_BIN -cp $JAR_PATH $MAIN_CLASS"
 MM_DEPTHS=(1 3)
 
 # MCTS Iterations: EASY (~999)
-MCTS_ITERATIONS=(0 25 50 100 250 500)
+MCTS_ITERATIONS=(0 24 49 99 249 499)
 
-RAVE_OPTIONS=(false true)
+RAVE_OPTIONS=(false) # true
 
 # Depths * Iterations * RAVE on/off * 2 match directions
 TOTAL_RUNS=$((${#MM_DEPTHS[@]} * ${#MCTS_ITERATIONS[@]} * ${#RAVE_OPTIONS[@]} * 2))
@@ -36,32 +36,32 @@ RUN_COUNT=1
 
 echo "Starting Minimax vs MCTS Matrix ($TOTAL_RUNS total configurations)..."
 
-# ==========================================
-# Matchups: Minimax (White) vs MCTS (Black)
-# ==========================================
-for depth in "${MM_DEPTHS[@]}"; do
-  for iters in "${MCTS_ITERATIONS[@]}"; do
-    for rave in "${RAVE_OPTIONS[@]}"; do
-
-      A1_FLAGS="-m minimax -mdp $depth"
-      A2_FLAGS="-M mcts -Mi $iters"
-
-      if [ "$rave" = true ]; then
-        A2_FLAGS="$A2_FLAGS -Mrv"
-        RAVE_LABEL="RAVE"
-      else
-        RAVE_LABEL="Standard"
-      fi
-
-      echo "----------------------------------------------------"
-      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax (Depth $depth) vs MCTS ($iters iters, $RAVE_LABEL)"
-      echo "----------------------------------------------------"
-
-      $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
-      RUN_COUNT=$((RUN_COUNT + 1))
-    done
-  done
-done
+## ==========================================
+## Matchups: Minimax (White) vs MCTS (Black)
+## ==========================================
+#for depth in "${MM_DEPTHS[@]}"; do
+#  for iters in "${MCTS_ITERATIONS[@]}"; do
+#    for rave in "${RAVE_OPTIONS[@]}"; do
+#
+#      A1_FLAGS="-m minimax -mdp $depth"
+#      A2_FLAGS="-M mcts -Mi $iters"
+#
+#      if [ "$rave" = true ]; then
+#        A2_FLAGS="$A2_FLAGS -Mrv"
+#        RAVE_LABEL="RAVE"
+#      else
+#        RAVE_LABEL="Standard"
+#      fi
+#
+#      echo "----------------------------------------------------"
+#      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax (Depth $depth) vs MCTS ($iters iters, $RAVE_LABEL)"
+#      echo "----------------------------------------------------"
+#
+#      $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
+#      RUN_COUNT=$((RUN_COUNT + 1))
+#    done
+#  done
+#done
 
 # ==========================================
 # Matchups: MCTS (White) vs Minimax (Black)

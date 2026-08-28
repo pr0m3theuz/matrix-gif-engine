@@ -773,10 +773,19 @@ class GetMovesOptimizedTest {
         16646016u, 16646017u, 16646018u, 16646019u, 16646020u, 16646025u, 16646031u
       )),
       PackedMove.Multiple(values = listOf(
+        16646017u, 16646018u, 16646019u, 16646020u, 16646025u, 16646031u
+      )),
+      PackedMove.Multiple(values = listOf(
         16646016u, 16646017u, 16646018u, 16646019u
       )),
       PackedMove.Multiple(values = listOf(
         16646016u, 16646020u, 16646025u, 16646031u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646017u, 16646018u, 16646019u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646020u, 16646025u, 16646031u
       ))
     )
 
@@ -801,14 +810,54 @@ class GetMovesOptimizedTest {
     println(moves)
 
     val expected = listOf<PackedMove>(
+      PackedMove.Multiple(listOf(16646016u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646016u, 16646018u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646016u, 16646025u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646016u, 16646018u, 16646025u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646018u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646025u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646018u, 16646025u, 16646017u, 16646019u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646016u, 16646018u, 16646017u, 16646019u)),
+      PackedMove.Multiple(listOf(16646016u, 16646025u, 16646020u, 16646031u)),
+      PackedMove.Multiple(listOf(16646017u, 16646019u)),
+      PackedMove.Multiple(listOf(16646020u, 16646031u))
+    )
+
+
+
+    assertEquals(expected, moves)
+  }
+
+  @Test
+  fun `multiple potentials and piece removal no intersecting potential`() {
+    val bitboard: Bitboard = Bitboard(
+      whiteGIPF = 32795UL, // 32794UL
+      whiteTAMSK = 516UL, // 517UL
+      whitePotentials = 516UL // 517UL
+    )
+
+    val whitePlayer = Player(
+      name = PlayerName.WHITE,
+    )
+
+    val moves = mutableListOf<PackedMove>()
+    bitboard.identifyPiecesToRemove(whitePlayer, moves)
+
+    println(moves)
+
+    val expected = listOf<PackedMove>(
       PackedMove.Multiple(values = listOf(
-        16646016u, 16646017u, 16646018u, 16646019u, 16646020u, 16646025u, 16646031u
+        16646018u, 16646016u, 16646017u, 16646019u
       )),
       PackedMove.Multiple(values = listOf(
-        16646016u, 16646017u, 16646018u, 16646019u
+        16646025u, 16646016u, 16646020u, 16646031u
+      )),
+       PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646019u
       )),
       PackedMove.Multiple(values = listOf(
-        16646016u, 16646020u, 16646025u, 16646031u
+        16646016u, 16646020u, 16646031u
       ))
     )
 

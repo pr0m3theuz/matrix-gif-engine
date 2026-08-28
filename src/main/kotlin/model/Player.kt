@@ -552,6 +552,7 @@ suspend fun Player.selectMove(
                           transpositionTable = transpositionTable,
                           endTime = endTime,
                           searchInfo = searchInfo,
+                          enableQSearch = currentPlayer.depth > 1
                         )
                           .move
                       }
@@ -594,6 +595,7 @@ suspend fun Player.selectMove(
                           turnPhase = turnPhase,
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
+                    enableQSearch = currentPlayer.depth > 1
                       )
                       .move
 
@@ -641,6 +643,7 @@ suspend fun Player.selectMove(
                         transpositionTable = transpositionTable,
                         endTime = endTime,
                         searchInfo = searchInfo,
+                        enableQSearch = currentPlayer.depth > 1
                       )
                         .move
                     }
@@ -682,6 +685,7 @@ suspend fun Player.selectMove(
                           caller = "PLAYER $name selectMove() @ ${startingDepth}",
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
+                    enableQSearch = currentPlayer.depth > 1
                       )
                       .move
 
