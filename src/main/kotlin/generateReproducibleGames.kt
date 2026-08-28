@@ -233,7 +233,7 @@ private suspend fun runBatch(
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
               val result =
-                  withTimeoutOrNull(10.minutes) {
+                  withTimeoutOrNull(30.minutes) {
                     runInterruptible {
                       playOneGame(
                           file = file,
@@ -451,8 +451,8 @@ fun playOneGame(
         "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
 
-      check(System.currentTimeMillis() < timestamp.plus(10.minutes.inWholeMilliseconds)) {
-        "Safety guard triggered: Exceeded maximum time threshold of 5 minutes exceeded."
+      check(System.currentTimeMillis() < timestamp.plus(30.minutes.inWholeMilliseconds)) {
+        "Safety guard triggered: Exceeded maximum time threshold of 30 minutes exceeded."
       }
 
       playerWhoMadeTheLastMove = gameState.currentPlayer
