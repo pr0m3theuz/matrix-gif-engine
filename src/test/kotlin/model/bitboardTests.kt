@@ -2,6 +2,9 @@
 
 package model
 
+import kotlin.random.Random
+import kotlin.test.assertEquals
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
@@ -11,9 +14,6 @@ import org.jetbrains.kotlinx.multik.api.zeros
 import org.jetbrains.kotlinx.multik.ndarray.data.set
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.collections.emptyList
-import kotlin.random.Random
-import kotlin.test.assertEquals
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -403,128 +403,144 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     Piece(
-                        abbreviation = "WZ",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WZ",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WD",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WD",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WD",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WD",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WD",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WD",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WY",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WY",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WY",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WY",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
         )
 
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     Piece(
-                        abbreviation = "BT",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BT",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BZ",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BZ",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BD",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BD",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BP",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BP",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BP",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BP",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
         )
 
@@ -596,159 +612,179 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     Piece(
-                        abbreviation = "BG",
-                        potential = false,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.GIPF,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BG",
+                            potential = false,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.GIPF,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BZ",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BZ",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BZ",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BZ",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BZ",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BZ",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BD",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BD",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BY",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BY",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BP",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BP",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "BP",
-                        potential = true,
-                        colorName = PlayerName.BLACK,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "BP",
+                            potential = true,
+                            colorName = PlayerName.BLACK,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
             capturedPieces =
                 mutableListOf(
                     Piece(
-                        abbreviation = "WG",
-                        potential = false,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.GIPF,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WG",
+                            potential = false,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.GIPF,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = false,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = false,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
         )
 
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     Piece(
-                        abbreviation = "WT",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WT",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WT",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WT",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WZ",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WZ",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WD",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WD",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WD",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.DVONN,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WD",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.DVONN,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WY",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WY",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
         )
 
@@ -808,28 +844,28 @@ class BitboardTest {
         testBitboard
             .createPlayerPiecesWithPotentialPowerset(
                 currentPlayer,
-                listOf(linesWithFourInARow.first()),
+                columnInfos = listOf(linesWithFourInARow.first()),
             )
-            .filter { it.isNotEmpty() }
+//            filter { it.isNotEmpty() }
 
     logger.info { playerPiecesWithPotentialPowerset }
 
     val piecesWithPotentialPowerset = mutableListOf<UInt>()
 
-//        testBitboard.removeSelectedPiecesToRemove(
-//            currentPlayer,
-//            playerPiecesWithPotentialPowerset.first(),
-//          piecesWithPotentialPowerset
-//        )
+    //        testBitboard.removeSelectedPiecesToRemove(
+    //            currentPlayer,
+    //            playerPiecesWithPotentialPowerset.first(),
+    //          piecesWithPotentialPowerset
+    //        )
 
-//    val retrievedCapturedPieces =
-//        testBitboard
-//            .createRetrieveAndCapturePiecesList(
-//                columnInfos = linesWithFourInARow,
-//                selectedPiecesWithPotentialPowerset = emptyList(),
-//                player = currentPlayer,
-//            )
-//            .plus(piecesWithPotentialPowerset)
+    //    val retrievedCapturedPieces =
+    //        testBitboard
+    //            .createRetrieveAndCapturePiecesList(
+    //                columnInfos = linesWithFourInARow,
+    //                selectedPiecesWithPotentialPowerset = emptyList(),
+    //                player = currentPlayer,
+    //            )
+    //            .plus(piecesWithPotentialPowerset)
 
     listOf(
         RetrievedCapturedPieceBit(
@@ -964,7 +1000,7 @@ class BitboardTest {
             ),
         )
 
-//    assertEquals(expectedRetrievedCapturedPiecesBit, retrievedCapturedPieces)
+    //    assertEquals(expectedRetrievedCapturedPiecesBit, retrievedCapturedPieces)
 
     mutableListOf(
         Piece(
@@ -1586,10 +1622,8 @@ class BitboardTest {
             piece("WP").pack(),
         )
 
-    val nextPlayer =
-        Player(name = PlayerName.BLACK, piecesInReserve = blackReserve)
-    val currentPlayer =
-        Player(name = PlayerName.WHITE, piecesInReserve = whiteReserve)
+    val nextPlayer = Player(name = PlayerName.BLACK, piecesInReserve = blackReserve)
+    val currentPlayer = Player(name = PlayerName.WHITE, piecesInReserve = whiteReserve)
 
     // 4. Initialize Bitboard
     val finalBitboard =
@@ -1633,11 +1667,11 @@ class BitboardTest {
         )
 
     val retrievedCapturedPieces = mutableListOf<UInt>()
-//        modifiableBitboard.removeSelectedPiecesToRemove(
-//            player = currentPlayer,
-//            piecesToRemove = bestMove.retrievedCapturedPiecesBit,
-//          retrievedCapturedPieces
-//        )
+    //        modifiableBitboard.removeSelectedPiecesToRemove(
+    //            player = currentPlayer,
+    //            piecesToRemove = bestMove.retrievedCapturedPiecesBit,
+    //          retrievedCapturedPieces
+    //        )
 
     val centerCoordinate = Coordinate(column = 'E', row = 5)
 
@@ -1660,7 +1694,7 @@ class BitboardTest {
 
     modifiableBitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = nextPlayer)
 
-//    modifiableBitboard.validatePieceRemoval(retrievedCapturedPieces)
+    //    modifiableBitboard.validatePieceRemoval(retrievedCapturedPieces)
 
     val convertedBitboardBoard = modifiableBitboard.convertBitboardToBoard(board)
 
@@ -1718,57 +1752,64 @@ class BitboardTest {
     val whitePlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     Piece(
-                        abbreviation = "WT",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WT",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WT",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WT",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WT",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.TAMSK,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WT",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.TAMSK,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WZ",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WZ",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WZ",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.ZERTZ,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WZ",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.ZERTZ,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WY",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.YINSH,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WY",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.YINSH,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                     Piece(
-                        abbreviation = "WP",
-                        potential = true,
-                        colorName = PlayerName.WHITE,
-                        type = PieceType.PUNCT,
-                        isNeutralized = false,
-                    ).pack(),
+                            abbreviation = "WP",
+                            potential = true,
+                            colorName = PlayerName.WHITE,
+                            type = PieceType.PUNCT,
+                            isNeutralized = false,
+                        )
+                        .pack(),
                 ),
         )
 
@@ -1812,7 +1853,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -1829,7 +1870,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("WY", potential = false).pack(),
                     piece("WP", potential = false).pack(),
@@ -1969,7 +2010,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -1985,7 +2026,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("WZ", potential = false).pack(),
                     piece("WD", potential = true).pack(),
@@ -2093,7 +2134,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BG", potential = false).pack(),
@@ -2109,7 +2150,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(),
+            piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WT", potential = true).pack(),
@@ -2257,13 +2298,13 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(),
+            piecesInReserve = mutableListOf(),
         )
 
     val dvonnMoves = mutableListOf<PossibleBitMove>()
@@ -2325,13 +2366,13 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
         )
 
     val opponentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(),
+            piecesInReserve = mutableListOf(),
         )
 
     val dvonnMoves = mutableListOf<PossibleBitMove>()
@@ -2877,7 +2918,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -2890,7 +2931,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(),
+            piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WG", potential = false).pack(),
@@ -3470,7 +3511,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -3483,7 +3524,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(),
+            piecesInReserve = mutableListOf(),
             capturedPieces =
                 mutableListOf(
                     piece("WG", potential = false).pack(),
@@ -3528,15 +3569,16 @@ class BitboardTest {
 
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
-    val bestMove =
-        selectMoveMCTS(
-            bitboard = bitboard,
-            currentPlayer = currentPlayer,
-            nextPlayer = nextPlayer,
-            rounds = 0..999,
-            turnPhase = TurnPhase.PlayerInputWindow,
-            Random(1),
-        )
+    val bestMove = runBlocking {
+      selectMoveMCTS(
+          bitboard = bitboard,
+          currentPlayer = currentPlayer,
+          nextPlayer = nextPlayer,
+          rounds = 0..999,
+          turnPhase = TurnPhase.PlayerInputWindow,
+          Random(1),
+      )
+    }
   }
 
   @Test
@@ -4078,7 +4120,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("WY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("BD", potential = true).pack(),
@@ -4092,7 +4134,7 @@ class BitboardTest {
     val nextPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve = mutableListOf(piece("BY", potential = false).pack()),
+            piecesInReserve = mutableListOf(piece("BY", potential = false).pack()),
             capturedPieces =
                 mutableListOf(
                     piece("WD", potential = true).pack(),
@@ -4150,15 +4192,16 @@ class BitboardTest {
 
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
-    val bestMove =
-        selectMoveMCTS(
-            bitboard = bitboard,
-            currentPlayer = currentPlayer,
-            nextPlayer = nextPlayer,
-            rounds = 0..999,
-            turnPhase = TurnPhase.PlayerInputWindow,
-            rng = Random(0),
-        )
+    val bestMove = runBlocking {
+      selectMoveMCTS(
+          bitboard = bitboard,
+          currentPlayer = currentPlayer,
+          nextPlayer = nextPlayer,
+          rounds = 0..999,
+          turnPhase = TurnPhase.PlayerInputWindow,
+          rng = Random(0),
+      )
+    }
   }
 
   @Test
@@ -4228,7 +4271,7 @@ class BitboardTest {
     val currentPlayer =
         Player(
             name = PlayerName.BLACK,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("BZ", potential = false).pack(),
                     piece("BY", potential = false).pack(),
@@ -4244,7 +4287,7 @@ class BitboardTest {
     val opponentPlayer =
         Player(
             name = PlayerName.WHITE,
-          piecesInReserve =
+            piecesInReserve =
                 mutableListOf(
                     piece("WZ", potential = false).pack(),
                     piece("WD", potential = true).pack(),

@@ -2765,35 +2765,101 @@ fun Bitboard.evaluateLinesForFourInARow(player: Player): List<ColumnInfo> {
   return columns
 }
 
-fun Bitboard.createPlayerPiecesWithPotentialPowerset(
+fun Bitboard.createPotentialPowerset(
     player: Player,
-    columnInfos: List<ColumnInfo> = emptyList(),
     positions: List<ULong> = emptyList(),
+    linesMask: List<ULong> = emptyList(),
+    intersectingBits: ULong = 0UL
+): List<List<ULong>> {
+  require(!(columnInfos.isEmpty() && positions.isEmpty())) { "There must be at least one column" }
+
+  // TODO handle intersecting lines, but do i?
+  val intersectingBitHasPotential = when (player.name) {
+    PlayerName.WHITE -> {
+      // pieces with potential and not neutralized
+      (whitePotentials and intersectingBits) != 0UL &&
+          (whiteNeutralized.inv() and intersectingBits) != 0UL
+    }
+
+    PlayerName.BLACK -> {
+      (blackPotentials and intersectingBits) != 0UL &&
+          (blackNeutralized.inv() and intersectingBits) != 0UL
+    }
+  }
+
+  val potentials = positions.filter { bitmask ->
+    when (player.name) {
+      PlayerName.WHITE -> {
+        // pieces with potential and not neutralized
+        (whitePotentials and bitmask) == bitmask &&
+            (whiteNeutralized.inv() and bitmask) == bitmask
+      }
+
+      PlayerName.BLACK -> {
+        (blackPotentials and bitmask) == bitmask &&
+            (blackNeutralized.inv() and bitmask) == bitmask
+      }
+    }
+  }.distinct()
+
+   if (intersectingBitHasPotential) {
+      return potentials.fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
+        // For every item, take the current sublists (accumulator)
+        // and add a new set of sublists where the item is appended
+        accumulator +
+            accumulator.map {
+              // only add unique/distinct items
+              if (!it.contains(item)) {
+                (it + item)
+              } else {
+                it
+              }
+            }
+      }
+    } else {
+      val temp = linesMask.flatMap { bitmask ->
+	      potentials.filter { it and bitmask == it }.fold(initial = listOf(emptyList<ULong>())) { accumulator, item ->
+		      // For every item, take the current sublists (accumulator)
+		      // and add a new set of sublists where the item is appended
+		      accumulator +
+				      accumulator.map {
+					      // only add unique/distinct items
+					      if (!it.contains(item)) {
+						      (it + item)
+					      } else {
+						      it
+					      }
+				      }
+	      }
+      }
+
+	   return temp
+    }
+
+
+//  /**
+//   * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
+//   * stack in play TODO Minimax/MCTS — what it would be like to remove at least one of these pieces
+//   * if all pieces have potentials use line score heuristic and pieces in reserve TODO return of a
+//   * list containing different combinations of bit positions
+//   */
+  return emptyList()
+}
+
+
+fun Bitboard.createPlayerPiecesWithPotentialPowerset(
+  player: Player,
+  columnInfos: List<ColumnInfo> = emptyList(),
+  positions: List<ULong> = emptyList(),
 ): List<List<ULong>> {
   require(!(columnInfos.isEmpty() && positions.isEmpty())) { "There must be at least one column" }
 
   // TODO handle intersecting lines, but do i?
 
   val playerPiecesWithPotential =
-      if (columnInfos.isNotEmpty()) {
-        columnInfos.flatMap { column ->
-          column.positions.filter { bitmask ->
-            when (player.name) {
-              PlayerName.WHITE -> {
-                // pieces with potential and not neutralized
-                (whitePotentials and bitmask) == bitmask &&
-                    (whiteNeutralized.inv() and bitmask) == bitmask
-              }
-
-              PlayerName.BLACK -> {
-                (blackPotentials and bitmask) == bitmask &&
-                    (blackNeutralized.inv() and bitmask) == bitmask
-              }
-            }
-          }
-        }
-      } else {
-        positions.filter { bitmask ->
+    if (columnInfos.isNotEmpty()) {
+      columnInfos.flatMap { column ->
+        column.positions.filter { bitmask ->
           when (player.name) {
             PlayerName.WHITE -> {
               // pieces with potential and not neutralized
@@ -2808,6 +2874,22 @@ fun Bitboard.createPlayerPiecesWithPotentialPowerset(
           }
         }
       }
+    } else {
+      positions.filter { bitmask ->
+        when (player.name) {
+          PlayerName.WHITE -> {
+            // pieces with potential and not neutralized
+            (whitePotentials and bitmask) == bitmask &&
+                (whiteNeutralized.inv() and bitmask) == bitmask
+          }
+
+          PlayerName.BLACK -> {
+            (blackPotentials and bitmask) == bitmask &&
+                (blackNeutralized.inv() and bitmask) == bitmask
+          }
+        }
+      }
+    }
 
   /**
    * TODO causes stack overflow error, but an empty list is necessary as a player can leave the
@@ -2970,7 +3052,7 @@ fun Bitboard.identifyPiecesToRemove(player: Player): List<PossibleBitMove> {
   if (linesWithFourInARow.isNotEmpty()) {
     // TODO Ensure Rules are followed for stack piece retrieval
     val playerPiecesWithPotential =
-        createPlayerPiecesWithPotentialPowerset(player, positions = fullyPopulatedPositions)
+        createPlayerPiecesWithPotentialPowerset(player, columnInfos = columnInfos, positions = fullyPopulatedPositions)
 
     val playerPiecesNotNeutralizedWithoutPotential = fullyPopulatedPositions.filter { bitmask ->
       val result =

@@ -723,4 +723,95 @@ class GetMovesOptimizedTest {
 
     Assertions.assertTrue(dvonnMoves.isEmpty())
   }
+
+  @Test
+  fun `piece removal intersecting basics`() {
+    val bitboard: Bitboard = Bitboard(
+      whiteGIPF = 33311UL,
+    )
+
+    val whitePlayer = Player(
+      name = PlayerName.WHITE,
+    )
+
+    val moves = mutableListOf<PackedMove>()
+    bitboard.identifyPiecesToRemove(whitePlayer, moves)
+
+    println(moves)
+
+    val expected = listOf<PackedMove>(
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646018u, 16646019u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646020u, 16646025u, 16646031u
+      ))
+    )
+
+    assertEquals(expected, moves)
+  }
+
+  @Test
+  fun `piece removal intersecting potential`() {
+    val bitboard: Bitboard = Bitboard(
+      whiteGIPF = 33310UL, // 32794UL
+      whiteTAMSK = 1UL, // 517ul
+      whitePotentials = 1UL // 517ul
+    )
+
+    val whitePlayer = Player(
+      name = PlayerName.WHITE,
+    )
+
+    val moves = mutableListOf<PackedMove>()
+    bitboard.identifyPiecesToRemove(whitePlayer, moves)
+
+    println(moves)
+
+    val expected = listOf<PackedMove>(
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646018u, 16646019u, 16646020u, 16646025u, 16646031u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646018u, 16646019u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646020u, 16646025u, 16646031u
+      ))
+    )
+
+    assertEquals(expected, moves)
+  }
+
+  @Test
+  fun `multiple potentials and piece removal intersecting potential`() {
+    val bitboard: Bitboard = Bitboard(
+      whiteGIPF = 32794UL, // 32794UL
+      whiteTAMSK = 517UL, // 517UL
+      whitePotentials = 517UL // 517UL
+    )
+
+    val whitePlayer = Player(
+      name = PlayerName.WHITE,
+    )
+
+    val moves = mutableListOf<PackedMove>()
+    bitboard.identifyPiecesToRemove(whitePlayer, moves)
+
+    println(moves)
+
+    val expected = listOf<PackedMove>(
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646018u, 16646019u, 16646020u, 16646025u, 16646031u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646017u, 16646018u, 16646019u
+      )),
+      PackedMove.Multiple(values = listOf(
+        16646016u, 16646020u, 16646025u, 16646031u
+      ))
+    )
+
+    assertEquals(expected, moves)
+  }
 }
