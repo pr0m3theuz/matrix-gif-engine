@@ -282,6 +282,10 @@ private suspend fun runBatch(
             } catch (e: Throwable) {
               failed.incrementAndGet()
               recordFailure(gameId, gameSeed, e)
+
+              if (completed.get().plus(failed.get()) > 500) {
+                exitProcess(0)
+              }
             }
           }
         }
@@ -378,6 +382,8 @@ fun playOneGame(
 ): List<String> {
   val rng = Random(seed)
 
+  val timeOfFirstMove = System.currentTimeMillis()
+
   // NOTE: adapt these calls to actually accept `rng` once your game logic
   // is updated to take an explicit Random parameter instead of a global one.
   var gameState: State =
@@ -451,8 +457,8 @@ fun playOneGame(
         "Safety guard triggered: Exceeded maximum turn threshold of $MAX_TURNS_THRESHOLD. Turns: $turn"
       }
 
-      check(System.currentTimeMillis() < timestamp.plus(30.minutes.inWholeMilliseconds)) {
-        "Safety guard triggered: Exceeded maximum time threshold of 30 minutes exceeded."
+      check(System.currentTimeMillis() < timeOfFirstMove.plus(15.minutes.inWholeMilliseconds)) {
+        "Safety guard triggered: Exceeded maximum time threshold of 15 minutes exceeded."
       }
 
       playerWhoMadeTheLastMove = gameState.currentPlayer
