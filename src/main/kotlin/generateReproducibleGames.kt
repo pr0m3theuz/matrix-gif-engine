@@ -168,11 +168,11 @@ private suspend fun runBatch(
   logger.info { "(save baseSeed if you want to reproduce this exact batch later)" }
 
   val filePrefix =
-      "agent-1_${agentOne.model}_${
+      "agent-1_${agentOne.model.name.take(4)}_${
         if (agentOne.strength != Strength.NULL) agentOne.strength else {
-        "iterations-" + agentOne.iterations + "-depth-" + agentOne.depth
-      }}_agent-2_${agentTwo.model}_${ if (agentTwo.strength != Strength.NULL) agentTwo.strength else {
-        "iterations-" + agentTwo.iterations + "-depth-" + agentTwo.depth
+        "iter-" + agentOne.iterations.toString().padStart(3, '0') + "-depth-" + agentOne.depth.toString().padStart(3, '0')
+      }}_agent-2_${agentTwo.model.name.take(4)}_${ if (agentTwo.strength != Strength.NULL) agentTwo.strength else {
+        "iter-" + agentTwo.iterations.toString().padStart(3, '0') + "-depth-" + agentTwo.depth.toString().padStart(3, '0')
       }}"
 
   val timestamp = now().toString().replace(":", "-")
