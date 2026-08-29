@@ -1214,5 +1214,6 @@ fun Bitboard.identifyPiecesToRemove(player: Player, removalsBuffer: MutableList<
     }
 
     removalsBuffer.removeIf { (it as PackedMove.Multiple).values.isEmpty() }
+    removalsBuffer.distinct()
   }
 }
