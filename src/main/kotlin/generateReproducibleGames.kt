@@ -282,7 +282,7 @@ private suspend fun runBatch(
                   }
                 }
 
-                if (completed.get() > 505) {
+                if (completed.get() > 501) {
                   exitProcess(0)
                 }
               }
@@ -290,7 +290,7 @@ private suspend fun runBatch(
               failed.incrementAndGet()
               recordFailure(gameId, gameSeed, e)
 
-              if (completed.get() > 505) {
+              if (completed.get() > 501) {
                 exitProcess(0)
               }
             }

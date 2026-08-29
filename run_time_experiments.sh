@@ -7,12 +7,12 @@ set -e
 # Configuration Variables
 # ==========================================
 JAVA_BIN="java"
-JVM_OPTS="-Xmx56g"
+JVM_OPTS="-XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=90.0"
 JAR_PATH="./build/libs/code-1.0-SNAPSHOT-standalone.jar"
 MAIN_CLASS="org.example.GenerateReproducibleGamesKt"
 
 # Run Settings
-TOTAL_GAMES=500
+TOTAL_GAMES=550
 THREADS=32
 
 # Base command string
@@ -23,7 +23,7 @@ CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
 # Matrix Parameters
 # ==========================================
 # Minimax Depths: EASY (3), MEDIUM (5), HARD (7)
-TIME_DURATIONS=(100 300 500)
+TIME_DURATIONS=(100 300 500 1000)
 
 # MCTS Iterations: EASY (~999)
 MCTS_ITERATIONS=(49 99 249 499)

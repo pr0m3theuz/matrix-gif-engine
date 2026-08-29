@@ -7,9 +7,13 @@ set -e
 # Configuration Variables
 # ==========================================
 JAVA_BIN="java"
-JVM_OPTS="-Xmx31g"
+JVM_OPTS="-XX:InitialRAMPercentage=70.0 -XX:MaxRAMPercentage=90.0"
 JAR_PATH="./build/libs/code-1.0-SNAPSHOT-standalone.jar"
 MAIN_CLASS="org.example.GenerateReproducibleGamesKt"
+
+# Run Settings
+TOTAL_GAMES=550
+THREADS=32
 
 # Base command string
 CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
@@ -19,39 +23,39 @@ CMD="$JAVA_BIN $JVM_OPTS -cp $JAR_PATH $MAIN_CLASS"
 # ==========================================
 
 echo "Starting Run 1/12: MCTS (random) vs Minimax (greedy)..."
-$CMD -b -g 500 -m mcts -ms random -M minimax -MS greedy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms random -M minimax -MS greedy
 
 echo "Starting Run 2/12: Minimax (greedy) vs MCTS (random)..."
-$CMD -b -g 500 -m minimax -ms greedy -M mcts -MS random
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms greedy -M mcts -MS random
 
 echo "Starting Run 3/12: MCTS (random) vs Minimax (easy)..."
-$CMD -b -g 500 -m mcts -ms random -M minimax -MS easy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms random -M minimax -MS easy
 
 echo "Starting Run 4/12: Minimax (easy) vs MCTS (random)..."
-$CMD -b -g 500 -m minimax -ms easy -M mcts -MS random
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms easy -M mcts -MS random
 
 echo "Starting Run 5/12: MCTS (easy) vs Minimax (greedy)..."
-$CMD -b -g 500 -m mcts -ms easy -M minimax -MS greedy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms easy -M minimax -MS greedy
 
 echo "Starting Run 6/12: Minimax (greedy) vs MCTS (easy)..."
-$CMD -b -g 500 -m minimax -ms greedy -M mcts -MS easy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms greedy -M mcts -MS easy
 
 echo "Starting Run 7/12: Minimax (easy) vs Minimax (greedy)..."
-$CMD -b -g 500 -m minimax -ms easy -M minimax -MS greedy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms easy -M minimax -MS greedy
 
 echo "Starting Run 8/12: Minimax (easy) vs Minimax (greedy)..."
-$CMD -b -g 500 -m minimax -ms easy -M minimax -MS greedy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms easy -M minimax -MS greedy
 
 echo "Starting Run 9/12: MCTS (easy) vs MCTS (random)..."
-$CMD -b -g 500 -m mcts -ms easy -M mcts -MS random
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms easy -M mcts -MS random
 
 echo "Starting Run 10/12: MCTS (random) vs MCTS (easy)..."
-$CMD -b -g 500 -m mcts -ms random -M mcts -MS easy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms random -M mcts -MS easy
 
 echo "Starting Run 11/12: MCTS (easy) vs Minimax (easy)..."
-$CMD -b -g 500 -m mcts -ms easy -M minimax -MS easy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m mcts -ms easy -M minimax -MS easy
 
 echo "Starting Run 12/12: Minimax (easy) vs MCTS (easy)..."
-$CMD -b -g 500 -m minimax -ms easy -M mcts -MS easy
+$CMD -b -g "$TOTAL_GAMES" -p "$THREADS" -m minimax -ms easy -M mcts -MS easy
 
 echo "All experiments completed successfully!"
