@@ -63,7 +63,10 @@ fun recordSearchStatsCSV(
     seed: Long,
     gameId: Int,
     state: State,
+    collectSearchInfo: Boolean,
 ): String {
+
+  if (collectSearchInfo) return ""
 
   return buildString {
     for ((turn, infoLists) in state.turnSearchInfo.entries.sortedBy { it.key }) {
@@ -126,6 +129,7 @@ fun recordGameResult(
   state: State,
   winner: Winner?,
   turn: Int,
+  collectSearchInfo: Boolean,
 ): List<String> {
   requireNotNull(winner)
 
@@ -159,9 +163,14 @@ fun recordGameResult(
 
 //  recordRawSearchDataJson(File(rawJsonFilePath), lock, gameId, state)
 
-  val searchData = recordSearchStatsCSV( seed, gameId, state)
+  val searchData = recordSearchStatsCSV( seed, gameId, state, collectSearchInfo)
 
-  return listOf(gameResults,
-    searchData
+  return if (collectSearchInfo) {
+    listOf(
+      gameResults,
+      searchData
     )
+  } else {
+    listOf(gameResults)
+  }
 }

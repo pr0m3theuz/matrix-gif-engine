@@ -17,9 +17,9 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(-7046031041489946050)
+  val rng = Random(-4076601381036510389)
 
-  constructZobristHashKeysTable(rng)
+  constructZobristHashKeysTable(Random(42))
 
 //  var gameState: State =
 //      initializeState(
@@ -37,23 +37,23 @@ fun main() {
     initializeState(
       whitePlayer = Player(
         name = PlayerName.WHITE,
-        model = Model.MINIMAX,
-        timeControl = true,
+        model = Model.MCTS,
+        timeControl = false,
         timeDuration = 300.milliseconds,
         enableFPU = true,
         enablePW = true,
-        iterations = 0,
-        depth = 0,
+        iterations = 49,
+        depth = 1,
       ),
       blackPlayer = Player(
         name = PlayerName.BLACK,
-        model = Model.MCTS,
-        timeControl = true,
+        model = Model.MINIMAX,
+        timeControl = false,
         timeDuration = 300.milliseconds,
         enableFPU = true,
         enablePW = true,
         iterations = 0,
-        depth = 0,
+        depth = 3,
       ),
     )
 
@@ -70,10 +70,13 @@ fun main() {
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
     gameState.turnDuration[turn] = mutableListOf()
-    gameState.turnSearchInfo[turn] = mutableListOf()
+
+    if (true) {
+      gameState.turnSearchInfo[turn] = mutableListOf()
+    }
 
     gameState = runBlocking {
-      playerTurn(gameState, turn, rng)
+      playerTurn(gameState, turn, rng, true)
     }
 
 

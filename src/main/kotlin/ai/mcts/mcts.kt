@@ -386,6 +386,7 @@ suspend fun selectMoveMCTS(
     duration: Duration = Duration.ZERO,
     useRAVE: Boolean = false,
     searchInfos: MutableList<SearchInfo>? = null,
+    collectSearchInfo: Boolean = false
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -534,8 +535,9 @@ suspend fun selectMoveMCTS(
     }
   }
 
-  searchInfos?.add(collectMctsStats(rootMCTSNode, iterations = rounds.count()))
-
+  if (collectSearchInfo) {
+    searchInfos?.add(collectMctsStats(rootMCTSNode, iterations = rounds.count()))
+  }
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
   for (child in rootMCTSNode.childrenNodes) {

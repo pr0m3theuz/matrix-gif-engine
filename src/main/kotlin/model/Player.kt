@@ -2,13 +2,13 @@
 
 package org.example.model
 
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTimedValue
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -17,7 +17,6 @@ import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.engine.ExperienceCollector
 import org.example.engine.TranspositionTable
-import kotlin.time.Duration.Companion.milliseconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -83,11 +82,11 @@ enum class Strength(
       duration = 10.seconds,
   ),
   NULL(
-    difficulty = 0,
-    minimaxDepth = 1,
-    mctsRounds = 0..0,
-    duration = Duration.ZERO,
-  )
+      difficulty = 0,
+      minimaxDepth = 1,
+      mctsRounds = 0..0,
+      duration = Duration.ZERO,
+  ),
 }
 
 fun getStrength(strength: String): Strength {
@@ -508,6 +507,7 @@ suspend fun Player.selectMove(
     opponent: Player,
     rng: Random,
     searchInfos: MutableList<SearchInfo> = mutableListOf(),
+    collectSearchInfo: Boolean,
 ): PackedMove? {
   return when (model) {
     Model.MINIMAX -> {
@@ -528,10 +528,10 @@ suspend fun Player.selectMove(
               runInterruptible {
                 while (!Thread.interrupted()) {
                   val searchInfo =
-                    SearchInfo(
-                      model = Model.MINIMAX,
-                      strength = timeDuration.toString(),
-                    )
+                      SearchInfo(
+                          model = Model.MINIMAX,
+                          strength = timeDuration.toString(),
+                      )
                   searchInfo.turnPhase.add(turnPhase)
 
                   if (Thread.interrupted()) {
@@ -539,22 +539,23 @@ suspend fun Player.selectMove(
                   }
 
                   val (move, elapsed) =
-                    measureTimedValue {
+                      measureTimedValue {
                         alphaBetaNgMxSearch(
-                          maxDepth = startingDepth,
-                          bitboard = bitboard.deepCopy(),
-                          currentPlayer = currentPlayer.deepCopy(),
-                          opponentPlayer = opponent.deepCopy(),
-                          alphaBetaScore = AlphaBetaScoreBitPacked(),
-                          rng = rng,
-                          depth = 0,
-                          turnPhase = turnPhase,
-                          transpositionTable = transpositionTable,
-                          endTime = endTime,
-                          searchInfo = searchInfo,
-                          enableQSearch = currentPlayer.depth > 1
-                        )
-                          .move
+                                maxDepth = startingDepth,
+                                bitboard = bitboard.deepCopy(),
+                                currentPlayer = currentPlayer.deepCopy(),
+                                opponentPlayer = opponent.deepCopy(),
+                                alphaBetaScore = AlphaBetaScoreBitPacked(),
+                                rng = rng,
+                                depth = 0,
+                                turnPhase = turnPhase,
+                                transpositionTable = transpositionTable,
+                                endTime = endTime,
+                                searchInfo = searchInfo,
+                                enableQSearch = currentPlayer.depth > 1,
+                                collectSearchInfo = collectSearchInfo,
+                            )
+                            .move
                       }
 
                   searchInfos.add(searchInfo)
@@ -566,7 +567,6 @@ suspend fun Player.selectMove(
                 }
               }
             }
-
 
             bestMove
           } else {
@@ -595,7 +595,8 @@ suspend fun Player.selectMove(
                           turnPhase = turnPhase,
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
-                    enableQSearch = currentPlayer.depth > 1
+                          enableQSearch = currentPlayer.depth > 1,
+                          collectSearchInfo = collectSearchInfo,
                       )
                       .move
 
@@ -620,33 +621,35 @@ suspend fun Player.selectMove(
             withTimeoutOrNull(timeDuration) {
               runInterruptible {
                 while (
-                  System.currentTimeMillis() < endTime /*|| startingDepth <= strength.minimaxDepth*/
+                    System.currentTimeMillis() <
+                        endTime /*|| startingDepth <= strength.minimaxDepth*/
                 ) {
                   val searchInfo =
-                    SearchInfo(
-                      model = Model.MINIMAX,
-                      strength = timeDuration.toString(),
-                    )
+                      SearchInfo(
+                          model = Model.MINIMAX,
+                          strength = timeDuration.toString(),
+                      )
                   searchInfo.turnPhase.add(turnPhase)
 
                   val (move, elapsed) =
-                    measureTimedValue {
-                      resolveBoardRemovals(
-                        maxDepth = startingDepth,
-                        currentPlayer = currentPlayer.deepCopy(),
-                        opponentPlayer = opponent.deepCopy(),
-                        bitboard = bitboard.deepCopy(),
-                        alphaBetaScore = AlphaBetaScoreBitPacked(),
-                        rng = rng,
-                        depth = 0,
-                        caller = "PLAYER $name selectMove() @ ${startingDepth}",
-                        transpositionTable = transpositionTable,
-                        endTime = endTime,
-                        searchInfo = searchInfo,
-                        enableQSearch = currentPlayer.depth > 1
-                      )
-                        .move
-                    }
+                      measureTimedValue {
+                        resolveBoardRemovals(
+                                maxDepth = startingDepth,
+                                currentPlayer = currentPlayer.deepCopy(),
+                                opponentPlayer = opponent.deepCopy(),
+                                bitboard = bitboard.deepCopy(),
+                                alphaBetaScore = AlphaBetaScoreBitPacked(),
+                                rng = rng,
+                                depth = 0,
+                                caller = "PLAYER $name selectMove() @ ${startingDepth}",
+                                transpositionTable = transpositionTable,
+                                endTime = endTime,
+                                searchInfo = searchInfo,
+                                enableQSearch = currentPlayer.depth > 1,
+                                collectSearchInfo = collectSearchInfo,
+                            )
+                            .move
+                      }
 
                   searchInfos.add(searchInfo)
                   //              remainingTime -= elapsed
@@ -685,7 +688,8 @@ suspend fun Player.selectMove(
                           caller = "PLAYER $name selectMove() @ ${startingDepth}",
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
-                    enableQSearch = currentPlayer.depth > 1
+                          enableQSearch = currentPlayer.depth > 1,
+                          collectSearchInfo = collectSearchInfo,
                       )
                       .move
 
@@ -709,8 +713,8 @@ suspend fun Player.selectMove(
           rng = rng,
           duration = if (timeControl) timeDuration else Duration.ZERO,
           useRAVE = this.useRAVE,
-
           searchInfos = searchInfos,
+          collectSearchInfo = collectSearchInfo,
       )
     }
     Model.NEURAL_NETWORK -> {

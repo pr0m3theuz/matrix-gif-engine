@@ -209,6 +209,17 @@ fun createCLIOptions(): Options {
                 .get()
         )
 
+        addOption(
+          Option.builder("css")
+            .longOpt("collect-search-statistics")
+            .hasArg(false)
+            .argName("VERBOSE")
+            .desc(
+              "Enable collection of search statistics of all available games"
+            )
+            .get()
+        )
+
         addOption("h", "help", false, "Print this help message")
 
         createAgentOptions("Agent 1 (White)", "agent-1", "m").forEach {

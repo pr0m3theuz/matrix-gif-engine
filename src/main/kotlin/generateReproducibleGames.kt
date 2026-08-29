@@ -111,6 +111,8 @@ suspend fun main(args: Array<String>) = coroutineScope {
         .trimIndent()
   }
 
+  val collectSearchInfo = cmd.hasOption("collect-search-statistics")
+
   if (cmd.hasOption("replay")) {
     val gameId =
         cmd.getOptionValue("game-id").toIntOrNull() ?: error("Usage: replay <game-Id> [seed>")
@@ -127,6 +129,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
         timestamp = 0L,
         agentOne,
         agentTwo,
+      collectSearchInfo
     )
 
     logger.info {
@@ -151,6 +154,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
         baseSeed = baseSeed,
         agentOne,
         agentTwo,
+      collectSearchInfo
     )
   }
 }
@@ -161,6 +165,7 @@ private suspend fun runBatch(
     baseSeed: Long,
     agentOne: AgentConfig,
     agentTwo: AgentConfig,
+    collectSearchInfo: Boolean
 ) = coroutineScope {
   logger.info {
     "Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed"
@@ -190,7 +195,7 @@ private suspend fun runBatch(
     searchStatsFile.createNewFile()
   }
 
-  searchStatsFile.appendText("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
+//  searchStatsFile.appendText("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
 
   val gameResultsData = Channel<String>(capacity = 64)
   val searchResultsData = Channel<String>(capacity = 64)
@@ -244,6 +249,7 @@ private suspend fun runBatch(
                           timestamp = startTime,
                           agentOne,
                           agentTwo,
+                          collectSearchInfo
                       )
                     }
                   }
@@ -260,8 +266,9 @@ private suspend fun runBatch(
               } else {
 
                 gameResultsData.send(result.first())
-                searchResultsData.send(result.last())
-
+                if (collectSearchInfo) {
+                  searchResultsData.send(result.last())
+                }
                 val n = completed.incrementAndGet()
                 if (n % 10 == 0) {
                   previousCompletionTime.set(System.currentTimeMillis())
@@ -379,6 +386,7 @@ fun playOneGame(
     timestamp: Long,
     agentOne: AgentConfig,
     agentTwo: AgentConfig,
+    collectSearchInfo: Boolean,
 ): List<String> {
   val rng = Random(seed)
 
@@ -439,7 +447,7 @@ fun playOneGame(
       }
 
       gameState = runBlocking {
-        playerTurn(gameState, turn, rng)
+        playerTurn(gameState, turn, rng, collectSearchInfo)
       }
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
@@ -494,7 +502,7 @@ fun playOneGame(
   //    else -> {}
   //  }
 
-  return recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn)
+  return recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn, collectSearchInfo)
   //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
 }
 
@@ -505,6 +513,7 @@ fun playOneGame(
     timestamp: Long,
     agentOne: AgentConfig,
     agentTwo: AgentConfig,
+    collectSearchInfo: Boolean
 ) {
   val rng = Random(seed)
 
@@ -556,7 +565,7 @@ fun playOneGame(
         gameState.printStateSummary()
       }
 
-      gameState = runBlocking { playerTurn(gameState, turn, rng) }
+      gameState = runBlocking { playerTurn(gameState, turn, rng, collectSearchInfo) }
 
       gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 

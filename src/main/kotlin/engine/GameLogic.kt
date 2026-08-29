@@ -13,7 +13,7 @@ import org.example.model.*
 
 private val logger = KotlinLogging.logger {}
 
-suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
+suspend fun playerTurn(state: State, turn: Int, rng: Random, collectSearchInfo: Boolean = false): State {
 
   var newState = state // .deepCopy(copyCollector = true)
 
@@ -28,11 +28,12 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
    * pushing a second or third TAMSK-stack onto the central spot during one and the same turn.
    */
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng, collectSearchInfo)
 
     // recombine player pieces
     newState.currentPlayer.combinePieces()
 
+    newState.assertPieceCount()
     // return early if the current player captured 3 GIPF Pieces
     if (evaluateCapturedPieces(newState)) return newState
   }
@@ -50,7 +51,9 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
         }
       } == boardCenterSpotMask
   ) {
-    newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
+    newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng, collectSearchInfo)
+
+    newState.assertPieceCount()
   }
 
   newState.assertPieceCount()
@@ -59,7 +62,7 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
   newState.bitboard.identifyAvailableMoves(newState.currentPlayer, columnInfos, availableMoves)
 
   if (availableMoves.isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng, collectSearchInfo)
 
     newState.assertPieceCount()
   }
@@ -75,7 +78,9 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
         }
       } == boardCenterSpotMask
   ) {
-    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng, collectSearchInfo)
+
+    newState.assertPieceCount()
   }
 
   newState.assertPieceCount()
@@ -83,9 +88,11 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
   // TODO While there are pieces to remove
   //  TODO Has a bug? what bug?
   while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
-    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+    newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng, collectSearchInfo)
     // recombine player pieces
     newState.currentPlayer.combinePieces()
+
+    newState.assertPieceCount()
   }
 
   newState.assertPieceCount()
@@ -95,7 +102,7 @@ suspend fun playerTurn(state: State, turn: Int, rng: Random): State {
   return newState
 }
 
-suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random): State {
+suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Random, collectSearchInfo: Boolean): State {
 
   val bitboard = state.bitboard.deepCopy()
 
@@ -110,12 +117,14 @@ suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Rando
             opponent = state.nextPlayer,
             rng = rng,
             searchInfos = searchInfos,
+          collectSearchInfo = collectSearchInfo
         )
       }
 
   state.turnDuration.getOrDefault(turn, mutableListOf()).add(searchDuration.inWholeMilliseconds)
-  state.turnSearchInfo.getOrDefault(turn, mutableListOf()).add(searchInfos)
-
+  if (collectSearchInfo) {
+    state.turnSearchInfo.getOrDefault(turn, mutableListOf()).add(searchInfos)
+  }
   /**
    * The TAMSK-potential Rules You must make use of it in the same turn it is pushed onto the middle
    * spot. If not, the potential goes out of the game.
@@ -132,6 +141,29 @@ suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Rando
     state.turnMoves
         .getOrDefault(turn, mutableListOf())
         .add(PackedMove.Multiple(values = listOf(unusedTAMSKPotential)))
+
+    bitboard.assertPieceCount(
+      currentPlayer = state.currentPlayer,
+      nextPlayer = state.nextPlayer,
+    )
+
+    val newBoard = bitboard.convertBitboardToBoard(state.board)
+
+    val newState =
+      State(
+        currentPlayer = state.currentPlayer,
+        nextPlayer = state.nextPlayer,
+        board = newBoard,
+        bitboard = bitboard,
+        turnMoves = state.turnMoves,
+        turnDuration = state.turnDuration,
+        turnSearchInfo = state.turnSearchInfo,
+        collector = state.collector,
+      )
+
+    newState.assertPieceCount(bitboard = bitboard)
+
+    return newState
   }
 
   if (packedMove != null) {
@@ -197,20 +229,6 @@ suspend fun playerMove(state: State, turnPhase: TurnPhase, turn: Int, rng: Rando
               require(extractedPiece.extractPieceColor() == state.currentPlayer.name) {
                 "Must be the current player's piece!"
               }
-
-              // --- MOVE VALIDATION ---
-              //            requireNotNull(bestMove.extractTargetBit()) {
-              //              "CRITICAL MOVE ERROR: bestMove.targetBit cannot be null. A valid move
-              // must have a destination."
-              //            }
-              //            requireNotNull(bestMove.extractPushDirection()) {
-              //              "CRITICAL MOVE ERROR: bestMove.pushDirection cannot be null. A valid
-              // move must define the resulting board shift."
-              //            }
-              //            requireNotNull(bestMove.extractColumnInfo()) {
-              //              "CRITICAL MOVE ERROR: bestMove.columnInfos cannot be empty. No valid
-              // board columns were provided for this move."
-              //            }
 
               selectedPiece.let {
                 bitboard.addPieceToBitboard(bestMove)
