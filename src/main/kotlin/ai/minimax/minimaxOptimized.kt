@@ -1342,7 +1342,7 @@ private fun applyTamskMove(
   if (bestMove != null) {
     val moveValue = (bestMove as PackedMove.Single).value
 
-    if (moveValue.extractSourceBit() == boardCenterSpotMask) {
+    if (moveValue.extractSourceBit() == boardCenterSpotMask && moveValue.extractMoveType() == MoveType.AddPiece) {
       vacantBitFound = bitboard.useTamskPotential(moveValue)
     }
 
