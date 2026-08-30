@@ -341,9 +341,9 @@ fun alphaBetaNgMxSearch(
   val capture0 = currentPlayer.captureMoves[0][captureTableIndex]
   val capture1 = currentPlayer.captureMoves[1][captureTableIndex]
 
-  val ttTargetBit = if (pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
-  val ttPushDirection = if (pvMove) ttEntry.move.extractPushDirection() else 0u
-  val ttMoveType = if (pvMove) ttEntry.move.extractMoveType() else 0u
+  val ttTargetBit = if (enableTranspositionTable && pvMove) ttEntry.move.extractTargetBit() else 0u // adjust type if needed
+  val ttPushDirection = if (enableTranspositionTable && pvMove) ttEntry.move.extractPushDirection() else null
+  val ttMoveType = if (enableTranspositionTable && pvMove) ttEntry.move.extractMoveType() else null
 
   availableMoves.sortByDescending {
     val move = (it as PackedMove.Single).value
@@ -365,7 +365,7 @@ fun alphaBetaNgMxSearch(
       //        450000
       //      } else 0
     } else if (
-        pvMove && // todo try target bit and push direction. works for add piece but not for use
+        enableTranspositionTable && pvMove && // todo try target bit and push direction. works for add piece but not for use
             move.extractTargetBit() == ttTargetBit &&
             move.extractPushDirection() == ttPushDirection &&
             move.extractMoveType() == ttMoveType
