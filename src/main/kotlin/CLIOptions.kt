@@ -20,6 +20,9 @@ data class AgentConfig(
     val enablePW: Boolean = false,
     val iterations: Int = 0,
     val depth: Int = 1,
+    val enableQSearch: Boolean,
+    val enableTranspositionTable: Boolean,
+    val enableKillerMoves: Boolean,
 )
 
 fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<Option> {
@@ -93,7 +96,29 @@ fun createAgentOptions(name: String, prefix: String, shortPrefix: String): List<
           .desc("Depth of Minimax Search for $name (default: 1)")
           .get()
 
-  return listOf(model, strength, timeControl, timeDuration, rave, fpu, pw, iterations, depth)
+  val qSearch =
+    Option.builder("${shortPrefix}qs")
+      .longOpt("$prefix-minimax-qsearch")
+      .hasArg(false)
+      .desc("Enable Quiescence Search for $name (default: false)")
+      .get()
+
+  val enableKillerMoves =
+    Option.builder("${shortPrefix}km")
+      .longOpt("$prefix-minimax-killer-moves")
+      .hasArg(false)
+      .desc("Enable Killer Move Heuristic for $name (default: false)")
+      .get()
+
+  val enableTranspositionTable =
+    Option.builder("${shortPrefix}tt")
+      .longOpt("$prefix-minimax-transposition-table")
+      .hasArg(false)
+      .desc("Enable Transposition Table for $name (default: false)")
+      .get()
+
+
+  return listOf(model, strength, timeControl, timeDuration, rave, fpu, pw, iterations, depth, qSearch, enableKillerMoves, enableTranspositionTable)
 }
 
 fun parseAgentArgs(
@@ -126,6 +151,10 @@ fun parseAgentArgs(
   val depth =
       if (cmd.hasOption("$prefix-minimax-depth")) cmd.getOptionValue("$prefix-minimax-depth").toInt() else 1
 
+  val qSearch = cmd.hasOption("$prefix-minimax-qsearch")
+  val enableKillerMoves = cmd.hasOption("$prefix-minimax-killer-moves")
+  val enableTranspositionTable = cmd.hasOption("$prefix-minimax-transposition-table")
+
   return AgentConfig(
       model = model,
       strength = strength,
@@ -136,6 +165,9 @@ fun parseAgentArgs(
       enablePW = pw,
       iterations = iterations,
       depth = depth,
+      enableQSearch = qSearch,
+      enableTranspositionTable = enableTranspositionTable,
+      enableKillerMoves = enableKillerMoves,
   )
 }
 

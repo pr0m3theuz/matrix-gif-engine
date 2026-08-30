@@ -120,6 +120,9 @@ data class Player(
     @EncodeDefault val enablePW: Boolean = false,
     @EncodeDefault val iterations: Int = 0,
     @EncodeDefault val depth: Int = 0,
+    @EncodeDefault val enableQSearch: Boolean = false,
+    @EncodeDefault val enableTranspositionTable: Boolean = false,
+    @EncodeDefault val enableKillerMoves: Boolean = false,
     @Transient val collector: ExperienceCollector? = ExperienceCollector(),
     @Transient val transpositionTable: TranspositionTable = TranspositionTable(),
     @Transient val killerMoves: List<UIntArray> = List(2) { UIntArray(64) },
@@ -552,8 +555,11 @@ suspend fun Player.selectMove(
                                 transpositionTable = transpositionTable,
                                 endTime = endTime,
                                 searchInfo = searchInfo,
-                                enableQSearch = currentPlayer.depth > 1,
+                                enableQSearch =
+                                    currentPlayer.depth > 1 || currentPlayer.enableQSearch,
                                 collectSearchInfo = collectSearchInfo,
+                                enableTranspositionTable = enableTranspositionTable,
+                                enableKillerMoves = enableKillerMoves,
                             )
                             .move
                       }
@@ -595,8 +601,10 @@ suspend fun Player.selectMove(
                           turnPhase = turnPhase,
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
-                          enableQSearch = currentPlayer.depth > 1,
+                          enableQSearch = currentPlayer.depth > 1 || currentPlayer.enableQSearch,
                           collectSearchInfo = collectSearchInfo,
+                          enableTranspositionTable = enableTranspositionTable,
+                          enableKillerMoves = enableKillerMoves,
                       )
                       .move
 
@@ -645,8 +653,11 @@ suspend fun Player.selectMove(
                                 transpositionTable = transpositionTable,
                                 endTime = endTime,
                                 searchInfo = searchInfo,
-                                enableQSearch = currentPlayer.depth > 1,
+                                enableQSearch =
+                                    currentPlayer.depth > 1 || currentPlayer.enableQSearch,
                                 collectSearchInfo = collectSearchInfo,
+                                enableTranspositionTable = enableTranspositionTable,
+                                enableKillerMoves = enableKillerMoves,
                             )
                             .move
                       }
@@ -688,8 +699,10 @@ suspend fun Player.selectMove(
                           caller = "PLAYER $name selectMove() @ ${startingDepth}",
                           transpositionTable = transpositionTable,
                           searchInfo = searchInfo,
-                          enableQSearch = currentPlayer.depth > 1,
+                          enableQSearch = currentPlayer.depth > 1 || currentPlayer.enableQSearch,
                           collectSearchInfo = collectSearchInfo,
+                          enableTranspositionTable = enableTranspositionTable,
+                          enableKillerMoves = enableKillerMoves,
                       )
                       .move
 

@@ -95,6 +95,9 @@ suspend fun main(args: Array<String>) = coroutineScope {
         MCTS RAVE:            ${agentOne.useRAVE}
         Progressive Widening: ${agentOne.enablePW}
         First Play Urgency:   ${agentOne.enableFPU}
+        QSearch:              ${agentOne.enableQSearch}
+        Trans. Table:         ${agentOne.enableTranspositionTable}
+        Killer Moves:         ${agentOne.enableKillerMoves}
 
       [Agent 2 (Black)]
         Model:                ${agentTwo.model}
@@ -106,6 +109,9 @@ suspend fun main(args: Array<String>) = coroutineScope {
         MCTS RAVE:            ${agentTwo.useRAVE}
         Progressive Widening: ${agentTwo.enablePW}
         First Play Urgency:   ${agentTwo.enableFPU}
+        QSearch:              ${agentTwo.enableQSearch}
+        Trans. Table:         ${agentTwo.enableTranspositionTable}
+        Killer Moves:         ${agentTwo.enableKillerMoves}
       =====================================================================================
       """
         .trimIndent()
@@ -417,6 +423,9 @@ fun playOneGame(
                   enablePW = agentOne.enablePW,
                   iterations = agentOne.iterations,
                   depth = agentOne.depth,
+                  enableQSearch = agentOne.enableQSearch,
+                  enableTranspositionTable = agentOne.enableTranspositionTable,
+                  enableKillerMoves = agentOne.enableKillerMoves,
               ),
           blackPlayer =
               Player(
@@ -430,6 +439,9 @@ fun playOneGame(
                   enablePW = agentTwo.enablePW,
                   iterations = agentTwo.iterations,
                   depth = agentTwo.depth,
+                  enableQSearch = agentTwo.enableQSearch,
+                  enableTranspositionTable = agentTwo.enableTranspositionTable,
+                  enableKillerMoves = agentTwo.enableKillerMoves,
               ),
       )
 

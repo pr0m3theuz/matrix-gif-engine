@@ -119,6 +119,8 @@ fun alphaBetaNgMxSearch(
     searchInfo: SearchInfo? = null,
     enableQSearch: Boolean,
     collectSearchInfo: Boolean = false,
+    enableTranspositionTable: Boolean,
+    enableKillerMoves: Boolean,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
     logger.info { "--- ALPHA-BETA CALLED ---" }
@@ -177,6 +179,8 @@ fun alphaBetaNgMxSearch(
             endTime = endTime,
             searchInfo = searchInfo,
             enableQSearch = enableQSearch,
+            enableTranspositionTable = enableTranspositionTable,
+            enableKillerMoves = enableKillerMoves,
         )
       } else {
         Triple(emptyList(), 0, emptyList())
@@ -232,6 +236,8 @@ fun alphaBetaNgMxSearch(
             transpositionTable = transpositionTable,
             endTime = endTime,
             searchInfo = searchInfo,
+            enableTranspositionTable = enableTranspositionTable,
+            enableKillerMoves = enableKillerMoves,
         )
 
     rollbackInitialRemovals()
@@ -287,33 +293,34 @@ fun alphaBetaNgMxSearch(
           hash = bitboard.getZobristHash(currentPlayer),
       )
 
-  val ttAlpha = alphaBetaScore.alpha // + forcedRemovalScore
-  val ttBeta = alphaBetaScore.beta // + forcedRemovalScore
+  if (enableTranspositionTable) {
+    val ttAlpha = alphaBetaScore.alpha // + forcedRemovalScore
+    val ttBeta = alphaBetaScore.beta // + forcedRemovalScore
 
-  if (!isPVNode && ttFound && ttEntry.depth >= depth) {
-    if (ttEntry.bound == Bound.EXACT) {
-      rollbackInitialRemovals()
+    if (!isPVNode && ttFound && ttEntry.depth >= depth) {
+      if (ttEntry.bound == Bound.EXACT) {
+        rollbackInitialRemovals()
 
-      return BestPackedMove(
-          score = ttEntry.score,
-      )
-    }
-    if (ttEntry.bound == Bound.BETA && ttEntry.score >= ttBeta) {
-      rollbackInitialRemovals()
+        return BestPackedMove(
+            score = ttEntry.score,
+        )
+      }
+      if (ttEntry.bound == Bound.BETA && ttEntry.score >= ttBeta) {
+        rollbackInitialRemovals()
 
-      return BestPackedMove(
-          score = ttEntry.score, // Fail-high
-      )
-    }
-    if (ttEntry.bound == Bound.ALPHA && ttEntry.score <= ttAlpha) {
-      rollbackInitialRemovals()
+        return BestPackedMove(
+            score = ttEntry.score, // Fail-high
+        )
+      }
+      if (ttEntry.bound == Bound.ALPHA && ttEntry.score <= ttAlpha) {
+        rollbackInitialRemovals()
 
-      return BestPackedMove(
-          score = ttEntry.score, // Fail-low
-      )
+        return BestPackedMove(
+            score = ttEntry.score, // Fail-low
+        )
+      }
     }
   }
-
   //
   var bound = Bound.ALPHA
 
@@ -340,13 +347,13 @@ fun alphaBetaNgMxSearch(
 
   availableMoves.sortByDescending {
     val move = (it as PackedMove.Single).value
-    if (pvMove && move == ttEntry.move) {
+    if (pvMove && move == ttEntry.move && enableTranspositionTable) {
       1000000
-    } else if (move == killer0) {
+    } else if (move == killer0 && enableKillerMoves) {
       900000
-    } else if (move == killer1) {
+    } else if (move == killer1 && enableKillerMoves) {
       800000
-      //    } else if (captureMoves.isNotEmpty()) {
+      //    } else if (captureMoves.isNotEmpty() && enableCaptureMoves) {
       //      if (
       //          captureMoves.any {
       //            val capture = (it as PackedMove.Single).value
@@ -437,6 +444,8 @@ fun alphaBetaNgMxSearch(
                 endTime = endTime,
                 searchInfo = searchInfo,
                 enableQSearch = enableQSearch,
+                enableTranspositionTable = enableTranspositionTable,
+                enableKillerMoves = enableKillerMoves,
             )
 
         bitboard.assertPieceCount(
@@ -466,6 +475,8 @@ fun alphaBetaNgMxSearch(
                   newlyStackedPieces,
                   unusedTAMSKPotential,
                   enableQSearch = enableQSearch,
+                  enableTranspositionTable = enableTranspositionTable,
+                  enableKillerMoves = enableKillerMoves,
               )
           )
               continue
@@ -488,6 +499,8 @@ fun alphaBetaNgMxSearch(
                             endTime = endTime,
                             searchInfo = searchInfo,
                             enableQSearch = enableQSearch,
+                            enableTranspositionTable = enableTranspositionTable,
+                            enableKillerMoves = enableKillerMoves,
                         )
                         .score,
             )
@@ -529,7 +542,7 @@ fun alphaBetaNgMxSearch(
         }
 
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
-          currentPlayer.updateKillerMoves(moveValue, depth)
+          if (enableKillerMoves) currentPlayer.updateKillerMoves(moveValue, depth)
 
           if (bestPiecesToRetrieveCapture4.isEmpty()) {
             // History heuristic only applies to quiet moves.
@@ -648,6 +661,8 @@ fun alphaBetaNgMxSearch(
                   endTime,
                   searchInfo,
                   enableQSearch,
+                  enableTranspositionTable = enableTranspositionTable,
+                  enableKillerMoves = enableKillerMoves,
               )
 
           extraTamskMove = tamskMove1
@@ -674,6 +689,8 @@ fun alphaBetaNgMxSearch(
                 endTime = endTime,
                 searchInfo = searchInfo,
                 enableQSearch = enableQSearch,
+                enableTranspositionTable = enableTranspositionTable,
+                enableKillerMoves = enableKillerMoves,
             )
 
         bitboard.assertPieceCount(
@@ -702,6 +719,8 @@ fun alphaBetaNgMxSearch(
                               endTime = endTime,
                               searchInfo = searchInfo,
                               enableQSearch = enableQSearch,
+                              enableTranspositionTable = enableTranspositionTable,
+                              enableKillerMoves = enableKillerMoves,
                           )
                           .score,
               )
@@ -797,6 +816,8 @@ fun alphaBetaNgMxSearch(
                             endTime = endTime,
                             searchInfo = searchInfo,
                             enableQSearch = enableQSearch,
+                            enableTranspositionTable = enableTranspositionTable,
+                            enableKillerMoves = enableKillerMoves,
                         )
                         .score,
             )
@@ -911,7 +932,7 @@ fun alphaBetaNgMxSearch(
           // best: $alphaBetaScore"
           //          }
 
-          currentPlayer.updateKillerMoves(moveValue, depth)
+          if (enableKillerMoves) currentPlayer.updateKillerMoves(moveValue, depth)
 
           if (bestPiecesToRetrieveCapture2.isEmpty()) {
             // History heuristic only applies to quiet moves.
@@ -968,6 +989,8 @@ fun alphaBetaNgMxSearch(
                   endTime,
                   searchInfo,
                   enableQSearch,
+                  enableTranspositionTable = enableTranspositionTable,
+                  enableKillerMoves = enableKillerMoves,
               )
 
           extraTamskMove = tamskMove1
@@ -995,6 +1018,8 @@ fun alphaBetaNgMxSearch(
                 endTime = endTime,
                 searchInfo = searchInfo,
                 enableQSearch = enableQSearch,
+                enableTranspositionTable = enableTranspositionTable,
+                enableKillerMoves = enableKillerMoves,
             )
 
         val beforeRecursionBitboardState = bitboard.deepCopy()
@@ -1019,6 +1044,8 @@ fun alphaBetaNgMxSearch(
                               endTime = endTime,
                               searchInfo = searchInfo,
                               enableQSearch = enableQSearch,
+                              enableTranspositionTable = enableTranspositionTable,
+                              enableKillerMoves = enableKillerMoves,
                           )
                           .score,
               )
@@ -1094,6 +1121,8 @@ fun alphaBetaNgMxSearch(
                             endTime = endTime,
                             searchInfo = searchInfo,
                             enableQSearch = enableQSearch,
+                            enableTranspositionTable = enableTranspositionTable,
+                            enableKillerMoves = enableKillerMoves,
                         )
                         .score,
             )
@@ -1174,7 +1203,7 @@ fun alphaBetaNgMxSearch(
           bound = Bound.EXACT
         }
         if (alphaBetaScore.alpha >= alphaBetaScore.beta) {
-          currentPlayer.updateKillerMoves(moveValue, depth)
+          if (enableKillerMoves) currentPlayer.updateKillerMoves(moveValue, depth)
 
           if (bestPiecesToRetrieveCapture3.isEmpty()) {
             // History heuristic only applies to quiet moves.
@@ -1207,15 +1236,17 @@ fun alphaBetaNgMxSearch(
 
   alphaBetaScore.alpha += forcedRemovalScore
 
-  alphaBetaScore.move?.let {
-    transpositionTable.save(
-        entry = ttEntry,
-        hash = bitboard.getZobristHash(currentPlayer),
-        bound = bound,
-        depth = depth,
-        move = it,
-        value = alphaBetaScore.alpha,
-    )
+  if (enableTranspositionTable) {
+    alphaBetaScore.move?.let {
+      transpositionTable.save(
+          entry = ttEntry,
+          hash = bitboard.getZobristHash(currentPlayer),
+          bound = bound,
+          depth = depth,
+          move = it,
+          value = alphaBetaScore.alpha,
+      )
+    }
   }
 
   bitboard.diff(initBitboard)
@@ -1245,6 +1276,8 @@ private fun applyTamskMove(
     endTime: Long,
     searchInfo: SearchInfo?,
     enableQSearch: Boolean,
+    enableTranspositionTable: Boolean,
+    enableKillerMoves: Boolean,
 ): Triple<BestPackedMove, ULong, UInt?> {
   val preTamskMoveBitboardState = bitboard.deepCopy()
 
@@ -1298,6 +1331,8 @@ private fun applyTamskMove(
             endTime = endTime,
             searchInfo = searchInfo,
             enableQSearch = enableQSearch,
+            enableTranspositionTable = enableTranspositionTable,
+            enableKillerMoves = enableKillerMoves,
         )
 
     bitboard.assertPieceCount(
@@ -1402,6 +1437,8 @@ private fun lateMoveReductionSearch(
     newlyStackedPieces: List<UInt>,
     unusedTAMSKPotential: UInt,
     enableQSearch: Boolean,
+    enableTranspositionTable: Boolean,
+    enableKillerMoves: Boolean,
 ): Boolean {
   val move =
       BestPackedMove(
@@ -1420,6 +1457,8 @@ private fun lateMoveReductionSearch(
                       endTime = endTime,
                       searchInfo = searchInfo,
                       enableQSearch = enableQSearch,
+                      enableTranspositionTable = enableTranspositionTable,
+                      enableKillerMoves = enableKillerMoves,
                   )
                   .score,
       )
@@ -1467,6 +1506,8 @@ private fun bestPiecesToRemove(
     endTime: Long = Long.MAX_VALUE,
     searchInfo: SearchInfo? = null,
     enableQSearch: Boolean,
+    enableTranspositionTable: Boolean,
+    enableKillerMoves: Boolean,
 ): Triple<List<UInt>, Int, List<UInt>> {
   val initBitboard = bitboard.deepCopy()
 
@@ -1488,6 +1529,8 @@ private fun bestPiecesToRemove(
           endTime = endTime,
           searchInfo = searchInfo,
           enableQSearch = enableQSearch,
+          enableTranspositionTable = enableTranspositionTable,
+          enableKillerMoves = enableKillerMoves,
       )
 
   bitboard.diff(initBitboard)
@@ -1548,6 +1591,8 @@ fun resolveBoardRemovals(
     endTime: Long = Long.MAX_VALUE,
     searchInfo: SearchInfo? = null,
     enableQSearch: Boolean,
+    enableTranspositionTable: Boolean,
+    enableKillerMoves: Boolean,
     collectSearchInfo: Boolean = false,
 ): BestPackedMove {
   if (logger.isDebugEnabled()) {
@@ -1658,6 +1703,8 @@ fun resolveBoardRemovals(
                           endTime = endTime,
                           searchInfo = searchInfo,
                           enableQSearch = enableQSearch,
+                          enableTranspositionTable = enableTranspositionTable,
+                          enableKillerMoves = enableKillerMoves,
                       )
                       .score,
           )

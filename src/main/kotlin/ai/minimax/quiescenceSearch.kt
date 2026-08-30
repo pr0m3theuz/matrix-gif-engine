@@ -42,6 +42,7 @@ import org.example.model.undoTamskPotential
 import org.example.model.undoUsePiecePotential
 import org.example.model.usePiecePotential
 import org.example.model.useTamskPotential
+import kotlin.Boolean
 import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
@@ -59,7 +60,9 @@ fun qSearch(
 	transpositionTable: TranspositionTable,
 	endTime: Long = Long.MAX_VALUE,
 	searchInfo: SearchInfo? = null,
-	collectSearchInfo: Boolean = false
+	collectSearchInfo: Boolean = false,
+	enableTranspositionTable: Boolean,
+	enableKillerMoves: Boolean,
 ): BestPackedMove {
 
 	val initBitboard = bitboard.deepCopy()
@@ -103,26 +106,29 @@ fun qSearch(
 			hash = bitboard.getZobristHash(currentPlayer),
 		)
 
-	if (!isPVNode && ttFound && ttEntry.depth >= depth) {
-		if (ttEntry.bound == Bound.EXACT) {
+	if (enableTranspositionTable) {
+		if (!isPVNode && ttFound && ttEntry.depth >= depth) {
+			if (ttEntry.bound == Bound.EXACT) {
 
-			return BestPackedMove(
-				score = ttEntry.score,
-			)
-		}
-		if (ttEntry.bound == Bound.BETA && ttEntry.score >= alphaBetaScore.beta) {
+				return BestPackedMove(
+					score = ttEntry.score,
+				)
+			}
+			if (ttEntry.bound == Bound.BETA && ttEntry.score >= alphaBetaScore.beta) {
 
-			return BestPackedMove(
-				score = ttEntry.score, // Fail-high
-			)
-		}
-		if (ttEntry.bound == Bound.ALPHA && ttEntry.score <= alphaBetaScore.alpha) {
+				return BestPackedMove(
+					score = ttEntry.score, // Fail-high
+				)
+			}
+			if (ttEntry.bound == Bound.ALPHA && ttEntry.score <= alphaBetaScore.alpha) {
 
-			return BestPackedMove(
-				score = ttEntry.score, // Fail-low
-			)
+				return BestPackedMove(
+					score = ttEntry.score, // Fail-low
+				)
+			}
 		}
 	}
+
 
 	val standPat = scoreBitboardState(bitboard, currentPlayer, opponentPlayer, rng) + 50
 
@@ -194,6 +200,8 @@ fun qSearch(
 						transpositionTable = transpositionTable,
 						endTime = endTime,
 						searchInfo = searchInfo,
+						enableTranspositionTable = enableTranspositionTable,
+						enableKillerMoves = enableKillerMoves,
 					)
 
 				bitboard.assertPieceCount(
@@ -217,6 +225,8 @@ fun qSearch(
 								transpositionTable = transpositionTable,
 								endTime = endTime,
 								searchInfo = searchInfo,
+								enableTranspositionTable = enableTranspositionTable,
+								enableKillerMoves = enableKillerMoves,
 							)
 								.score
 					)
@@ -363,6 +373,8 @@ fun qSearch(
 							transpositionTable,
 							endTime,
 							searchInfo,
+							enableTranspositionTable = enableTranspositionTable,
+							enableKillerMoves = enableKillerMoves,
 						)
 
 					extraTamskMove = tamskMove1
@@ -387,7 +399,9 @@ fun qSearch(
 						rng,
 						transpositionTable = transpositionTable,
 						endTime = endTime,
-						searchInfo = searchInfo
+						searchInfo = searchInfo,
+								enableTranspositionTable = enableTranspositionTable,
+						enableKillerMoves = enableKillerMoves,
 					)
 
 				bitboard.assertPieceCount(
@@ -411,6 +425,8 @@ fun qSearch(
 								transpositionTable = transpositionTable,
 								endTime = endTime,
 								searchInfo = searchInfo,
+								enableTranspositionTable = enableTranspositionTable,
+								enableKillerMoves = enableKillerMoves,
 							)
 								.score
 					)
@@ -555,6 +571,8 @@ fun qSearch(
 							transpositionTable,
 							endTime,
 							searchInfo,
+							enableTranspositionTable = enableTranspositionTable,
+							enableKillerMoves = enableKillerMoves,
 						)
 
 					extraTamskMove = tamskMove1
@@ -580,7 +598,9 @@ fun qSearch(
 						rng = rng,
 						transpositionTable = transpositionTable,
 						endTime = endTime,
-						searchInfo = searchInfo
+						searchInfo = searchInfo,
+						enableTranspositionTable = enableTranspositionTable,
+						enableKillerMoves = enableKillerMoves,
 					)
 
 				val beforeRecursionBitboardState = bitboard.deepCopy()
@@ -601,6 +621,8 @@ fun qSearch(
 								transpositionTable = transpositionTable,
 								endTime = endTime,
 								searchInfo = searchInfo,
+								enableTranspositionTable = enableTranspositionTable,
+								enableKillerMoves = enableKillerMoves,
 							)
 								.score
 					)
@@ -711,6 +733,8 @@ fun applyTamskMove(
 	transpositionTable: TranspositionTable,
 	endTime: Long,
 	searchInfo: SearchInfo?,
+	enableTranspositionTable: Boolean,
+	enableKillerMoves: Boolean,
 ): Triple<BestPackedMove, ULong, UInt?> {
 	val preTamskMoveBitboardState = bitboard.deepCopy()
 
@@ -763,6 +787,8 @@ fun applyTamskMove(
 				transpositionTable = transpositionTable,
 				endTime = endTime,
 				searchInfo = searchInfo,
+				enableTranspositionTable = enableTranspositionTable,
+				enableKillerMoves = enableKillerMoves,
 			)
 
 		bitboard.assertPieceCount(
@@ -854,6 +880,8 @@ private fun bestPiecesToRemove(
 	transpositionTable: TranspositionTable,
 	endTime: Long = Long.MAX_VALUE,
 	searchInfo: SearchInfo? = null,
+	enableTranspositionTable: Boolean,
+	enableKillerMoves: Boolean,
 ): Triple<List<UInt>, Int, List<UInt>> {
 	val initBitboard = bitboard.deepCopy()
 
@@ -874,6 +902,8 @@ private fun bestPiecesToRemove(
 			transpositionTable = transpositionTable,
 			endTime = endTime,
 			searchInfo = searchInfo,
+			enableTranspositionTable = enableTranspositionTable,
+			enableKillerMoves = enableKillerMoves,
 		)
 
 	bitboard.diff(initBitboard)
@@ -933,6 +963,8 @@ private fun resolveBoardRemovalsQS(
 	transpositionTable: TranspositionTable,
 	endTime: Long = Long.MAX_VALUE,
 	searchInfo: SearchInfo? = null,
+	enableTranspositionTable: Boolean,
+	enableKillerMoves: Boolean,
 ): BestPackedMove {
 	if (logger.isDebugEnabled()) {
 		logger.info { "--- RESOLVE BOARD REMOVALS CALLED ---" }
@@ -1035,6 +1067,8 @@ private fun resolveBoardRemovalsQS(
 							transpositionTable = transpositionTable,
 							endTime = endTime,
 							searchInfo = searchInfo,
+							enableTranspositionTable = enableTranspositionTable,
+							enableKillerMoves = enableKillerMoves,
 						)
 							.score,
 				)
