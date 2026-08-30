@@ -6,6 +6,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
+import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 import kotlin.time.Clock.System.now
 import kotlin.time.Duration.Companion.minutes
@@ -21,7 +22,6 @@ import org.apache.commons.cli.ParseException
 import org.apache.commons.cli.help.HelpFormatter
 import org.example.engine.*
 import org.example.model.*
-import kotlin.system.exitProcess
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -129,7 +129,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
         timestamp = 0L,
         agentOne,
         agentTwo,
-      collectSearchInfo
+        collectSearchInfo,
     )
 
     logger.info {
@@ -154,7 +154,7 @@ suspend fun main(args: Array<String>) = coroutineScope {
         baseSeed = baseSeed,
         agentOne,
         agentTwo,
-      collectSearchInfo
+        collectSearchInfo,
     )
   }
 }
@@ -165,7 +165,7 @@ private suspend fun runBatch(
     baseSeed: Long,
     agentOne: AgentConfig,
     agentTwo: AgentConfig,
-    collectSearchInfo: Boolean
+    collectSearchInfo: Boolean,
 ) = coroutineScope {
   logger.info {
     "Starting batch run: $totalGames games, parallelism=$parallelism, baseSeed=$baseSeed"
@@ -174,9 +174,18 @@ private suspend fun runBatch(
 
   val filePrefix =
       "agent-1_${agentOne.model.name.take(4)}_${
-        if (agentOne.strength != Strength.NULL) agentOne.strength else {
+        if (agentOne.strength != Strength.NULL) {
+          agentOne.strength
+        } else if (agentOne.timeControl) {
+          "time-control-${agentOne.timeDuration}"
+        } else {
         "iter-" + agentOne.iterations.toString().padStart(3, '0') + "-depth-" + agentOne.depth.toString().padStart(3, '0')
-      }}_agent-2_${agentTwo.model.name.take(4)}_${ if (agentTwo.strength != Strength.NULL) agentTwo.strength else {
+      }}_agent-2_${agentTwo.model.name.take(4)}_${ 
+        if (agentTwo.strength != Strength.NULL) {
+        agentTwo.strength
+      } else if (agentTwo.timeControl) {
+        "time-control-${agentTwo.timeDuration}"
+      } else {
         "iter-" + agentTwo.iterations.toString().padStart(3, '0') + "-depth-" + agentTwo.depth.toString().padStart(3, '0')
       }}"
 
@@ -195,7 +204,7 @@ private suspend fun runBatch(
     searchStatsFile.createNewFile()
   }
 
-//  searchStatsFile.appendText("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
+  //  searchStatsFile.appendText("seed,turn,model,depth,avg_branching_factor,eff_branching_factor")
 
   val gameResultsData = Channel<String>(capacity = 64)
   val searchResultsData = Channel<String>(capacity = 64)
@@ -249,7 +258,7 @@ private suspend fun runBatch(
                           timestamp = startTime,
                           agentOne,
                           agentTwo,
-                          collectSearchInfo
+                          collectSearchInfo,
                       )
                     }
                   }
@@ -431,9 +440,7 @@ fun playOneGame(
   // exact sequence leading up to the crash independent of whether seeding
   // was perfectly deterministic elsewhere in the codebase.
   try {
-    while (
-        !evaluateCapturedPieces(gameState) && !Thread.interrupted()
-    ) {
+    while (!evaluateCapturedPieces(gameState) && !Thread.interrupted()) {
       turn++
       gameState.turnMoves[turn] = mutableListOf()
       gameState.turnDuration[turn] = mutableListOf()
@@ -502,7 +509,17 @@ fun playOneGame(
   //    else -> {}
   //  }
 
-  return recordGameResult(file, fileLock, gameId, seed, timestamp, gameState, winner, turn, collectSearchInfo)
+  return recordGameResult(
+      file,
+      fileLock,
+      gameId,
+      seed,
+      timestamp,
+      gameState,
+      winner,
+      turn,
+      collectSearchInfo,
+  )
   //  gameState.collector?.saveCurrentEpisodes(agent = "mcts", games = gameId.toString())
 }
 
@@ -513,7 +530,7 @@ fun playOneGame(
     timestamp: Long,
     agentOne: AgentConfig,
     agentTwo: AgentConfig,
-    collectSearchInfo: Boolean
+    collectSearchInfo: Boolean,
 ) {
   val rng = Random(seed)
 
