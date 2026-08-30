@@ -386,7 +386,7 @@ suspend fun selectMoveMCTS(
     duration: Duration = Duration.ZERO,
     useRAVE: Boolean = false,
     searchInfos: MutableList<SearchInfo>? = null,
-    collectSearchInfo: Boolean = false
+    collectSearchInfo: Boolean = false,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
 
@@ -445,6 +445,9 @@ suspend fun selectMoveMCTS(
               PlayerName.BLACK to mutableSetOf(),
           )
 
+      // todo add currentNode.previousTurnPhases + currentNode.turnPhase to simulateRandomGame to
+      // determine appropriate starting point for simulateRandomGame
+
       val winner =
           simulateRandomGame(
               currentNode.bitboard.deepCopy(),
@@ -452,6 +455,8 @@ suspend fun selectMoveMCTS(
               currentNode.nextPlayer.liteDeepCopy(),
               rng = rng,
               simulationActions = simulationActions,
+              previousTurnPhases = currentNode.previousTurnPhases,
+              currentTurnPhase = currentNode.turnPhase,
           )
 
       // Group moves by the player who made them so AMAF lookups below never cross-credit a
@@ -508,14 +513,19 @@ suspend fun selectMoveMCTS(
                   PlayerName.BLACK to mutableSetOf(),
               )
 
+          // todo add currentNode.previousTurnPhases + currentNode.turnPhase to simulateRandomGame
+          // to determine appropriate starting point for simulateRandomGame
+
           val winner =
               simulateRandomGame(
                   currentNode.bitboard.deepCopy(),
                   currentNode.currentPlayer.liteDeepCopy(),
                   currentNode.nextPlayer.liteDeepCopy(),
                   rng = rng,
-                  simulationActions,
-                  endTime = endTime
+                  simulationActions = simulationActions,
+                  endTime = endTime,
+                  previousTurnPhases = currentNode.previousTurnPhases,
+                  currentTurnPhase = currentNode.turnPhase,
               )
 
           // region TODO REWRITE
@@ -653,6 +663,8 @@ fun simulateRandomGame(
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
     endTime: Long = Long.MAX_VALUE,
+    previousTurnPhases: List<TurnPhase>,
+    currentTurnPhase: TurnPhase,
 ): Player? {
 
   var playerWhoMadeTheLastMove: Player? = null
@@ -662,26 +674,52 @@ fun simulateRandomGame(
   var activePlayer = currentPlayer
   var opponentPlayer = nextPlayer
 
-  val availableMoves = mutableListOf<PackedMove>()
-  bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
+
 
   //  val opponentMoves = mutableListOf<PossibleBitMove>()
   //  bitboard.identifyAvailableMoves(opponentPlayer, movesBuffer = opponentMoves)
 
-  while (!evaluateCapturedPieces(activePlayer) && availableMoves.isNotEmpty()) {
+  // TODO complete intermediate states && rotate players
+  if (previousTurnPhases.isNotEmpty()) {
+    completeCurrentTurn(
+      bitboard = bitboard,
+      currentPlayer = activePlayer,
+      opponentPlayer = opponentPlayer,
+      rng = rng,
+      simulationActions = simulationActions,
+      previousTurnPhases = previousTurnPhases,
+      currentTurnPhase = currentTurnPhase,
+    )
+
+    playerWhoMadeTheLastMove = activePlayer
+    // end of turn, rotate players
+    val tempPlayer = opponentPlayer
+    opponentPlayer = activePlayer
+    activePlayer = tempPlayer
+
+  }
+
+  val availableMoves = mutableListOf<PackedMove>()
+  bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
+
+  // todo check if player passed
+  while (!evaluateCapturedPieces(activePlayer)) {
 
     if (System.currentTimeMillis() >= endTime) {
       return null
     }
 
-    if (availableMoves.isEmpty()) break
+//    if (availableMoves.isEmpty()) break
+    // track actions taken during a turn
+    val actions: MutableList<PackedMove> = mutableListOf()
 
     simulatePlayerTurn(
         bitboard = bitboard,
         currentPlayer = activePlayer,
         opponentPlayer = opponentPlayer,
         rng = rng,
-        simulationActions,
+	      simulationActions = simulationActions,
+        actions = actions,
     )
 
     // TODO fix early game turns. white gets an extra move
@@ -690,6 +728,9 @@ fun simulateRandomGame(
     //            opponentPlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF }) <
     // 2
     //    )
+
+    // player passed, ran out of moves
+    if (actions.isEmpty()) break
 
     playerWhoMadeTheLastMove = activePlayer
     // end of turn, rotate players
@@ -718,6 +759,7 @@ fun simulatePlayerTurn(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   if (logger.isDebugEnabled()) {
     //		logger.info { "--- ALPHA-BETA CALLED ---" }
@@ -728,13 +770,17 @@ fun simulatePlayerTurn(
 
   // TODO given a list of moves, select a random move
 
-  simulatePieceRetrievalCapture(
-      bitboard,
-      currentPlayer,
-      opponentPlayer,
-      rng,
-      simulationActions,
-  )
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        actions,
+    )
+  }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -750,6 +796,7 @@ fun simulatePlayerTurn(
         opponentPlayer,
         rng,
         simulationActions,
+        actions,
     )
   }
 
@@ -759,6 +806,7 @@ fun simulatePlayerTurn(
       opponentPlayer,
       rng = rng,
       simulationActions,
+      actions,
   )
 
   while (
@@ -773,16 +821,21 @@ fun simulatePlayerTurn(
         opponentPlayer,
         rng = rng,
         simulationActions,
+        actions,
     )
   }
 
-  simulatePieceRetrievalCapture(
-      bitboard,
-      currentPlayer,
-      opponentPlayer,
-      rng,
-      simulationActions,
-  )
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        actions,
+    )
+  }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 }
@@ -793,6 +846,7 @@ fun simulatePlayerMove(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   //  val initbitboard = bitboard.deepCopy()
   val possibleBitMoves = mutableListOf<PackedMove>()
@@ -806,6 +860,8 @@ fun simulatePlayerMove(
   val randomPackedMove = possibleBitMoves.random(rng)
 
   simulationActions.getValue(currentPlayer.name).add(randomPackedMove)
+
+  actions.add(randomPackedMove)
 
   when (randomPackedMove) {
     is PackedMove.Multiple -> {}
@@ -848,6 +904,7 @@ fun simulatePieceRetrievalCapture(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   val removePiecesPowerset = mutableListOf<PackedMove>()
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
@@ -856,6 +913,7 @@ fun simulatePieceRetrievalCapture(
     val selectedPieceToRemove = removePiecesPowerset.random(rng)
 
     simulationActions.getValue(currentPlayer.name).add(selectedPieceToRemove)
+    actions.add(selectedPieceToRemove)
 
     when (selectedPieceToRemove) {
       is PackedMove.Multiple -> {
@@ -879,6 +937,90 @@ fun simulatePieceRetrievalCapture(
     }
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+  }
+
+  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+}
+
+fun completeCurrentTurn(
+    bitboard: Bitboard,
+    currentPlayer: Player,
+    opponentPlayer: Player,
+    rng: Random,
+    simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    previousTurnPhases: List<TurnPhase>,
+    currentTurnPhase: TurnPhase,
+) {
+  if (logger.isDebugEnabled()) {
+    //		logger.info { "--- ALPHA-BETA CALLED ---" }
+    logger.info { "currentPlayer: $currentPlayer" }
+    logger.info { "opponentPlayer: $opponentPlayer" }
+    logger.info { "Bitboard: ${Json.encodeToString(bitboard)}" }
+  }
+
+  val turnHasHadNormalMove = previousTurnPhases.any { it == TurnPhase.PlayerInputWindow }
+
+  if (!turnHasHadNormalMove && currentTurnPhase != TurnPhase.ExtraMove) {
+    while (
+        when (currentPlayer.name) {
+          PlayerName.WHITE ->
+              bitboard.whiteTAMSK and bitboard.whitePotentials and boardCenterSpotMask
+          PlayerName.BLACK ->
+              bitboard.blackTAMSK and bitboard.blackPotentials and boardCenterSpotMask
+        } == boardCenterSpotMask
+    ) {
+      simulatePlayerMove(
+          bitboard,
+          currentPlayer,
+          opponentPlayer,
+          rng,
+          simulationActions,
+          mutableListOf(),
+      )
+    }
+  }
+
+  if (!turnHasHadNormalMove) {
+    simulatePlayerMove(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng = rng,
+        simulationActions,
+        mutableListOf(),
+    )
+  }
+
+  if (turnHasHadNormalMove && currentTurnPhase != TurnPhase.PieceRemoval) {
+    while (
+        when (currentPlayer.name) {
+          PlayerName.WHITE ->
+              bitboard.whiteTAMSK and bitboard.whitePotentials and boardCenterSpotMask
+          PlayerName.BLACK ->
+              bitboard.blackTAMSK and bitboard.blackPotentials and boardCenterSpotMask
+        } == boardCenterSpotMask
+    ) {
+      simulatePlayerMove(
+          bitboard,
+          currentPlayer,
+          opponentPlayer,
+          rng = rng,
+          simulationActions,
+          mutableListOf(),
+      )
+    }
+  }
+
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        mutableListOf(),
+    )
   }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
