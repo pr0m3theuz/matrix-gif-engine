@@ -345,7 +345,9 @@ data class MCTSNode(
 
     // 1. LAZY EXPANSION: If unlocked slot is available, instantiate a new child
     if (childrenNodes.size < allowedChildrenLimit && unvisitedMoves.isNotEmpty()) {
-      return expandNextChild(rng)
+//      return expandNextChild(rng) // this made fpu = infinity
+      // expandNextChild adds new child to children nodes
+      expandNextChild(rng)
     }
 
     // 2. PUCT SELECTION: Otherwise, pick the best existing child via PUCT / RAVE
