@@ -121,6 +121,9 @@ data class MCTSNode(
   fun getUnlockedActionCount(): Int {
     if (rolloutCounts <= 0) return 1
 
+    // if progressive widening disable return all actions
+    if (!enablePW) return totalActions
+
     // https://proceedings.neurips.cc/paper/2021/file/9b0ead00a217ea2c12e06a72eec4923f-Paper.pdf
     val limit = progressiveWideningConstant * rolloutCounts.toDouble().pow(progressiveWideningAlpha)
 
@@ -343,11 +346,15 @@ data class MCTSNode(
   fun selectOrExpandChild(rng: Random): MCTSNode {
     val allowedChildrenLimit = getUnlockedActionCount()
 
-    // 1. LAZY EXPANSION: If unlocked slot is available, instantiate a new child
+    // If unlocked slot is available, instantiate a new child
     if (childrenNodes.size < allowedChildrenLimit && unvisitedMoves.isNotEmpty()) {
-//      return expandNextChild(rng) // this made fpu = infinity
       // expandNextChild adds new child to children nodes
-      expandNextChild(rng)
+      if (enableFPU) {
+        expandNextChild(rng)
+      } else {
+        // this makes fpu = infinity
+        return expandNextChild(rng)
+      }
     }
 
     if (allowedChildrenLimit == 1 && childrenNodes.isNotEmpty()) {
@@ -411,7 +418,7 @@ suspend fun selectMoveMCTS(
           nextPlayer = nextPlayer,
           turnPhase = turnPhase,
           unvisitedMoves = availableMoves.toMutableList(),
-          useRAVE = useRAVE,
+          useRAVE = currentPlayer.useRAVE,
           enableFPU = currentPlayer.enableFPU,
           enablePW = currentPlayer.enablePW,
           raveStats = availableMoves.associateWith { RaveStats() },
