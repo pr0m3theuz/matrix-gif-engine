@@ -350,6 +350,10 @@ data class MCTSNode(
       expandNextChild(rng)
     }
 
+    if (allowedChildrenLimit == 1 && childrenNodes.isNotEmpty()) {
+      return childrenNodes.first()
+    }
+
     // 2. PUCT SELECTION: Otherwise, pick the best existing child via PUCT / RAVE
     val totalRollouts = this.rolloutCounts.toDouble()
     var bestScore = -Double.MAX_VALUE
