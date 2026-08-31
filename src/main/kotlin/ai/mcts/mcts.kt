@@ -389,7 +389,7 @@ suspend fun selectMoveMCTS(
     collectSearchInfo: Boolean = false,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
-
+  var countIterations = 0
   bitboard.generateMoves(currentPlayer, turnPhase, availableMoves)
 
   if (availableMoves.isEmpty()) return null
@@ -482,6 +482,7 @@ suspend fun selectMoveMCTS(
         while (System.currentTimeMillis() < endTime
         //          !Thread.interrupted()
         ) {
+          countIterations++
           var currentNode: MCTSNode? = rootMCTSNode
 
           while (
@@ -546,7 +547,12 @@ suspend fun selectMoveMCTS(
   }
 
   if (collectSearchInfo) {
-    searchInfos?.add(collectMctsStats(rootMCTSNode, iterations = rounds.count()))
+    searchInfos?.add(
+        collectMctsStats(
+            rootMCTSNode,
+            iterations = if (currentPlayer.timeControl) countIterations else rounds.count(),
+        )
+    )
   }
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
@@ -674,21 +680,19 @@ fun simulateRandomGame(
   var activePlayer = currentPlayer
   var opponentPlayer = nextPlayer
 
-
-
   //  val opponentMoves = mutableListOf<PossibleBitMove>()
   //  bitboard.identifyAvailableMoves(opponentPlayer, movesBuffer = opponentMoves)
 
   // TODO complete intermediate states && rotate players
   if (previousTurnPhases.isNotEmpty()) {
     completeCurrentTurn(
-      bitboard = bitboard,
-      currentPlayer = activePlayer,
-      opponentPlayer = opponentPlayer,
-      rng = rng,
-      simulationActions = simulationActions,
-      previousTurnPhases = previousTurnPhases,
-      currentTurnPhase = currentTurnPhase,
+        bitboard = bitboard,
+        currentPlayer = activePlayer,
+        opponentPlayer = opponentPlayer,
+        rng = rng,
+        simulationActions = simulationActions,
+        previousTurnPhases = previousTurnPhases,
+        currentTurnPhase = currentTurnPhase,
     )
 
     playerWhoMadeTheLastMove = activePlayer
@@ -696,7 +700,6 @@ fun simulateRandomGame(
     val tempPlayer = opponentPlayer
     opponentPlayer = activePlayer
     activePlayer = tempPlayer
-
   }
 
   val availableMoves = mutableListOf<PackedMove>()
@@ -709,7 +712,7 @@ fun simulateRandomGame(
       return null
     }
 
-//    if (availableMoves.isEmpty()) break
+    //    if (availableMoves.isEmpty()) break
     // track actions taken during a turn
     val actions: MutableList<PackedMove> = mutableListOf()
 
@@ -718,7 +721,7 @@ fun simulateRandomGame(
         currentPlayer = activePlayer,
         opponentPlayer = opponentPlayer,
         rng = rng,
-	      simulationActions = simulationActions,
+        simulationActions = simulationActions,
         actions = actions,
     )
 
