@@ -66,7 +66,7 @@ fun recordSearchStatsCSV(
     collectSearchInfo: Boolean,
 ): String {
 
-  if (collectSearchInfo) return ""
+  if (!collectSearchInfo) return ""
 
   return buildString {
     for ((turn, infoLists) in state.turnSearchInfo.entries.sortedBy { it.key }) {

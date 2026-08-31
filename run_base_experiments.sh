@@ -36,32 +36,32 @@ RUN_COUNT=1
 
 echo "Starting Minimax vs MCTS Matrix ($TOTAL_RUNS total configurations)..."
 
-## ==========================================
-## Matchups: Minimax (White) vs MCTS (Black)
-## ==========================================
-#for depth in "${MM_DEPTHS[@]}"; do
-#  for iters in "${MCTS_ITERATIONS[@]}"; do
-#    for rave in "${RAVE_OPTIONS[@]}"; do
-#
-#      A1_FLAGS="-m minimax -mdp $depth"
-#      A2_FLAGS="-M mcts -Mi $iters"
-#
-#      if [ "$rave" = true ]; then
-#        A2_FLAGS="$A2_FLAGS -Mrv"
-#        RAVE_LABEL="RAVE"
-#      else
-#        RAVE_LABEL="Standard"
-#      fi
-#
-#      echo "----------------------------------------------------"
-#      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax (Depth $depth) vs MCTS ($iters iters, $RAVE_LABEL)"
-#      echo "----------------------------------------------------"
-#
-#      $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
-#      RUN_COUNT=$((RUN_COUNT + 1))
-#    done
-#  done
-#done
+# ==========================================
+# Matchups: Minimax (White) vs MCTS (Black)
+# ==========================================
+for depth in "${MM_DEPTHS[@]}"; do
+  for iters in "${MCTS_ITERATIONS[@]}"; do
+    for rave in "${RAVE_OPTIONS[@]}"; do
+
+      A1_FLAGS="-m minimax -mdp $depth"
+      A2_FLAGS="-M mcts -Mi $iters"
+
+      if [ "$rave" = true ]; then
+        A2_FLAGS="$A2_FLAGS -Mrv"
+        RAVE_LABEL="RAVE"
+      else
+        RAVE_LABEL="Standard"
+      fi
+
+      echo "----------------------------------------------------"
+      echo "[$RUN_COUNT/$TOTAL_RUNS] Minimax (Depth $depth) vs MCTS ($iters iters, $RAVE_LABEL)"
+      echo "----------------------------------------------------"
+
+      $CMD -b -g "$TOTAL_GAMES" -p "$THREADS" $A1_FLAGS $A2_FLAGS
+      RUN_COUNT=$((RUN_COUNT + 1))
+    done
+  done
+done
 
 # ==========================================
 # Matchups: MCTS (White) vs Minimax (Black)
