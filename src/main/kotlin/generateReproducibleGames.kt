@@ -249,6 +249,10 @@ private suspend fun runBatch(
           async(dispatcher) {
             // Derive a per-game seed from the base seed + gameId so it's
             // deterministic across runs but distinct per game.
+            if (completed.get() > 100) {
+//                  exitProcess(0)
+              cancel()
+            }
 
             val gameSeed = deriveSeed(baseSeed, gameId)
             try {
@@ -297,17 +301,18 @@ private suspend fun runBatch(
                   }
                 }
 
-//                if (completed.get() > 501) {
+                if (completed.get() > 100) {
 //                  exitProcess(0)
-//                }
+                  cancel()
+                }
               }
             } catch (e: Throwable) {
               failed.incrementAndGet()
               recordFailure(gameId, gameSeed, e)
 
-//              if (completed.get() > 501) {
-//                exitProcess(0)
-//              }
+              if (completed.get() > 100) {
+                cancel()
+              }
             }
           }
         }
