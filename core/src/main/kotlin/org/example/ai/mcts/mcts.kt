@@ -6,10 +6,12 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.ai.doActionGetTurnPhase
-import org.example.ai.humanEvaluation.SearchInfo
+import org.example.ai.minimax.SearchInfo
 import org.example.engine.determineWinner
 import org.example.model.*
 import org.example.toBitList
@@ -87,7 +89,7 @@ data class MCTSNode(
     var raveWins: MutableMap<PlayerName, Int> =
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var parentMeanFPUValue: Float = 0.5f,
-    var meanFPUValue: Float = 0.5f, // from Facebook's ELF Go/Batch MCTS
+    var meanFPUValue: Float = 0.5f, // from Facebook's ELF Go
     val progressiveWideningConstant: Double = 1.5, // where
     val progressiveWideningAlpha: Double = 0.4, // where
     val totalActions: Int,
@@ -374,24 +376,25 @@ data class MCTSNode(
 
 // endregion
 
-fun selectMoveMCTS(
-    bitboard: Bitboard,
-    currentPlayer: Player,
-    nextPlayer: Player,
-    rounds: IntRange = 0..9999,
-    turnPhase: TurnPhase,
-    rng: Random,
-    duration: Duration = Duration.ZERO,
-    useRAVE: Boolean = false,
-    searchInfos: MutableList<SearchInfo>? = null,
+suspend fun selectMoveMCTS(
+  bitboard: Bitboard,
+  currentPlayer: Player,
+  nextPlayer: Player,
+  rounds: IntRange = 0..9999,
+  turnPhase: TurnPhase,
+  rng: Random,
+  duration: Duration = Duration.ZERO,
+  useRAVE: Boolean = false,
+  searchInfos: MutableList<SearchInfo>? = null,
+  collectSearchInfo: Boolean = false,
 ): PackedMove? {
   val availableMoves: MutableList<PackedMove> = mutableListOf()
-
+  var countIterations = 0
   bitboard.generateMoves(currentPlayer, turnPhase, availableMoves)
 
   if (availableMoves.isEmpty()) return null
 
-  if (rounds.last() == 0) {
+  if (rounds.last() == 0 && currentPlayer.timeControl == false) {
     return availableMoves.random(rng)
   }
 
@@ -442,6 +445,9 @@ fun selectMoveMCTS(
               PlayerName.BLACK to mutableSetOf(),
           )
 
+      // todo add currentNode.previousTurnPhases + currentNode.turnPhase to simulateRandomGame to
+      // determine appropriate starting point for simulateRandomGame
+
       val winner =
           simulateRandomGame(
               currentNode.bitboard.deepCopy(),
@@ -449,6 +455,8 @@ fun selectMoveMCTS(
               currentNode.nextPlayer.liteDeepCopy(),
               rng = rng,
               simulationActions = simulationActions,
+              previousTurnPhases = currentNode.previousTurnPhases,
+              currentTurnPhase = currentNode.turnPhase,
           )
 
       // Group moves by the player who made them so AMAF lookups below never cross-credit a
@@ -469,105 +477,83 @@ fun selectMoveMCTS(
     val startTime = System.currentTimeMillis()
     val endTime = startTime + duration.inWholeMilliseconds
 
-    while (System.currentTimeMillis() < endTime) {
-      var currentNode: MCTSNode? = rootMCTSNode
+    withTimeoutOrNull(currentPlayer.timeDuration) {
+      runInterruptible {
+        while (System.currentTimeMillis() < endTime
+        //          !Thread.interrupted()
+        ) {
+          countIterations++
+          var currentNode: MCTSNode? = rootMCTSNode
 
-      while (
-          (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
-              currentNode?.childrenNodes?.isNotEmpty() == true) &&
-              !evaluateCapturedPieces(currentNode.currentPlayer) // &&
-      ) {
+          while (
+              (currentNode?.unvisitedMoves?.isNotEmpty() == true ||
+                  currentNode?.childrenNodes?.isNotEmpty() == true) &&
+                  !evaluateCapturedPieces(currentNode.currentPlayer) // &&
+          ) {
 
-        currentNode = currentNode.selectOrExpandChild(rng)
+            currentNode = currentNode.selectOrExpandChild(rng)
 
-        if (currentNode.rolloutCounts == 0) {
-          break
+            if (currentNode.rolloutCounts == 0) {
+              break
+            }
+          }
+
+          checkNotNull(currentNode) {
+            "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
+                "Verify tree expansion bounds and parent-child link validity."
+          }
+
+          //      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode =
+          // currentNode.expandNextChild(rng)
+
+          // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
+          // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
+          val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
+              mapOf(
+                  PlayerName.WHITE to mutableSetOf(),
+                  PlayerName.BLACK to mutableSetOf(),
+              )
+
+          // todo add currentNode.previousTurnPhases + currentNode.turnPhase to simulateRandomGame
+          // to determine appropriate starting point for simulateRandomGame
+
+          val winner =
+              simulateRandomGame(
+                  currentNode.bitboard.deepCopy(),
+                  currentNode.currentPlayer.liteDeepCopy(),
+                  currentNode.nextPlayer.liteDeepCopy(),
+                  rng = rng,
+                  simulationActions = simulationActions,
+                  endTime = endTime,
+                  previousTurnPhases = currentNode.previousTurnPhases,
+                  currentTurnPhase = currentNode.turnPhase,
+              )
+
+          // region TODO REWRITE
+          // Group moves by the player who made them so AMAF lookups below never cross-credit a
+          // sibling using a move the *other* player happened to play during the rollout. Includes
+          // both the in-tree path moves and the random-playout moves, per the RAVE definition.
+          //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
+          //          collectTreePathMovesByPlayer(currentNode).apply {
+          //            for ((player, move) in simulationActions) {
+          //              getOrPut(player) { mutableSetOf() }.add(move)
+          //            }
+          //          }
+          // endregion
+          backpropagateRewards(currentNode, winner, simulationActions)
         }
       }
-
-      checkNotNull(currentNode) {
-        "Search Tree Traversal Failure: Encountered a null node during evaluation loop. " +
-            "Verify tree expansion bounds and parent-child link validity."
-      }
-
-      //      if (currentNode.unvisitedMoves.isNotEmpty()) currentNode =
-      // currentNode.expandNextChild(rng)
-
-      // https://www.ijcai.org/Proceedings/15/Papers/112.pdf
-      // https://github.com/hiive/hiivelabs-zertz-mcts/blob/12537a6be44e99f8273c9f81587191526f358a0e/src/mcts.rs
-      val simulationActions: Map<PlayerName, MutableSet<PackedMove>> =
-          mapOf(
-              PlayerName.WHITE to mutableSetOf(),
-              PlayerName.BLACK to mutableSetOf(),
-          )
-
-      val winner =
-          simulateRandomGame(
-              currentNode.bitboard.deepCopy(),
-              currentNode.currentPlayer.liteDeepCopy(),
-              currentNode.nextPlayer.liteDeepCopy(),
-              rng = rng,
-              simulationActions,
-              endTime,
-          )
-
-      // region TODO REWRITE
-      // Group moves by the player who made them so AMAF lookups below never cross-credit a
-      // sibling using a move the *other* player happened to play during the rollout. Includes
-      // both the in-tree path moves and the random-playout moves, per the RAVE definition.
-      //      val simulationActionsByPlayer: Map<PlayerName, Set<PackedMove>> =
-      //          collectTreePathMovesByPlayer(currentNode).apply {
-      //            for ((player, move) in simulationActions) {
-      //              getOrPut(player) { mutableSetOf() }.add(move)
-      //            }
-      //          }
-      // endregion
-      backpropagateRewards(currentNode, winner, simulationActions)
     }
   }
 
-  fun collectMctsStats(root_node: MCTSNode, minVisits: Int = 1): SearchInfo {
-    val branchingCounts: MutableList<Double> = mutableListOf()
-    val turnPhases: MutableList<TurnPhase> = mutableListOf()
-    val totalActions: MutableList<Double> = mutableListOf()
-    val depth: MutableList<Double> = mutableListOf()
-
-    fun traverse(node: MCTSNode, currentDepth: Int) {
-      depth.add(currentDepth.toDouble())
-      turnPhases.add(node.turnPhase)
-      totalActions.add(node.totalActions.toDouble())
-      // Filter children with meaningful search volume
-      val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
-
-      if (activeChildren.isNotEmpty()) {
-        branchingCounts.add(activeChildren.size.toDouble())
-        for (child in activeChildren) {
-          traverse(child, currentDepth + 1)
-        }
-      }
-    }
-
-    traverse(root_node, 0)
-
-    val nodesCount = totalActions.size.toDouble()
-    val totalAvailableMovesSum = totalActions.sum()
-    val maxDepthVal = depth.maxOrNull() ?: 0.0
-
-    return SearchInfo(
-        model = Model.MCTS,
-        strength = currentPlayer.strength,
-        turnPhase = turnPhases,
-        totalNodesEvaluated = nodesCount,
-        totalAvailableMovesEvaluated = totalAvailableMovesSum,
-        maxDepthReached = maxDepthVal,
-        branchingCounts = branchingCounts,
-        totalActions = totalActions,
-        depths = depth,
+  if (collectSearchInfo) {
+    searchInfos?.add(
+        collectMctsStats(
+            rootMCTSNode,
+            iterations = if (currentPlayer.timeControl) countIterations else rounds.count(),
+        )
     )
   }
-
-  searchInfos?.add(collectMctsStats(rootMCTSNode))
-
   var bestMove: PackedMove? = null
   var bestPercentage = -1f
   for (child in rootMCTSNode.childrenNodes) {
@@ -580,6 +566,50 @@ fun selectMoveMCTS(
 
   // TODO What to do when no best move is found?
   return bestMove ?: availableMoves.random(rng)
+}
+
+private fun collectMctsStats(
+    rootMCTSNode: MCTSNode,
+    iterations: Int,
+    minVisits: Int = 1,
+): SearchInfo {
+  val branchingCounts: MutableList<Double> = mutableListOf()
+  val turnPhases: MutableList<TurnPhase> = mutableListOf()
+  val totalActions: MutableList<Double> = mutableListOf()
+  val depth: MutableList<Double> = mutableListOf()
+
+  fun traverse(node: MCTSNode, currentDepth: Int) {
+    depth.add(currentDepth.toDouble())
+    turnPhases.add(node.turnPhase)
+    totalActions.add(node.totalActions.toDouble())
+    // Filter children with meaningful search volume
+    val activeChildren = node.childrenNodes.filter { it.rolloutCounts >= minVisits }
+
+    if (activeChildren.isNotEmpty()) {
+      branchingCounts.add(activeChildren.size.toDouble())
+      for (child in activeChildren) {
+        traverse(child, currentDepth + 1)
+      }
+    }
+  }
+
+  traverse(rootMCTSNode, 0)
+
+  val nodesCount = totalActions.size.toDouble()
+  val totalAvailableMovesSum = totalActions.sum()
+  val maxDepthVal = depth.maxOrNull() ?: 0.0
+
+  return SearchInfo(
+      model = Model.MCTS,
+      strength = iterations.toString(),
+      turnPhase = turnPhases,
+      totalNodesEvaluated = nodesCount,
+      totalAvailableMovesEvaluated = totalAvailableMovesSum,
+      maxDepthReached = maxDepthVal,
+      branchingCounts = branchingCounts,
+      totalActions = totalActions,
+      depths = depth,
+  )
 }
 
 private fun backpropagateRewards(
@@ -639,6 +669,8 @@ fun simulateRandomGame(
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
     endTime: Long = Long.MAX_VALUE,
+    previousTurnPhases: List<TurnPhase>,
+    currentTurnPhase: TurnPhase,
 ): Player? {
 
   var playerWhoMadeTheLastMove: Player? = null
@@ -648,26 +680,49 @@ fun simulateRandomGame(
   var activePlayer = currentPlayer
   var opponentPlayer = nextPlayer
 
-  val availableMoves = mutableListOf<PackedMove>()
-  bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
-
   //  val opponentMoves = mutableListOf<PossibleBitMove>()
   //  bitboard.identifyAvailableMoves(opponentPlayer, movesBuffer = opponentMoves)
 
-  while (!evaluateCapturedPieces(activePlayer) && availableMoves.isNotEmpty()) {
+  // TODO complete intermediate states && rotate players
+  if (previousTurnPhases.isNotEmpty()) {
+    completeCurrentTurn(
+        bitboard = bitboard,
+        currentPlayer = activePlayer,
+        opponentPlayer = opponentPlayer,
+        rng = rng,
+        simulationActions = simulationActions,
+        previousTurnPhases = previousTurnPhases,
+        currentTurnPhase = currentTurnPhase,
+    )
+
+    playerWhoMadeTheLastMove = activePlayer
+    // end of turn, rotate players
+    val tempPlayer = opponentPlayer
+    opponentPlayer = activePlayer
+    activePlayer = tempPlayer
+  }
+
+  val availableMoves = mutableListOf<PackedMove>()
+  bitboard.identifyAvailableMoves(activePlayer, movesBuffer = availableMoves)
+
+  // todo check if player passed
+  while (!evaluateCapturedPieces(activePlayer)) {
 
     if (System.currentTimeMillis() >= endTime) {
       return null
     }
 
-    if (availableMoves.isEmpty()) break
+    //    if (availableMoves.isEmpty()) break
+    // track actions taken during a turn
+    val actions: MutableList<PackedMove> = mutableListOf()
 
     simulatePlayerTurn(
         bitboard = bitboard,
         currentPlayer = activePlayer,
         opponentPlayer = opponentPlayer,
         rng = rng,
-        simulationActions,
+        simulationActions = simulationActions,
+        actions = actions,
     )
 
     // TODO fix early game turns. white gets an extra move
@@ -676,6 +731,9 @@ fun simulateRandomGame(
     //            opponentPlayer.piecesInReserve.count { piece -> piece.type == PieceType.GIPF }) <
     // 2
     //    )
+
+    // player passed, ran out of moves
+    if (actions.isEmpty()) break
 
     playerWhoMadeTheLastMove = activePlayer
     // end of turn, rotate players
@@ -704,6 +762,7 @@ fun simulatePlayerTurn(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   if (logger.isDebugEnabled()) {
     //		logger.info { "--- ALPHA-BETA CALLED ---" }
@@ -714,13 +773,17 @@ fun simulatePlayerTurn(
 
   // TODO given a list of moves, select a random move
 
-  simulatePieceRetrievalCapture(
-      bitboard,
-      currentPlayer,
-      opponentPlayer,
-      rng,
-      simulationActions,
-  )
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        actions,
+    )
+  }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -736,6 +799,7 @@ fun simulatePlayerTurn(
         opponentPlayer,
         rng,
         simulationActions,
+        actions,
     )
   }
 
@@ -745,6 +809,7 @@ fun simulatePlayerTurn(
       opponentPlayer,
       rng = rng,
       simulationActions,
+      actions,
   )
 
   while (
@@ -759,16 +824,21 @@ fun simulatePlayerTurn(
         opponentPlayer,
         rng = rng,
         simulationActions,
+        actions,
     )
   }
 
-  simulatePieceRetrievalCapture(
-      bitboard,
-      currentPlayer,
-      opponentPlayer,
-      rng,
-      simulationActions,
-  )
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        actions,
+    )
+  }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 }
@@ -779,6 +849,7 @@ fun simulatePlayerMove(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   //  val initbitboard = bitboard.deepCopy()
   val possibleBitMoves = mutableListOf<PackedMove>()
@@ -792,6 +863,8 @@ fun simulatePlayerMove(
   val randomPackedMove = possibleBitMoves.random(rng)
 
   simulationActions.getValue(currentPlayer.name).add(randomPackedMove)
+
+  actions.add(randomPackedMove)
 
   when (randomPackedMove) {
     is PackedMove.Multiple -> {}
@@ -834,6 +907,7 @@ fun simulatePieceRetrievalCapture(
     opponentPlayer: Player,
     rng: Random,
     simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    actions: MutableList<PackedMove>,
 ) {
   val removePiecesPowerset = mutableListOf<PackedMove>()
   bitboard.identifyPiecesToRemove(currentPlayer, removePiecesPowerset)
@@ -842,6 +916,7 @@ fun simulatePieceRetrievalCapture(
     val selectedPieceToRemove = removePiecesPowerset.random(rng)
 
     simulationActions.getValue(currentPlayer.name).add(selectedPieceToRemove)
+    actions.add(selectedPieceToRemove)
 
     when (selectedPieceToRemove) {
       is PackedMove.Multiple -> {
@@ -865,6 +940,90 @@ fun simulatePieceRetrievalCapture(
     }
 
     bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+  }
+
+  bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
+}
+
+fun completeCurrentTurn(
+    bitboard: Bitboard,
+    currentPlayer: Player,
+    opponentPlayer: Player,
+    rng: Random,
+    simulationActions: Map<PlayerName, MutableSet<PackedMove>>,
+    previousTurnPhases: List<TurnPhase>,
+    currentTurnPhase: TurnPhase,
+) {
+  if (logger.isDebugEnabled()) {
+    //		logger.info { "--- ALPHA-BETA CALLED ---" }
+    logger.info { "currentPlayer: $currentPlayer" }
+    logger.info { "opponentPlayer: $opponentPlayer" }
+    logger.info { "Bitboard: ${Json.encodeToString(bitboard)}" }
+  }
+
+  val turnHasHadNormalMove = previousTurnPhases.any { it == TurnPhase.PlayerInputWindow }
+
+  if (!turnHasHadNormalMove && currentTurnPhase != TurnPhase.ExtraMove) {
+    while (
+        when (currentPlayer.name) {
+          PlayerName.WHITE ->
+              bitboard.whiteTAMSK and bitboard.whitePotentials and boardCenterSpotMask
+          PlayerName.BLACK ->
+              bitboard.blackTAMSK and bitboard.blackPotentials and boardCenterSpotMask
+        } == boardCenterSpotMask
+    ) {
+      simulatePlayerMove(
+          bitboard,
+          currentPlayer,
+          opponentPlayer,
+          rng,
+          simulationActions,
+          mutableListOf(),
+      )
+    }
+  }
+
+  if (!turnHasHadNormalMove) {
+    simulatePlayerMove(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng = rng,
+        simulationActions,
+        mutableListOf(),
+    )
+  }
+
+  if (turnHasHadNormalMove && currentTurnPhase != TurnPhase.PieceRemoval) {
+    while (
+        when (currentPlayer.name) {
+          PlayerName.WHITE ->
+              bitboard.whiteTAMSK and bitboard.whitePotentials and boardCenterSpotMask
+          PlayerName.BLACK ->
+              bitboard.blackTAMSK and bitboard.blackPotentials and boardCenterSpotMask
+        } == boardCenterSpotMask
+    ) {
+      simulatePlayerMove(
+          bitboard,
+          currentPlayer,
+          opponentPlayer,
+          rng = rng,
+          simulationActions,
+          mutableListOf(),
+      )
+    }
+  }
+
+  // todo while loop
+  while (bitboard.evaluateLinesForFourInARow(currentPlayer).isNotEmpty()) {
+    simulatePieceRetrievalCapture(
+        bitboard,
+        currentPlayer,
+        opponentPlayer,
+        rng,
+        simulationActions,
+        mutableListOf(),
+    )
   }
 
   bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)

@@ -2,11 +2,14 @@
 
 package org.example
 
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.random.Random
 import kotlinx.serialization.json.Json
 import org.example.engine.*
 import org.example.model.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private val logger = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
@@ -14,39 +17,53 @@ const val MAXIMUM_PIECES = 66
 const val EXPECTED_TOTAL = MAXIMUM_PIECES / 2
 
 fun main() {
-  val rng = Random(-7046031041489946050)
+  val rng = Random(seed=-42)
 
-  constructZobristHashKeysTable(rng)
+  constructZobristHashKeysTable(Random(42))
+
+//  var gameState: State =
+//      initializeState(
+//          Model.MINIMAX,
+//          Strength.EASY,
+//          Model.MCTS,
+//          Strength.MEDIUM,
+//          playerOneTimeControl = false,
+//          playerTwoTimeControl = false,
+//          playerOneEnableRAVE = false,
+//          playerTwoEnableRAVE = false,
+//      )
 
   var gameState: State =
-      initializeState(
-          Player(
-              name = PlayerName.WHITE,
-              model = Model.MCTS,
-              strength = Strength.EASY,
-              timeControl = false,
-              useRAVE = false,
-              enableFPU = true,
-              enablePW = true,
-              iterations = 1000,
-              depth = 3,
-          ),
-          Player(
-              name = PlayerName.BLACK,
-              model = Model.MCTS,
-              strength = Strength.EASY,
-              timeControl = false,
-              useRAVE = false,
-              enableFPU = true,
-              enablePW = true,
-              iterations = 1000,
-              depth = 3,
-          ),
-      )
+    initializeState(
+      whitePlayer = Player(
+        name = PlayerName.WHITE,
+        model = Model.MCTS,
+        timeControl = false,
+        timeDuration = 0.milliseconds,
+        useRAVE = false,
+        enableFPU = false,
+        enablePW = false,
+        iterations = 999,
+        depth = 1,
+      ),
+      blackPlayer = Player(
+        name = PlayerName.BLACK,
+        model = Model.MCTS,
+        timeControl = false,
+        timeDuration = 0.milliseconds,
+        useRAVE = false,
+        enableFPU = false,
+        enablePW = false,
+        iterations = 999,
+        depth = 1,
+      ),
+    )
 
   var turn = 0
 
   var playerWhoMadeTheLastMove: Player? = null
+
+  val collectSearchInfo = false
 
   while (
       !evaluateCapturedPieces(gameState) // ||
@@ -57,9 +74,15 @@ fun main() {
     //    gameState.printStateSummary()
     gameState.turnMoves[turn] = mutableListOf()
     gameState.turnDuration[turn] = mutableListOf()
-    gameState.turnSearchInfo[turn] = mutableListOf()
 
-    gameState = playerTurn(gameState, turn, rng)
+    if (collectSearchInfo) {
+      gameState.turnSearchInfo[turn] = mutableListOf()
+    }
+
+    gameState = runBlocking {
+      playerTurn(gameState, turn, rng, collectSearchInfo)
+    }
+
 
     gameState.assertPieceCount(EXPECTED_TOTAL, MAXIMUM_PIECES)
 
@@ -106,13 +129,16 @@ fun main() {
   println("Average Branching Factor: $avgAbf")
   println("Effective Branching Factor: $avgEbf")
 
-  recordSearchStatsCSV(File("output/results/search_stats.csv"), "search_stats.csv", 1, 1, gameState)
-  recordRawSearchDataJson(
-      File("output/results/raw_search_data.json"),
-      "raw_search_data.json",
-      1,
-      gameState,
-  )
+//  File("output/results/search_stats.csv").appendText(recordSearchStatsCSV(1, 1, gameState))
+//
+//  File("output/results/raw_search_data.json")
+//      .appendText(
+//          recordRawSearchDataJson(
+//              1,
+//              gameState,
+//          )
+//      )
+
   //  when (winner?.name) {
   //    gameState.currentPlayer.name -> {
   //      gameState.currentPlayer.collector?.endEpisode(1)

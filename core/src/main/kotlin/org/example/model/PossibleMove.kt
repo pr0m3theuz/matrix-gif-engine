@@ -66,7 +66,7 @@ data class PossibleBitMove(
 }
 
 fun UInt.packPossibleBitMove(
-    piece: UInt = 0u,
+  piece: UInt = 0u,
     sourceBit: ULong = 0xFFFFFFFFFFFFFFFFUL,
     targetBit: ULong,
     pushDirection: PushDirection? = null,

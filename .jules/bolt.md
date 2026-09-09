@@ -1,3 +1,0 @@
-## 2026-08-11 - Fast Bitboard Iteration for Zobrist Hashing
-**Learning:** `getZobristHash` previously iterated over all 40 spots on the board and checked bits for every single piece type per spot. Since bitboard operations on sparse arrays are common, replacing naive loops over board size with iteration over set bits (`countTrailingZeroBits()` and `temp and (temp - 1UL)`) yields massive speedups (around 7x faster on near-full boards, and up to 10x faster on empty/typical boards).
-**Action:** When implementing operations that depend on bit positions across many layers/piece types, always prefer iterating over set bits for each layer using Brian Kernighan's algorithm over iterating through all board indices.

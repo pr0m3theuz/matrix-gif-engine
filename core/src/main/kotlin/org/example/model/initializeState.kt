@@ -5,19 +5,37 @@ package org.example.model
 import org.example.engine.TranspositionTable
 
 fun initializeState(
-  playerOne: Player,
-  playerTwo: Player
+    playerOneModel: Model = Model.MINIMAX,
+    playerOneStrength: Strength = Strength.EASY,
+    playerTwoModel: Model = Model.MINIMAX,
+    playerTwoStrength: Strength = Strength.EASY,
+    playerOneTimeControl: Boolean = false,
+    playerTwoTimeControl: Boolean = false,
+    playerOneEnableRAVE: Boolean = false,
+    playerTwoEnableRAVE: Boolean = false,
 ): State {
   val centerCoordinate = Coordinate(column = 'E', row = 5)
 
   // Create players
-  val whitePlayer = playerOne.deepCopy().copy(
-    transpositionTable = TranspositionTable(),
-  )
+  val whitePlayer =
+      Player(
+          name = PlayerName.WHITE,
+          model = playerOneModel,
+          strength = playerOneStrength,
+          timeControl = playerOneTimeControl,
+          useRAVE = playerOneEnableRAVE,
+          transpositionTable = TranspositionTable(),
+      )
 
-  val blackPlayer = playerTwo.deepCopy().copy(
-    transpositionTable = TranspositionTable(),
-  )
+  val blackPlayer =
+      Player(
+          name = PlayerName.BLACK,
+          model = playerTwoModel,
+          strength = playerTwoStrength,
+          timeControl = playerTwoTimeControl,
+          useRAVE = playerTwoEnableRAVE,
+          transpositionTable = TranspositionTable(),
+      )
 
   // Create pieces
   val whitePieces = createPlayerPieces(whitePlayer)
@@ -60,6 +78,56 @@ fun initializeState(
       board = board,
       bitboard = Bitboard(),
       //      lines = constructLines(nodes = nodes),
+  )
+}
+
+fun initializeState(
+  whitePlayer: Player,
+  blackPlayer: Player,
+): State {
+  val centerCoordinate = Coordinate(column = 'E', row = 5)
+
+  // Create pieces
+  val whitePieces = createPlayerPieces(whitePlayer)
+  val blackPieces = createPlayerPieces(blackPlayer)
+
+  whitePlayer.piecesInReserve.addAll(whitePieces)
+  blackPlayer.piecesInReserve.addAll(blackPieces)
+
+  val players = listOf<Player>(whitePlayer, blackPlayer)
+
+  // Create Nodes
+  val nodes =
+    constructNodes(
+      letters = LETTERS,
+      rows = ROWS.toList(),
+      centerLetterIndex = LETTERS.indexOf(centerCoordinate.column),
+      center = centerCoordinate,
+    )
+
+  // Populate node neighbours
+  nodes.forEach { node ->
+    node.neighbors =
+      populateNeighbors(
+        coordinate = node.coordinate,
+        nodes = nodes,
+      )
+  }
+
+  // Create board
+
+  val board = Board(nodes = nodes, centerNodeCoordinate = centerCoordinate)
+
+  // Create lines
+
+  return State(
+    currentPlayer = whitePlayer,
+    nextPlayer = blackPlayer,
+    //		whitePlayer = whitePlayer,
+    //		blackPlayer = blackPlayer,
+    board = board,
+    bitboard = Bitboard(),
+    //      lines = constructLines(nodes = nodes),
   )
 }
 

@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import org.example.ai.doActionGetTurnPhase
 import org.example.ai.mcts.PackedMove
 import org.example.ai.mcts.createChildState
@@ -117,7 +118,7 @@ class MainViewModel : ViewModel() {
     }
   }
 
-  val rng = Random(42)
+  val rng = Random.Default
   var playerWhoMadeTheLastMove: Player? = null
 
   private fun initGame() {
@@ -138,7 +139,7 @@ class MainViewModel : ViewModel() {
     }
   }
 
-  private fun playerTurn(state: State, turn: Int, rng: Random) {
+  private suspend fun playerTurn(state: State, turn: Int, rng: Random) {
     var newState = state // .deepCopy(copyCollector = true)
 
     if (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
@@ -157,7 +158,7 @@ class MainViewModel : ViewModel() {
         )
       }
 
-      newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+      newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng, collectSearchInfo = false)
 
       // recombine player pieces
       newState.currentPlayer.combinePieces()
@@ -196,7 +197,7 @@ class MainViewModel : ViewModel() {
       _uiState.update {
         it.copy(turnPhase = TurnPhase.ExtraMove)
       }
-      newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng)
+      newState = playerMove(newState, TurnPhase.ExtraMove, turn, rng, collectSearchInfo = false)
 
       _uiState.update {
         it.copy(
@@ -221,7 +222,7 @@ class MainViewModel : ViewModel() {
 
       newState =
           if (newState.currentPlayer.model != Model.HUMAN) {
-            playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng)
+            playerMove(newState, turnPhase = TurnPhase.PlayerInputWindow, turn, rng, collectSearchInfo = false)
           } else {
             newState
           }
@@ -261,7 +262,7 @@ class MainViewModel : ViewModel() {
         )
       }
 
-      newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng)
+      newState = playerMove(newState, turnPhase = TurnPhase.ExtraMove, turn, rng, collectSearchInfo = false)
 
       _uiState.update {
         it.copy(gameState = newState)
@@ -283,7 +284,7 @@ class MainViewModel : ViewModel() {
         )
       }
 
-      newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng)
+      newState = playerMove(newState, turnPhase = TurnPhase.PieceRemoval, turn, rng, collectSearchInfo = false)
       // recombine player pieces
       newState.currentPlayer.combinePieces()
 
@@ -438,11 +439,13 @@ class MainViewModel : ViewModel() {
         )
       }
 
-      playerTurn(
+      runBlocking {
+        playerTurn(
           newState,
           _uiState.value.turnCount,
           rng,
-      )
+        )
+      }
 
       if (evaluateCapturedPieces(newState) || _uiState.value.availableMoves.isEmpty()) {
         val winner =

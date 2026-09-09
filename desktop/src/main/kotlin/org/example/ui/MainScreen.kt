@@ -1396,7 +1396,7 @@ fun Pieces(pieces: List<Piece>, title: String) {
 
 private fun getPieceImage(piece: Piece): ImageBitmap {
 
-  val dir = "/Users/darronporter/Downloads/Dissertation/code/src/main/resources/images"
+  val dir = "/Users/darronporter/Downloads/Dissertation/code-cli-desktop/core/src/main/resources/images"
 
   return Image.makeFromEncoded(
           File("$dir/${piece.colorName.name.lowercase()}_${piece.type.name.lowercase()}.png")
