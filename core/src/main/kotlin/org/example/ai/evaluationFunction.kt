@@ -415,6 +415,8 @@ fun fasterEvaluation(
   return ((myTotal - oppTotal) * 1000) / (myTotal + oppTotal)
 }
 
+
+// TODO has a bug
 fun doActionGetTurnPhase(
   selectedPackedMove: PackedMove,
   childBitboard: Bitboard,

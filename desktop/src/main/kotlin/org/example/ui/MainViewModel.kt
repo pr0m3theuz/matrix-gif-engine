@@ -1,11 +1,14 @@
 package org.example.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.coroutineScope
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.example.ai.doActionGetTurnPhase
 import org.example.ai.mcts.PackedMove
@@ -15,6 +18,7 @@ import org.example.engine.determineWinner
 import org.example.engine.evaluateCapturedPieces
 import org.example.engine.playerMove
 import org.example.model.*
+import kotlin.collections.toList
 
 enum class GameStatus {
   Init,
@@ -45,6 +49,8 @@ sealed class MainUiEvent {
   data class ReplayGame(val a: Boolean = true) : MainUiEvent()
 
   data class NavigateToMainMenu(val a: Boolean = true) : MainUiEvent()
+
+  data class UseAI(val a: Boolean = true) : MainUiEvent()
 }
 
 class MainViewModel : ViewModel() {
@@ -75,6 +81,11 @@ class MainViewModel : ViewModel() {
       }
       is MainUiEvent.SelectMove -> {
         applyMove(event.move)
+      }
+      is MainUiEvent.UseAI -> {
+        viewModelScope.launch {
+          makeAIMove()
+        }
       }
       is MainUiEvent.ReplayGame -> {
         val whitePlayer =
@@ -137,12 +148,22 @@ class MainViewModel : ViewModel() {
           availableMoves = availableMoves,
       )
     }
+
+//    if (_uiState.value.gameState?.currentPlayer?.model != Model.HUMAN) {
+//      viewModelScope.launch {
+//        playerTurn(
+//          state,
+//          _uiState.value.turnCount,
+//          rng,
+//        )
+//      }
+//    }
   }
 
   private suspend fun playerTurn(state: State, turn: Int, rng: Random) {
     var newState = state // .deepCopy(copyCollector = true)
 
-    if (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
+    while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
       val availableMoves: MutableList<PackedMove> = mutableListOf()
 
       newState.bitboard.generateMoves(
@@ -273,7 +294,7 @@ class MainViewModel : ViewModel() {
 
     // TODO While there are pieces to remove
     //  TODO Has a bug? what bug?
-    if (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
+    while (newState.bitboard.evaluateLinesForFourInARow(state.currentPlayer).isNotEmpty()) {
       val availableMoves: MutableList<PackedMove> = mutableListOf()
       newState.bitboard.generateMoves(newState.currentPlayer, TurnPhase.ExtraMove, availableMoves)
 
@@ -412,7 +433,7 @@ class MainViewModel : ViewModel() {
     }
 
     // todo check is nodesMoves is empty declare winner
-    if (nodeMoves.isEmpty()) {
+    if (nodeMoves.isEmpty() ) {
       val winner =
           determineWinner(
               currentPlayer = nodeCurrentPlayer,
@@ -432,22 +453,31 @@ class MainViewModel : ViewModel() {
       return
     }
 
-    if (nodeCurrentPlayer.model != Model.HUMAN) {
-      _uiState.update {
-        it.copy(
-            turnCount = _uiState.value.turnCount + 1,
-        )
-      }
+//    if (nodeCurrentPlayer.model != Model.HUMAN) {
+//      _uiState.update {
+//        it.copy(
+//            turnCount = _uiState.value.turnCount + 1,
+//        )
+//      }
+//
+//      viewModelScope.launch {
+//        playerTurn(
+//          newState,
+//          _uiState.value.turnCount,
+//          rng,
+//        )
+//      }
 
-      runBlocking {
-        playerTurn(
-          newState,
-          _uiState.value.turnCount,
-          rng,
-        )
-      }
+      val passed = if (newState.turnMoves.size > 2) {
+        newState.turnMoves.keys
+          .toList()
+          .takeLast(1)
+          .all { turns ->
+            newState.turnMoves[turns].isNullOrEmpty()
+          }
+      } else false
 
-      if (evaluateCapturedPieces(newState) || _uiState.value.availableMoves.isEmpty()) {
+      if (evaluateCapturedPieces(newState) || _uiState.value.availableMoves.isEmpty() || passed) {
         val winner =
             determineWinner(
                 currentPlayer = nodeCurrentPlayer,
@@ -466,6 +496,142 @@ class MainViewModel : ViewModel() {
         }
         return
       }
+//    }
+  }
+
+  private suspend fun makeAIMove() {
+    val state = _uiState.value.gameState?.deepCopy()
+
+    requireNotNull(state)
+
+    val bitboard = state.bitboard.deepCopy()
+
+    val packedMove = state.currentPlayer.selectMove(
+      turnPhase = _uiState.value.turnPhase,
+      bitboard = bitboard,
+      currentPlayer = state.currentPlayer,
+      opponent = state.nextPlayer,
+      rng = rng,
+      collectSearchInfo = false
+    ) ?: _uiState.value.availableMoves.random(rng)
+
+//    state.turnMoves.getOrDefault(_uiState.value.turnCount, mutableListOf())
+
+    // todo find a better solution for handling null moves
+    if (packedMove != null) {
+      val turnPhase =
+        doActionGetTurnPhase(
+          packedMove,
+          bitboard,
+          state.currentPlayer,
+          state.nextPlayer,
+        )
+
+      state.turnMoves.getOrDefault(_uiState.value.turnCount, mutableListOf()).add(packedMove)
+
+
+      _uiState.update {
+        it.copy(
+          previousTurnPhases = _uiState.value.previousTurnPhases + _uiState.value.turnPhase,
+          playerWhoMadeTheLastMove = state.currentPlayer,
+        )
+      }
+
+
+
+      // child Node Moves
+      val (nodeCurrentPlayer, nodeNextPlayer, nodeTurnPhase, nodeMoves) =
+        createChildState(
+          bitboard,
+          state.currentPlayer,
+          state.nextPlayer,
+          turnPhase,
+          _uiState.value.previousTurnPhases.any { it == TurnPhase.PlayerInputWindow },
+        )
+
+      bitboard.assertPieceCount(
+        currentPlayer = state.currentPlayer,
+        nextPlayer = state.nextPlayer,
+      )
+
+      val newBoard = bitboard.convertBitboardToBoard(state.board)
+
+      val newState =
+        State(
+          currentPlayer = nodeCurrentPlayer,
+          nextPlayer = nodeNextPlayer,
+          board = newBoard,
+          bitboard = bitboard,
+          turnMoves = state.turnMoves,
+          turnDuration = state.turnDuration,
+          turnSearchInfo = state.turnSearchInfo,
+          collector = state.collector,
+        )
+
+      newState.assertPieceCount(bitboard = bitboard)
+
+      _uiState.update {
+        it.copy(
+          gameState = newState,
+          turnCount = if (nodeCurrentPlayer != state.currentPlayer) _uiState.value.turnCount.plus(1) else _uiState.value.turnCount,
+          turnPhase = nodeTurnPhase,
+          availableMoves = nodeMoves,
+        )
+      }
+    } else {
+      state.turnMoves.getOrDefault(_uiState.value.turnCount, mutableListOf())
+    }
+
+    val passed = _uiState.value.gameState?.turnMoves?.size?.let {
+	    if (it > 2) {
+        _uiState.value.gameState?.turnMoves?.keys
+	        ?.toList()
+			    ?.takeLast(1)
+			    ?.all { turns ->
+            _uiState.value.gameState?.turnMoves[turns].isNullOrEmpty()
+			    }
+	    } else false
+    } ?: false
+
+    if (evaluateCapturedPieces(_uiState.value.gameState!!) || _uiState.value.availableMoves.isEmpty() || passed) {
+      val winner =
+        determineWinner(
+          currentPlayer = _uiState.value.gameState?.currentPlayer!!,
+          nextPlayer = _uiState.value.gameState?.nextPlayer!!,
+          playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
+          bitboard = bitboard,
+          state = _uiState.value.gameState,
+          true,
+        )
+
+      _uiState.update {
+        it.copy(
+          winner = winner,
+        )
+      }
+
+      return
+    }
+
+    // todo check is nodesMoves is empty declare winner
+    if (_uiState.value.availableMoves.isEmpty()) {
+      val winner =
+        determineWinner(
+          currentPlayer = _uiState.value.gameState?.currentPlayer!!,
+          nextPlayer = _uiState.value.gameState?.nextPlayer!!,
+          playerWhoMadeTheLastMove = _uiState.value.playerWhoMadeTheLastMove,
+          bitboard = bitboard,
+          state = _uiState.value.gameState,
+          true,
+        )
+
+      _uiState.update {
+        it.copy(
+          winner = winner,
+          status = GameStatus.Running,
+        )
+      }
+      return
     }
   }
 }

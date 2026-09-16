@@ -3,6 +3,7 @@
     ExperimentalGridApi::class,
     ExperimentalComposeUiApi::class,
     ExperimentalFoundationApi::class,
+    ExperimentalUnsignedTypes::class,
 )
 
 package org.example.ui
@@ -25,12 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.TextStyle
@@ -52,7 +48,6 @@ import org.hexworks.mixite.core.api.HexagonalGridBuilder
 import org.hexworks.mixite.core.api.HexagonalGridLayout
 import org.hexworks.mixite.core.api.contract.SatelliteData
 import org.jetbrains.skia.Image
-import kotlin.collections.map
 
 @Composable
 fun MainScreen(
@@ -205,24 +200,26 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
 
   var selectedMove by remember { mutableStateOf<PackedMove?>(null) }
 
-  val nodesToHighlight = selectedMove?.let {
-    when (it) {
-	    is PackedMove.Multiple -> {
-        it.values.map { move ->
-          bitmaskNodes.getValue(move.extractTargetBit()).coordinate
+  val nodesToHighlight =
+      selectedMove?.let {
+        when (it) {
+          is PackedMove.Multiple -> {
+            it.values.map { move ->
+              bitmaskNodes.getValue(move.extractTargetBit()).coordinate
+            }
+          }
+          is PackedMove.Single -> {
+            val temp =
+                mutableListOf(
+                    bitmaskNodes.getValue(it.value.extractTargetBit()).coordinate,
+                )
+            if (it.value.extractMoveType() == MoveType.UsePotential) {
+              temp.add(bitmaskNodes.getValue(it.value.extractSourceBit()).coordinate)
+            }
+            temp.toList()
+          }
         }
-      }
-	    is PackedMove.Single -> {
-        val temp = mutableListOf(
-          bitmaskNodes.getValue(it.value.extractTargetBit()).coordinate,
-        )
-        if (it.value.extractMoveType() == MoveType.UsePotential) {
-          temp.add(bitmaskNodes.getValue(it.value.extractSourceBit()).coordinate)
-        }
-        temp.toList()
-      }
-    }
-  } ?: emptyList()
+      } ?: emptyList()
 
   // todo draw the board
   DrawBoard(uiState, nodesToHighlight)
@@ -284,6 +281,10 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
 
   if (uiState.turnPhase == TurnPhase.PieceRemoval && uiState.availableMoves.isNotEmpty()) {
     selectedMove = PieceRemovalMoves(uiState)
+  }
+
+  if (uiState.gameState?.currentPlayer?.model != Model.HUMAN && uiState.winner == null) {
+    onEvent(MainUiEvent.UseAI())
   }
 
   Button(
@@ -363,9 +364,12 @@ private fun PieceRemovalMoves(uiState: MainUiState): PackedMove? {
               verticalAlignment = Alignment.CenterVertically,
           ) {
             val nodes =
-                (move as PackedMove.Multiple).values.map { move ->
-                  bitmaskNodes.getValue(move.extractTargetBit())
-                }
+                (move as PackedMove.Multiple)
+                    .values
+                    .map { move ->
+                      bitmaskNodes.getValue(move.extractTargetBit())
+                    }
+                    .distinct()
 
             val text = nodes.joinToString { it.coordinate.toString() }
             Checkbox(
@@ -673,21 +677,21 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
   var playerOneModelExpanded by remember { mutableStateOf(false) }
   var playerTwoModelExpanded by remember { mutableStateOf(false) }
 
-  var playeronemodel by remember { mutableStateOf(Model.HUMAN) }
-  var playerOneiterations by remember { mutableStateOf(0) }
-  var playerOnedepth by remember { mutableStateOf(1) }
-  var playerOnetimeControl by remember { mutableStateOf(false) }
-  var playerOneuseRAVE by remember { mutableStateOf(false) }
-  var playerOneenableFPU by remember { mutableStateOf(true) }
-  var playerOneenablePW by remember { mutableStateOf(true) }
+  var playerOneModel by remember { mutableStateOf(Model.HUMAN) }
+  var playerOneIterations by remember { mutableStateOf(0) }
+  var playerOneDepth by remember { mutableStateOf(1) }
+  var playerOneTimeControl by remember { mutableStateOf(false) }
+  var playerOneUseRAVE by remember { mutableStateOf(false) }
+  var playerOneEnableFPU by remember { mutableStateOf(false) }
+  var playerOneEnablePW by remember { mutableStateOf(true) }
 
-  var playerTwomodel by remember { mutableStateOf(Model.MCTS) }
-  var playerTwoiterations by remember { mutableStateOf(0) }
-  var playerTwodepth by remember { mutableStateOf(1) }
-  var playerTwotimeControl by remember { mutableStateOf(false) }
-  var playerTwouseRAVE by remember { mutableStateOf(false) }
-  var playerTwoenableFPU by remember { mutableStateOf(true) }
-  var playerTwoenablePW by remember { mutableStateOf(true) }
+  var playerTwoModel by remember { mutableStateOf(Model.MCTS) }
+  var playerTwoIterations by remember { mutableStateOf(0) }
+  var playerTwoDepth by remember { mutableStateOf(1) }
+  var playerTwoTimeControl by remember { mutableStateOf(false) }
+  var playerTwoUseRAVE by remember { mutableStateOf(false) }
+  var playerTwoEnableFPU by remember { mutableStateOf(false) }
+  var playerTwoEnablePW by remember { mutableStateOf(true) }
 
   Row {
     Text("Select Players", style = MaterialTheme.typography.headlineMediumEmphasized)
@@ -725,7 +729,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
             OutlinedTextField(
                 enabled = true,
                 label = { Text("Model") },
-                value = playeronemodel.name,
+                value = playerOneModel.name,
                 onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
@@ -741,7 +745,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
             ) {
               for (model in Model.entries) DropdownMenuItem(
                   text = { Text(model.name) },
-                  onClick = { playeronemodel = model },
+                  onClick = { playerOneModel = model },
               )
             }
           }
@@ -751,9 +755,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               verticalAlignment = Alignment.CenterVertically,
           ) {
             OutlinedTextField(
-                label = { Text("MCTS Iterations") },
-                value = playerOneiterations.toString(),
-                onValueChange = { playerOneiterations = it.toInt().coerceIn(0..1000) },
+                label = { Text("MCTS Iterations (0-99999)") },
+                value = playerOneIterations.toString(),
+                onValueChange = {
+                  val input = it.trim()
+                  if (input.isNotEmpty() || input.isNotBlank()) {
+                    playerOneIterations = input.trim().toInt().coerceIn(0..99999)
+                  }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
             )
@@ -764,9 +773,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               verticalAlignment = Alignment.CenterVertically,
           ) {
             OutlinedTextField(
-                label = { Text("Minimax Search Depth") },
-                value = playerOnedepth.toString(),
-                onValueChange = { playerOnedepth = it.toInt().coerceIn(0..5) },
+                label = { Text("Minimax Search Depth (0-5)") },
+                value = playerOneDepth.toString(),
+                onValueChange = {
+                  val input = it.trim()
+                  if (input.isNotEmpty() || input.isNotBlank()) {
+                    playerOneDepth = input.toInt().coerceIn(0..5)
+                  }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
             )
@@ -778,12 +792,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Time Control")
             Switch(
-                checked = playerOnetimeControl,
+                checked = playerOneTimeControl,
                 onCheckedChange = {
-                  playerOnetimeControl = it
+                  playerOneTimeControl = it
                 },
                 thumbContent =
-                    if (playerOnetimeControl) {
+                    if (playerOneTimeControl) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -803,12 +817,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Use RAVE")
             Switch(
-                checked = playerOneuseRAVE,
+                checked = playerOneUseRAVE,
                 onCheckedChange = {
-                  playerOneuseRAVE = it
+                  playerOneUseRAVE = it
                 },
                 thumbContent =
-                    if (playerOneuseRAVE) {
+                    if (playerOneUseRAVE) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -826,14 +840,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically,
           ) {
-            Text("First Play Urgency")
+            Text("Mean First Play Urgency")
             Switch(
-                checked = playerOneenableFPU,
+                checked = playerOneEnableFPU,
                 onCheckedChange = {
-                  playerOneenableFPU = it
+                  playerOneEnableFPU = it
                 },
                 thumbContent =
-                    if (playerOneenableFPU) {
+                    if (playerOneEnableFPU) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -853,12 +867,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Progressive Widening")
             Switch(
-                checked = playerOneenablePW,
+                checked = playerOneEnablePW,
                 onCheckedChange = {
-                  playerOneenablePW = it
+                  playerOneEnablePW = it
                 },
                 thumbContent =
-                    if (playerOneenablePW) {
+                    if (playerOneEnablePW) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -899,7 +913,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
             OutlinedTextField(
                 enabled = true,
                 label = { Text("Model") },
-                value = playerTwomodel.name,
+                value = playerTwoModel.name,
                 onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
@@ -916,7 +930,7 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
             ) {
               for (model in Model.entries) DropdownMenuItem(
                   text = { Text(model.name) },
-                  onClick = { playerTwomodel = model },
+                  onClick = { playerTwoModel = model },
               )
             }
           }
@@ -926,9 +940,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               verticalAlignment = Alignment.CenterVertically,
           ) {
             OutlinedTextField(
-                label = { Text("MCTS Iterations") },
-                value = playerTwoiterations.toString(),
-                onValueChange = { playerTwoiterations = it.toInt().coerceIn(0..1000) },
+                label = { Text("MCTS Iterations (0-99999)") },
+                value = playerTwoIterations.toString(),
+                onValueChange = {
+                  val input = it.trim()
+                  if (input.isNotEmpty() || input.isNotBlank()) {
+                    playerTwoIterations = input.trim().toInt().coerceIn(0..99999)
+                  }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
             )
@@ -939,9 +958,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               verticalAlignment = Alignment.CenterVertically,
           ) {
             OutlinedTextField(
-                label = { Text("Minimax Search Depth") },
-                value = playerTwodepth.toString(),
-                onValueChange = { playerTwodepth = it.toInt().coerceIn(0..5) },
+                label = { Text("Minimax Search Depth (0-5)") },
+                value = playerTwoDepth.toString(),
+                onValueChange = {
+                  val input = it.trim()
+                  if (input.isNotEmpty() || input.isNotBlank()) {
+                    playerTwoDepth = input.toInt().coerceIn(0..5)
+                  }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
             )
@@ -953,12 +977,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Time Control")
             Switch(
-                checked = playerTwotimeControl,
+                checked = playerTwoTimeControl,
                 onCheckedChange = {
-                  playerTwotimeControl = it
+                  playerTwoTimeControl = it
                 },
                 thumbContent =
-                    if (playerTwotimeControl) {
+                    if (playerTwoTimeControl) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -978,12 +1002,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Use RAVE")
             Switch(
-                checked = playerTwouseRAVE,
+                checked = playerTwoUseRAVE,
                 onCheckedChange = {
-                  playerTwouseRAVE = it
+                  playerTwoUseRAVE = it
                 },
                 thumbContent =
-                    if (playerTwouseRAVE) {
+                    if (playerTwoUseRAVE) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -1001,14 +1025,14 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically,
           ) {
-            Text("First Play Urgency")
+            Text("Mean First Play Urgency")
             Switch(
-                checked = playerTwoenableFPU,
+                checked = playerTwoEnableFPU,
                 onCheckedChange = {
-                  playerTwoenableFPU = it
+                  playerTwoEnableFPU = it
                 },
                 thumbContent =
-                    if (playerTwoenableFPU) {
+                    if (playerTwoEnableFPU) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -1028,12 +1052,12 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
           ) {
             Text("Progressive Widening")
             Switch(
-                checked = playerTwoenablePW,
+                checked = playerTwoEnablePW,
                 onCheckedChange = {
-                  playerTwoenablePW = it
+                  playerTwoEnablePW = it
                 },
                 thumbContent =
-                    if (playerTwoenablePW) {
+                    if (playerTwoEnablePW) {
                       {
                         Icon(
                             imageVector = Icons.Filled.Check,
@@ -1059,23 +1083,23 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
               MainUiEvent.StartNewGame(
                   Player(
                       name = PlayerName.WHITE,
-                      model = playeronemodel,
-                      timeControl = playerTwotimeControl,
-                      useRAVE = playerTwouseRAVE,
-                      enableFPU = playerTwoenableFPU,
-                      enablePW = playerTwoenablePW,
-                      iterations = playerTwoiterations,
-                      depth = playerTwodepth,
+                      model = playerOneModel,
+                      timeControl = playerOneTimeControl,
+                      useRAVE = playerOneUseRAVE,
+                      enableFPU = playerOneEnableFPU,
+                      enablePW = playerOneEnablePW,
+                      iterations = playerOneIterations,
+                      depth = playerOneDepth,
                   ),
                   Player(
                       name = PlayerName.BLACK,
-                      model = playerTwomodel,
-                      timeControl = playerTwotimeControl,
-                      useRAVE = playerTwouseRAVE,
-                      enableFPU = playerTwoenableFPU,
-                      enablePW = playerTwoenablePW,
-                      iterations = playerTwoiterations,
-                      depth = playerTwodepth,
+                      model = playerTwoModel,
+                      timeControl = playerTwoTimeControl,
+                      useRAVE = playerTwoUseRAVE,
+                      enableFPU = playerTwoEnableFPU,
+                      enablePW = playerTwoEnablePW,
+                      iterations = playerTwoIterations,
+                      depth = playerTwoDepth,
                   ),
               )
           )
@@ -1249,29 +1273,26 @@ fun DrawBoard(uiState: MainUiState, selectedMoveCoordinates: List<Coordinate>) {
                   it.bitmask == bitmaskToCubeCoordinate.keys.toList()[index]
                 }
                 ?.let { node ->
-
                   if (node.coordinate in selectedMoveCoordinates) {
                     drawCircle(
-                      brush = Brush.linearGradient(
-                        colors = IBMColorBlindPalette.colors.map { it.copy(alpha = 0.6f) },
-                        end = Offset(size.width / 4f, 0f),
-                        tileMode = TileMode.Mirror
-                      ),
-                      center =
-                        Offset(
-                          hexagon.centerX.toFloat(),
-                          hexagon.centerY.toFloat(),
-                        )
-                          .minus(canvasOffset),
-                      radius =
-                        (hexagon.centerX -
-                            hexagon.points[0].coordinateX).toFloat().times(0.8f),
+                        brush =
+                            Brush.linearGradient(
+                                colors = IBMColorBlindPalette.colors.map { it.copy(alpha = 0.6f) },
+                                end = Offset(size.width / 4f, 0f),
+                                tileMode = TileMode.Mirror,
+                            ),
+                        center =
+                            Offset(
+                                    hexagon.centerX.toFloat(),
+                                    hexagon.centerY.toFloat(),
+                                )
+                                .minus(canvasOffset),
+                        radius =
+                            (hexagon.centerX - hexagon.points[0].coordinateX).toFloat().times(0.8f),
                     )
                   }
 
                   node.piece?.let { piece: Piece ->
-
-
                     val topPiece =
                         when (piece.type) {
                           PieceType.DVONN,
@@ -1396,7 +1417,8 @@ fun Pieces(pieces: List<Piece>, title: String) {
 
 private fun getPieceImage(piece: Piece): ImageBitmap {
 
-  val dir = "/Users/darronporter/Downloads/Dissertation/code-cli-desktop/core/src/main/resources/images"
+  val dir =
+      "/Users/darronporter/Downloads/Dissertation/code-cli-desktop/core/src/main/resources/images"
 
   return Image.makeFromEncoded(
           File("$dir/${piece.colorName.name.lowercase()}_${piece.type.name.lowercase()}.png")
