@@ -2,8 +2,8 @@
 
 package model
 
-import org.example.ai.humanEvaluation.BestPackedMove
 import org.example.ai.mcts.PackedMove
+import org.example.ai.minimax.BestPackedMove
 import org.example.model.Bitboard
 import org.example.model.Player
 import org.example.model.PlayerName

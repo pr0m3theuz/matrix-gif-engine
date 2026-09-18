@@ -2,6 +2,7 @@
 
 package ai.mcts
 
+import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
@@ -20,13 +21,15 @@ class MCTSNodeTest {
 
     val bitboard = Bitboard()
 
-    selectMoveMCTS(
+    runBlocking {
+      selectMoveMCTS(
         bitboard = bitboard,
         currentPlayer = state.currentPlayer,
         nextPlayer = state.nextPlayer,
         turnPhase = TurnPhase.PlayerInputWindow,
         rounds = 0..999,
         rng = Random(1),
-    )
+      )
+    }
   }
 }

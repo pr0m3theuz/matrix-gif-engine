@@ -3,10 +3,10 @@
 package ai.minimax
 
 import kotlin.test.assertEquals
-import org.example.ai.humanEvaluation.AlphaBetaScoreBitPacked
-import org.example.ai.humanEvaluation.BestPackedMove
-import org.example.ai.humanEvaluation.alphaBetaNgMxSearch
 import org.example.ai.mcts.PackedMove
+import org.example.ai.minimax.AlphaBetaScoreBitPacked
+import org.example.ai.minimax.BestPackedMove
+import org.example.ai.minimax.alphaBetaNgMxSearch
 import org.example.engine.TranspositionTable
 import org.example.model.*
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -450,11 +450,11 @@ class ResolveBoardRemovalsTest {
         )
 
     val alphaBetaScore =
-        AlphaBetaScoreBitPacked(
-            move = PackedMove.Multiple(listOf(16646025u, 16646027u, 16646028u, 1090387850u)),
-            alpha = 0,
-            beta = 2147483647,
-        )
+      AlphaBetaScoreBitPacked(
+        move = PackedMove.Multiple(listOf(16646025u, 16646027u, 16646028u, 1090387850u)),
+        alpha = 0,
+        beta = 2147483647,
+      )
 
     val transpositionTable = TranspositionTable()
 
@@ -479,21 +479,22 @@ class ResolveBoardRemovalsTest {
       bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
       val move =
-          BestPackedMove(
-              move = removePieces,
-              score =
-                  alphaBetaNgMxSearch(
-                          maxDepth = maxDepth,
-                          depth = depth.minus(1),
-                          bitboard = bitboard.deepCopy(),
-                          currentPlayer = opponentPlayer,
-                          opponentPlayer = currentPlayer,
-                          alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
-                          rng = rng,
-                          transpositionTable = transpositionTable,
-                      )
-                      .score,
-          )
+        BestPackedMove(
+          move = removePieces,
+          score =
+            alphaBetaNgMxSearch(
+              maxDepth = maxDepth,
+              depth = depth.minus(1),
+              bitboard = bitboard.deepCopy(),
+              currentPlayer = opponentPlayer,
+              opponentPlayer = currentPlayer,
+              alphaBetaScore = alphaBetaScore.swapAlphaBeta(),
+              rng = rng,
+              transpositionTable = transpositionTable,
+              enableQSearch = true
+            )
+              .score,
+        )
 
       bitboard.assertPieceCount(currentPlayer = currentPlayer, nextPlayer = opponentPlayer)
 
@@ -789,6 +790,7 @@ class ResolveBoardRemovalsTest {
         rng = rng,
         isPVNode = isPVNode && packedMove == availableMoves[0],
         transpositionTable = TranspositionTable(),
+        enableQSearch = true
     )
 
     bitboardForTesting.diff(bitboard)

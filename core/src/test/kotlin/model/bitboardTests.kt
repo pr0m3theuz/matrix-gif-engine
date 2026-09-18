@@ -2,6 +2,7 @@
 
 package model
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.example.ai.mcts.selectMoveMCTS
 import org.example.model.*
@@ -3529,14 +3530,16 @@ class BitboardTest {
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
     val bestMove =
+      runBlocking {
         selectMoveMCTS(
-            bitboard = bitboard,
-            currentPlayer = currentPlayer,
-            nextPlayer = nextPlayer,
-            rounds = 0..999,
-            turnPhase = TurnPhase.PlayerInputWindow,
-            Random(1),
+          bitboard = bitboard,
+          currentPlayer = currentPlayer,
+          nextPlayer = nextPlayer,
+          rounds = 0..999,
+          turnPhase = TurnPhase.PlayerInputWindow,
+          Random(1),
         )
+      }
   }
 
   @Test
@@ -4151,14 +4154,16 @@ class BitboardTest {
     assert(bitboardAvailableMoves.size == eligiblePotentialMoves.size)
 
     val bestMove =
+      runBlocking {
         selectMoveMCTS(
-            bitboard = bitboard,
-            currentPlayer = currentPlayer,
-            nextPlayer = nextPlayer,
-            rounds = 0..999,
-            turnPhase = TurnPhase.PlayerInputWindow,
-            rng = Random(0),
+          bitboard = bitboard,
+          currentPlayer = currentPlayer,
+          nextPlayer = nextPlayer,
+          rounds = 0..999,
+          turnPhase = TurnPhase.PlayerInputWindow,
+          rng = Random(0),
         )
+      }
   }
 
   @Test
