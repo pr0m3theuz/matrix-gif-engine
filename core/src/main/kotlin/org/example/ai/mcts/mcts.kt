@@ -90,7 +90,7 @@ data class MCTSNode(
         mutableMapOf(PlayerName.BLACK to 0, PlayerName.WHITE to 0),
     var parentMeanFPUValue: Float = 0.5f,
     var meanFPUValue: Float = 0.5f, // from Facebook's ELF Go
-    val progressiveWideningConstant: Double = 1.5, // where
+    val progressiveWideningConstant: Double = 6.0, // where
     val progressiveWideningAlpha: Double = 0.4, // where
     val totalActions: Int,
     val evalScore: Int = 0,
