@@ -1,6 +1,4 @@
 @file:OptIn(
-    ExperimentalMaterialApi::class,
-    ExperimentalGridApi::class,
     ExperimentalComposeUiApi::class,
     ExperimentalFoundationApi::class,
     ExperimentalUnsignedTypes::class,
@@ -11,7 +9,8 @@ package org.example.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material3.Badge
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -164,7 +163,6 @@ private fun GameScreen(uiState: MainUiState, gameState: State, onEvent: (MainUiE
 
   Card(
       modifier = Modifier.padding(16.dp),
-      elevation = 4.dp,
   ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -346,7 +344,6 @@ private fun PieceRemovalMoves(uiState: MainUiState): PackedMove? {
 
   Card(
       modifier = Modifier.padding(16.dp),
-      elevation = 8.dp,
   ) {
     Column(
         Modifier.padding(16.dp),
@@ -401,7 +398,6 @@ private fun UsePotentialMoves(
 
   Card(
       modifier = Modifier.padding(16.dp),
-      elevation = 8.dp,
   ) {
     Column(
         Modifier.padding(16.dp),
@@ -514,7 +510,6 @@ private fun AddPieceMoveOptions(
 
   Card(
       modifier = Modifier.padding(16.dp),
-      elevation = 8.dp,
   ) {
     Column(
         Modifier.padding(16.dp),
@@ -543,7 +538,6 @@ private fun AddPieceMoveOptions(
       ) {
         Card(
             modifier = Modifier.padding(end = 16.dp).weight(1f),
-            elevation = 4.dp,
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Pieces")
@@ -568,7 +562,6 @@ private fun AddPieceMoveOptions(
         }
         Card(
             modifier = Modifier.padding(end = 16.dp).weight(1f),
-            elevation = 4.dp,
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Push Directions")
@@ -616,7 +609,6 @@ private fun AddPieceMoveOptions(
         }
         Card(
             modifier = Modifier.weight(1f),
-            elevation = 4.dp,
         ) {
           Column(Modifier.padding(8.dp)) {
             Text("Nodes")
@@ -704,7 +696,6 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
   ) {
     Card(
         modifier = Modifier.weight(0.5f),
-        elevation = 4.dp,
     ) {
       Column(
           modifier = Modifier.padding(16.dp),
@@ -891,7 +882,6 @@ private fun MainMenuScreen(onEvent: (MainUiEvent) -> Unit) {
 
     Card(
         modifier = Modifier.weight(0.5f),
-        elevation = 4.dp,
     ) {
       Column(
           modifier = Modifier.padding(16.dp),
@@ -1164,7 +1154,6 @@ fun DrawBoard(uiState: MainUiState, selectedMoveCoordinates: List<Coordinate>) {
 
     Card(
         modifier = Modifier.padding(16.dp).widthIn(max = 1000.dp),
-        elevation = 6.dp,
     ) {
       val textMeasurer = rememberTextMeasurer()
 
@@ -1343,7 +1332,6 @@ fun Pieces(pieces: List<Piece>, title: String) {
 
   Card(
       modifier = Modifier.padding(16.dp).fillMaxWidth(),
-      elevation = 8.dp,
   ) {
     Column(
         Modifier.padding(32.dp),
@@ -1393,8 +1381,6 @@ fun Pieces(pieces: List<Piece>, title: String) {
                     BadgedBox(
                         badge = {
                           Badge(
-                              backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-                              contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                           ) {
                             Text("$count", style = MaterialTheme.typography.headlineSmallEmphasized)
                           }

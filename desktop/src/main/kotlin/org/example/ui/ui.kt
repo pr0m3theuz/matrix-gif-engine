@@ -1,20 +1,18 @@
 package org.example.ui
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.compose.AppTheme
 
 fun main() = application {
 	val state = rememberWindowState(size = DpSize(1200.dp, 1000.dp))
@@ -31,7 +29,7 @@ fun App(window: ComposeWindow) {
 
 	val coroutineScope = rememberCoroutineScope()
 
-	MaterialTheme {
+	AppTheme {
 		MainApp(window = window)
 	}
 }
@@ -42,7 +40,6 @@ fun MainApp(
 	viewModel: MainViewModel = viewModel { MainViewModel() },
 //	navController: NavHostController = rememberNavController()
 ) {
-
 	val uiState by viewModel.uiState.collectAsState()
 
 	MainScreen(
