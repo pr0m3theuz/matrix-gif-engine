@@ -2,7 +2,7 @@
   <configuration default="false" name="GenerateReproducibleGamesKt" type="JetRunConfigurationType" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="org.example.GenerateReproducibleGamesKt" />
     <module name="code.main" />
-    d<option name="PROGRAM_PARAMETERS" value="-b -g 1 -m minimax -mtc -mtd 300 -M mcts -Mtc -Mtd 300" />
+    <option name="PROGRAM_PARAMETERS" value="-b -g 1 -m minimax -mdp 1 -M minimax -Mdp 1" />
     <shortenClasspath name="MANIFEST" />
     <method v="2">
       <option name="Make" enabled="true" />
